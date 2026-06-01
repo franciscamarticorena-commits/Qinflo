@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Qinflo | Crianza compartida sin fricción</title>
+<meta name="description" content="Qinflo ayuda a madres, padres y cuidadores a coordinar calendario, gastos, acuerdos, documentos y recordatorios de crianza compartida."/>
+<meta name="theme-color" content="#6F7B4B"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="icon" href="favicon.svg" type="image/svg+xml"/>
+<link rel="apple-touch-icon" href="assets/icons/qinflo-icon.svg"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<!-- Observabilidad opcional: activar cuando existan llaves reales -->
+<!-- <script src="https://browser.sentry-cdn.com/8.0.0/bundle.tracing.min.js" crossorigin="anonymous"></script> -->
+<!-- <script src="https://app.posthog.com/static/array.js"></script> -->
+<link rel="stylesheet" href="css/styles.css"/>
+
+</head>
+<body>
+
+<!-- ===========================================================
+     AUTH
+============================================================ -->
+
+<div id="authScreen">
+  <div class="authBox">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="7" r="3"/><circle cx="16" cy="7" r="3"/>
+          <path d="M3 20c0-3.31 2.69-6 6-6s6 2.69 6 6"/>
+          <path d="M19 18c0-2.21-1.34-4-3-4"/>
+        </svg>
+      </div>
+      <h1>Qinflo</h1>
+      <p>Crianza compartida</p>
+    </div>
+
+
+<div class="tabs">
+  <button id="tabLoginBtn" class="active">Ingresar</button>
+  <button id="tabRegisterBtn">Crear cuenta</button>
+</div>
+
+<div id="authMsg" class="hidden"></div>
+
+<!-- LOGIN -->
+<div id="loginForm">
+  <div class="field"><label>Correo</label><input type="email" id="loginEmail" placeholder="tu@correo.com"/></div>
+  <div class="field"><label>Contraseña</label><input type="password" id="loginPass" placeholder="••••••••"/></div>
+  <button class="btn-primary" id="loginBtn">Ingresar</button>
+  <p style="text-align:center;margin-top:12px">
+    <button class="link-btn" id="forgotBtn">¿Olvidaste tu contraseña?</button>
+  </p>
+</div>
+
+<!-- REGISTRO -->
+<div id="registerForm" class="hidden">
+  <div class="field"><label>Tu nombre</label><input type="text" id="regName" placeholder="María González"/></div>
+  <div class="field"><label>Correo</label><input type="email" id="regEmail" placeholder="tu@correo.com"/></div>
+  <div class="field"><label>Contraseña</label><input type="password" id="regPass" placeholder="Mínimo 6 caracteres"/></div>
+  <div class="field"><label>Confirmar contraseña</label><input type="password" id="regPass2" placeholder="Repite tu contraseña"/></div>
+  <div class="field">
+    <label>Tipo de familia</label>
+    <select id="regFamType">
+      <option value="mama_papa">Mamá y Papá</option>
+      <option value="papa_papa">Papá y Papá</option>
+      <option value="mama_mama">Mamá y Mamá</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Yo soy…</label>
+    <select id="regRole">
+      <option value="p1" id="roleP1Opt">Mamá</option>
+      <option value="p2" id="roleP2Opt">Papá</option>
+    </select>
+  </div>
+  <button class="btn-primary" id="registerBtn">Crear cuenta</button>
+</div>
+
+<!-- FORGOT -->
+<div id="forgotForm" class="hidden">
+  <p style="font-size:13px;color:var(--text-s);margin-bottom:16px">Te enviaremos un enlace para restablecer tu contraseña.</p>
+  <div class="field"><label>Correo</label><input type="email" id="resetEmail" placeholder="tu@correo.com"/></div>
+  <button class="btn-primary" id="resetBtn">Enviar enlace</button>
+  <p style="text-align:center;margin-top:12px">
+    <button class="link-btn" id="backBtn">← Volver</button>
+  </p>
+</div>
+
+
+  </div>
+</div>
+
+<!-- ===========================================================
+     CONNECT
+============================================================ -->
+
+<div id="connectScreen" class="hidden">
+  <div class="connectBox">
+    <div style="margin-bottom:22px">
+      <h2 style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px">Invitar a co-padre/madre</h2>
+      <p style="font-size:13px;color:var(--text-s)">Envíale un link por WhatsApp para conectarse automáticamente</p>
+    </div>
+    <div class="invite-box">
+      <p class="lbl" style="margin-bottom:9px">Tu link de invitación</p>
+      <div id="inviteLinkDisplay" class="invite-link-display">Generando link...</div>
+      <button id="whatsappBtn" class="btn-whatsapp">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+        Invitar por WhatsApp
+      </button>
+    </div>
+    <div id="connectMsg" class="hidden"></div>
+    <p style="text-align:center;margin-top:14px">
+      <button class="link-btn" id="skipBtn">Hacer esto más tarde</button>
+    </p>
+  </div>
+</div>
+
+<!-- ===========================================================
+     APP
+============================================================ -->
+
+<div id="app">
+  <header>
+    <div class="header-inner">
+      <div class="header-top">
+        <div class="header-brand">
+          <div class="header-logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="9" cy="7" r="3"/><circle cx="16" cy="7" r="3"/>
+              <path d="M3 20c0-3.31 2.69-6 6-6s6 2.69 6 6"/>
+              <path d="M19 18c0-2.21-1.34-4-3-4"/>
+            </svg>
+          </div>
+          <div>
+            <div class="header-title">Qinflo</div>
+            <div class="header-sub-text" id="headerSub">Crianza compartida</div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="icon-btn" id="inviteBtn" title="Invitar">
+            <i data-lucide="link" style="width:16px;height:16px"></i>
+          </button>
+          <button class="icon-btn" id="logoutBtn" title="Salir">
+            <i data-lucide="log-out" style="width:16px;height:16px"></i>
+          </button>
+        </div>
+      </div>
+
+
+  <nav id="mainNav">
+    <button class="active" data-tab="calendar">
+      <i data-lucide="calendar-days"></i> Calendario
+    </button>
+    <button data-tab="expenses">
+      <i data-lucide="receipt-text"></i> Gastos
+    </button>
+    <button data-tab="messages">
+      <i data-lucide="message-circle"></i> Mensajes
+    </button>
+    <button data-tab="children">
+      <i data-lucide="users-round"></i> Hijos
+    </button>
+    <button data-tab="agreements">
+      <i data-lucide="folder-open"></i> Acuerdos
+    </button>
+    <button data-tab="reminders">
+      <i data-lucide="bell"></i> Recordatorios
+    </button>
+    <button data-tab="recursos">
+      <i data-lucide="landmark"></i> Recursos
+    </button>
+  </nav>
+</div>
+
+
+  </header>
+
+  <main>
+
+
+<!-- -- CALENDARIO ---------------------------------------- -->
+<div id="tab-calendar">
+  <div class="section-header">
+    <div class="section-title">
+      <h2>Calendario de Custodia</h2>
+      <p>Planifica los días con tus hijos</p>
+    </div>
+  </div>
+
+  <div class="custody-legend">
+    <div class="legend-item"><div class="dot" style="background:var(--accent)"></div><span id="leg1">Mamá</span></div>
+    <div class="legend-item"><div class="dot" style="background:var(--primary-d)"></div><span id="leg2">Papá</span></div>
+    <div class="legend-item"><span class="transition-symbol">↔</span><span>Cambio de casa</span></div>
+  </div>
+
+  <div id="pendingProposals"></div>
+
+  <div class="card">
+    <div class="card-body">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <button class="btn-outline" id="prevMonthBtn" style="padding:8px 12px">
+          <i data-lucide="chevron-left" style="width:16px;height:16px"></i>
+        </button>
+        <strong id="calMonthTitle" style="font-size:16px;color:var(--text)"></strong>
+        <button class="btn-outline" id="nextMonthBtn" style="padding:8px 12px">
+          <i data-lucide="chevron-right" style="width:16px;height:16px"></i>
+        </button>
+      </div>
+      <div class="cal-grid" id="calDayNames"></div>
+      <div class="cal-grid" id="calGrid" style="margin-top:4px"></div>
+
+      <div id="dayDetail" class="day-detail hidden">
+        <div class="day-detail-title">
+          <i data-lucide="calendar-days"></i> Día <span id="detailDay"></span>
+        </div>
+        <div id="detailEvents" style="margin-bottom:10px"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-outline" id="toggleEvBtn">
+            <i data-lucide="plus"></i> Evento
+          </button>
+          <button class="btn-outline" id="togglePropBtn">
+            <i data-lucide="arrow-left-right"></i> Proponer cambio
+          </button>
+        </div>
+        <div id="evForm" class="hidden" style="margin-top:12px;display:flex;gap:8px">
+          <input class="inp" id="evInput" placeholder="Descripción del evento..." style="flex:1"/>
+          <button class="btn-sm" id="saveEvBtn">Guardar</button>
+        </div>
+        <div id="propForm" class="hidden" style="margin-top:12px;display:grid;gap:9px">
+          <div class="grid-2">
+            <input class="inp" type="number" id="propFrom" placeholder="Día actual"/>
+            <input class="inp" type="number" id="propTo" placeholder="Nuevo día"/>
+          </div>
+          <input class="inp" id="propReason" placeholder="Razón del cambio"/>
+          <div style="display:flex;gap:8px">
+            <button class="btn-sm" id="savePropBtn">Enviar</button>
+            <button class="btn-outline" id="cancelPropBtn">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- -- GASTOS -------------------------------------------- -->
+<div id="tab-expenses" class="hidden">
+  <div class="section-header">
+    <div class="section-title"><h2>Gastos Compartidos</h2><p>Registro claro y transparente</p></div>
+    <button class="btn-sm" id="toggleExpBtn"><i data-lucide="plus"></i> Agregar</button>
+  </div>
+
+  <div class="uf-banner">
+    <div class="uf-label">Valor UF actual</div>
+    <div id="ufDisplay" class="uf-val">Cargando...</div>
+  </div>
+
+  <div class="stat-grid" id="expStats"></div>
+  <div id="balanceBar" class="balance-bar"></div>
+
+  <div id="expForm" class="hidden form-box">
+    <p style="font-weight:700;font-size:15px;color:var(--primary);margin-bottom:14px">Agregar gasto</p>
+    <div style="display:grid;gap:11px">
+      <input class="inp" id="expDesc" placeholder="Descripción del gasto"/>
+      <div class="currency-toggle">
+        <button id="btnCLP" class="cur-active">$ CLP</button>
+        <button id="btnUF">UF</button>
+      </div>
+      <div id="ufHint" class="hidden" style="background:rgba(95,124,110,.08);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--text-s)"></div>
+      <div class="grid-2">
+        <input class="inp" type="number" id="expAmount" placeholder="Monto"/>
+        <select class="sel" id="expFrequency">
+          <option value="unique">Único / puntual</option>
+          <option value="monthly">Mensual</option>
+          <option value="annual">Anual</option>
+          <option value="weekly">Semanal</option>
+        </select>
+      </div>
+      <div class="grid-2">
+        <select class="sel" id="expCat">
+          <option value="Educación">Educación</option>
+          <option value="Salud">Salud</option>
+          <option value="Vida cotidiana">Vida cotidiana</option>
+          <option value="Gastos extraordinarios">Gastos extraordinarios</option>
+        </select>
+        <select class="sel" id="expSubcat"></select>
+      </div>
+      <select class="sel" id="expTreatment">
+        <option value="pension">Considerada en la pensión de alimentos (Registro no cobrable)</option>
+        <option value="shared">Compartido entre ambos</option>
+        <option value="mama_only">Pagado solo por Mamá</option>
+        <option value="papa_only">Pagado solo por Papá</option>
+      </select>
+      <div class="grid-2" id="expPaymentActors">
+        <select class="sel" id="expPaidBy">
+          <option value="mama" id="expOptMama">Pagado por Mamá</option>
+          <option value="papa" id="expOptPapa">Pagado por Papá</option>
+        </select>
+        <div id="expHealthRefundBox" class="hidden">
+          <select class="sel" id="expHealthRefund" style="width:100%">
+            <option value="pending">Reembolso de salud pendiente</option>
+            <option value="yes">Sí genera reembolso</option>
+            <option value="no">No genera reembolso</option>
+          </select>
+        </div>
+      </div>
+      <div id="expDistributionBox" class="hidden" style="background:rgba(255,255,255,.62);border:1px solid var(--border);border-radius:14px;padding:12px 14px">
+        <label class="lbl">Distribución del gasto</label>
+        <div class="grid-2">
+          <div>
+            <div class="exp-subtle" id="pctMamaLbl">Mamá</div>
+            <select class="sel" id="pctMama" style="width:100%"></select>
+          </div>
+          <div>
+            <div class="exp-subtle" id="pctPapaLbl">Papá</div>
+            <select class="sel" id="pctPapa" style="width:100%"></select>
+          </div>
+        </div>
+      </div>
+      <div id="expDistributionHint" class="exp-subtle" style="font-weight:800;color:var(--primary-d)"></div>
+      <label class="lbl">Respaldo del gasto</label>
+      <input class="inp" type="file" id="expFile" accept="image/*,.pdf" />
+      <div class="exp-subtle">📎 Boleta, ticket o factura del gasto realizado.</div>
+      <div id="reimburseBox">
+        <label class="lbl">Respaldo del pago adeudado por el otro padre/madre</label>
+        <input class="inp" type="file" id="expReimburseFile" accept="image/*,.pdf" />
+        <div class="exp-subtle">📎 Comprobante de transferencia o depósito de la parte correspondiente.</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sm" id="saveExpBtn">Guardar</button>
+        <button class="btn-outline" id="cancelExpBtn">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <div>
+        <span style="color:var(--text);font-weight:700;font-size:13px">Historial</span>
+        <span id="expCount" style="font-size:11px;color:var(--text-s);font-weight:400;margin-left:8px"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:10px;color:var(--text-s);font-weight:700;text-transform:uppercase;letter-spacing:.6px">Periodo</span><div class="period-filter" style="margin-bottom:0;max-width:360px;min-width:260px">
+        <button class="active" data-period="week">Semana</button>
+        <button data-period="month">Mes</button>
+        <button data-period="year">Año</button>
+        <button data-period="all">Todo</button>
+      </div></div>
+    </div>
+    <div id="expList"></div>
+  </div>
+</div>
+
+<!-- -- MENSAJES ------------------------------------------ -->
+<div id="tab-messages" class="hidden">
+  <div class="section-header">
+    <div class="section-title"><h2>Mensajes</h2><p>Comunicación enfocada en los niños</p></div>
+  </div>
+  <div class="info-tip">
+    <i data-lucide="info"></i>
+    Mantén la comunicación enfocada en el bienestar de los niños.
+  </div>
+  <div id="quickReplies" class="quick-replies"></div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="msg-list" id="msgList"></div>
+  </div>
+  <div class="msg-input-row">
+    <input class="inp" id="msgInput" placeholder="Escribe un mensaje…"/>
+    <button class="btn-send" id="sendMsgBtn">
+      Enviar <i data-lucide="send"></i>
+    </button>
+  </div>
+</div>
+
+<!-- -- HIJOS --------------------------------------------- -->
+<div id="tab-children" class="hidden">
+  <div class="section-header">
+    <div class="section-title"><h2>Perfiles de Hijos</h2><p>Información importante</p></div>
+    <button class="btn-sm" id="openKidFormBtn"><i data-lucide="plus"></i> Agregar</button>
+  </div>
+  <div id="kidForm" class="hidden form-box">
+    <p style="font-weight:700;font-size:15px;color:var(--primary);margin-bottom:14px" id="kidFormTitle">Agregar hijo</p>
+    <input type="hidden" id="editKidId"/>
+    <div style="display:grid;gap:10px">
+      <div class="grid-2">
+        <div><label class="lbl">Nombre</label><input class="inp" id="kidName" placeholder="Nombre completo"/></div>
+        <div><label class="lbl">Fecha de nacimiento</label><input class="inp" type="date" id="kidBirth"/></div>
+      </div>
+      <div class="grid-2">
+        <div><label class="lbl">Edad</label><input class="inp" id="kidAge" placeholder="Se calcula desde fecha de nacimiento" disabled/></div>
+        <div><label class="lbl">Colegio</label><input class="inp" id="kidSchool" placeholder="Nombre del colegio"/></div>
+      </div>
+      <div class="grid-2">
+        <div><label class="lbl">Doctor / Pediatra</label><input class="inp" id="kidDoctor" placeholder="Nombre del médico"/></div>
+        <div><label class="lbl">Clínica preferente</label><input class="inp" id="kidClinic" placeholder="Clínica preferente"/></div>
+      </div>
+      <div class="grid-2">
+        <div><label class="lbl">Seguro escolar</label><input class="inp" id="kidSchoolInsurance" placeholder="Clínica / cobertura"/></div>
+        <div><label class="lbl">Grupo sanguíneo</label><input class="inp" id="kidBlood" placeholder="Ej: O+"/></div>
+      </div>
+      <div><label class="lbl">Alergias</label><input class="inp" id="kidAllergies" placeholder="Alergias conocidas"/></div>
+      <div><label class="lbl">Notas</label><textarea class="inp" id="kidNotes" placeholder="Información importante…" style="min-height:64px;resize:vertical"></textarea></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sm" id="saveKidBtn">Guardar</button>
+        <button class="btn-outline" id="cancelKidBtn">Cancelar</button>
+      </div>
+    </div>
+  </div>
+  <div id="kidList"></div>
+</div>
+
+<!-- -- ACUERDOS ------------------------------------------ -->
+<div id="tab-agreements" class="hidden">
+  <div class="section-header">
+    <div class="section-title"><h2>Acuerdos</h2><p>Registro de acuerdos entre ambos padres</p></div>
+    <button class="btn-sm" id="toggleAgrBtn"><i data-lucide="plus"></i> Nuevo</button>
+  </div>
+  <div id="agrForm" class="hidden form-box">
+    <p style="font-weight:700;font-size:15px;color:var(--primary);margin-bottom:14px">Nuevo acuerdo</p>
+    <div style="display:grid;gap:10px">
+      <input class="inp" id="agrTitle" placeholder="Título del acuerdo"/>
+      <div class="grid-2">
+        <select class="sel" id="agrCat"><option>Custodia</option><option>Económico</option><option>Salud</option><option>Educación</option><option>Vacaciones</option><option>Otro</option></select>
+        <select class="sel" id="agrStatus"><option>Activo</option><option>En revisión</option><option>Completado</option></select>
+      </div>
+      <textarea class="inp" id="agrContent" placeholder="Contenido del acuerdo…" style="min-height:84px;resize:vertical"></textarea>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sm" id="saveAgrBtn">Guardar</button>
+        <button class="btn-outline" id="cancelAgrBtn">Cancelar</button>
+      </div>
+    </div>
+  </div>
+  <div id="agrList"></div>
+</div>
+
+<!-- -- RECORDATORIOS ------------------------------------- -->
+<div id="tab-reminders" class="hidden">
+  <div class="section-header">
+    <div class="section-title"><h2>Recordatorios</h2><p>No olvides ningún compromiso</p></div>
+    <button class="btn-sm" id="toggleRemBtn"><i data-lucide="plus"></i> Agregar</button>
+  </div>
+  <div id="remForm" class="hidden form-box">
+    <p style="font-weight:700;font-size:15px;color:var(--primary);margin-bottom:14px">Nuevo recordatorio</p>
+    <div style="display:grid;gap:10px">
+      <input class="inp" id="remTitle" placeholder="Título"/>
+      <div class="grid-2">
+        <input class="inp" type="datetime-local" id="remDate"/>
+        <select class="sel" id="remFor">
+          <option value="both">Ambos</option>
+          <option value="mama" id="remOptMama">Mamá</option>
+          <option value="papa" id="remOptPapa">Papá</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sm" id="saveRemBtn">Guardar</button>
+        <button class="btn-outline" id="cancelRemBtn">Cancelar</button>
+      </div>
+    </div>
+  </div>
+  <div id="remList"></div>
+</div>
+
+<!-- -- RECURSOS ------------------------------------------ -->
+<div id="tab-recursos" class="hidden">
+  <div class="section-header">
+    <div class="section-title"><h2>Recursos de Apoyo</h2><p>Organismos clave para familias en Chile</p></div>
+  </div>
+  <div class="emergency-card">
+    <div>
+      <div style="color:var(--text);font-weight:800;font-size:15px">📞 Fono Familia - 149</div>
+      <div style="color:var(--text-s);font-size:12px;margin-top:3px">Atención gratuita 24/7 · Carabineros</div>
+    </div>
+    <a href="tel:149">Llamar</a>
+  </div>
+  <div id="resourcesList"></div>
+</div>
+
+
+  </main>
+  <footer>Qinflo by Kindflo · Chile · 2026</footer>
+</div>
+
+<script src="js/firebase.js"></script>
+<script src="js/state.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/connect.js"></script>
+<script src="js/calendar.js"></script>
+<script src="js/expenses.js"></script>
+<script src="js/messages.js"></script>
+<script src="js/children.js"></script>
+<script src="js/agreements.js"></script>
+<script src="js/reminders.js"></script>
+<script src="js/resources.js"></script>
+<script src="js/observability.js"></script>
+<script src="js/app-shell.js"></script>
+
+</body>
+</html>

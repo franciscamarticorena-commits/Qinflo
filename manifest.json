@@ -1,0 +1,20 @@
+{
+  "name": "Qinflo",
+  "short_name": "Qinflo",
+  "description": "Organiza calendario, gastos, acuerdos, documentos y recordatorios de crianza compartida.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F7F2EA",
+  "theme_color": "#6F7B4B",
+  "orientation": "portrait-primary",
+  "lang": "es-CL",
+  "icons": [
+    {
+      "src": "assets/icons/qinflo-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
