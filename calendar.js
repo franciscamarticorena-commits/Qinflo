@@ -212,3 +212,8 @@ function renderProposals() {
   });
   updateProposalButtonState();
 }
+window.renderCalendar = renderCalendar;
+
+setTimeout(function () {
+  renderCalendar();
+}, 300);
