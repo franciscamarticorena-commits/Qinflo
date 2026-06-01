@@ -81,12 +81,11 @@ async function doReset() {
 async function doGoogleLogin() {
   try {
     const provider = new firebase.auth.GoogleAuthProvider();
-    await auth.signInWithRedirect(provider);
+    const result = await auth.signInWithPopup(provider);
+    alert('Login Google OK: ' + result.user.email);
   } catch (e) {
     alert(e.code + ' | ' + e.message);
   }
-}
-
 window.doGoogleLogin = doGoogleLogin;
 auth.getRedirectResult()
   .then(function(result) {
