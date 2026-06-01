@@ -82,7 +82,7 @@ async function doGoogleLogin() {
   try {
     const provider = new firebase.auth.GoogleAuthProvider();
     const result = await auth.signInWithPopup(provider);
-    alert('Login Google OK: ' + result.user.email);
+    location.reload();
   } catch (e) {
     alert(e.code + ' | ' + e.message);
   }
