@@ -88,7 +88,15 @@ async function doGoogleLogin() {
 }
 
 window.doGoogleLogin = doGoogleLogin;
-
+auth.getRedirectResult()
+  .then(function(result) {
+    if (result.user) {
+      console.log('Google login OK:', result.user.email);
+    }
+  })
+  .catch(function(e) {
+    alert(e.code + ' | ' + e.message);
+  });
 const googleLoginBtn = $('googleLoginBtn');
 if (googleLoginBtn) {
   googleLoginBtn.addEventListener('click', doGoogleLogin);
