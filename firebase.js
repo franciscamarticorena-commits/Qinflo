@@ -1,5 +1,5 @@
 const firebaseConfig = {
-  apiKey: "AIzaSyDAGDPQxW_7IXfd1y_AyBxam6pvZtGjOWM",
+  apiKey: "AIzaSyDAGDPQXw_7IXfd1y_AyBAxm6pvZt0jOWM",
   authDomain: "qinflo.firebaseapp.com",
   projectId: "qinflo",
   storageBucket: "qinflo.firebasestorage.app",
@@ -10,4 +10,4 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
-const db = firebase.firestore();
+const db = firebase.firestore();  
