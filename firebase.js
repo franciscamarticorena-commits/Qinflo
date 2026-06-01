@@ -1,13 +1,13 @@
-// --- FIREBASE -----------------------------------------------
-// Mantiene el proyecto Firebase actual para no romper producción.
-// Cuando exista un proyecto Firebase nuevo para Qinflo, reemplazar aquí la configuración.
-firebase.initializeApp({
-  apiKey: "AIzaSyCPNF2HQ2x23Pbo2rAqBCkcqddSm7-BJkk",
-  authDomain: "kindflo-copadres.firebaseapp.com",
-  projectId: "kindflo-copadres",
-  storageBucket: "kindflo-copadres.firebasestorage.app",
-  messagingSenderId: "442877008580",
-  appId: "1:442877008580:web:2dfb169fb0e754be824791"
-});
+const firebaseConfig = {
+  apiKey: "AIzaSyDAGDPQxW_7IXfd1y_AyBxam6pvZtGjOWM",
+  authDomain: "qinflo.firebaseapp.com",
+  projectId: "qinflo",
+  storageBucket: "qinflo.firebasestorage.app",
+  messagingSenderId: "662940889446",
+  appId: "1:662940889446:web:1e52dfebd1680ec62318a7"
+};
+
+firebase.initializeApp(firebaseConfig);
+
 const auth = firebase.auth();
 const db = firebase.firestore();
