@@ -86,6 +86,7 @@ async function doGoogleLogin() {
   } catch (e) {
     alert(e.code + ' | ' + e.message);
   }
+}
 window.doGoogleLogin = doGoogleLogin;
 auth.getRedirectResult()
   .then(function(result) {
