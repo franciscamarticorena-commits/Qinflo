@@ -78,3 +78,18 @@ async function doReset() {
     showMsg('authMsg', errMsg(e.code), true);
   }
 }
+async function doGoogleLogin() {
+  try {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    await auth.signInWithRedirect(provider);
+  } catch (e) {
+    showMsg('authMsg', errMsg(e.code), true);
+  }
+}
+
+window.doGoogleLogin = doGoogleLogin;
+
+const googleLoginBtn = $('googleLoginBtn');
+if (googleLoginBtn) {
+  googleLoginBtn.addEventListener('click', doGoogleLogin);
+}
