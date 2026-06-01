@@ -83,7 +83,7 @@ async function doGoogleLogin() {
     const provider = new firebase.auth.GoogleAuthProvider();
     await auth.signInWithRedirect(provider);
   } catch (e) {
-    showMsg('authMsg', errMsg(e.code), true);
+    alert(e.code + ' | ' + e.message);
   }
 }
 
