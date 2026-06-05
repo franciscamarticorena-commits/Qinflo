@@ -105,4 +105,26 @@ async function doRegister() {
     showMsg('authMsg', errMsg(e.code), true);
   }
 }
+async function doReset() {
+  hideMsg('authMsg');
 
+  var email = $('resetEmail').value.trim();
+
+  if (!email) {
+    showMsg('authMsg', 'Ingresa tu correo', true);
+    return;
+  }
+
+  try {
+    await auth.sendPasswordResetEmail(email);
+    showMsg('authMsg', 'Te enviamos un enlace para restablecer tu contraseña.');
+  } catch(e) {
+    showMsg('authMsg', errMsg(e.code), true);
+  }
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+  if ($('forgotBtn')) $('forgotBtn').addEventListener('click', switchToForgot);
+  if ($('backBtn')) $('backBtn').addEventListener('click', switchToLogin);
+  if ($('resetBtn')) $('resetBtn').addEventListener('click', doReset);
+});
