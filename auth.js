@@ -32,72 +32,77 @@ async function doLogin() {
     await auth.signInWithEmailAndPassword(email, pass);
   } catch(e) {
     showMsg('authMsg', errMsg(e.code), true);
-  }
 }
-
+  
 async function doRegister() {
   hideMsg('authMsg');
+
   var name = $('regName').value.trim();
   var email = $('regEmail').value.trim();
   var pass = $('regPass').value;
   var pass2 = $('regPass2').value;
-  if (!name || !email || !pass || !pass2) { showMsg('authMsg', 'Completa todos los campos', true); return; }
-  if (pass !== pass2) { showMsg('authMsg', 'Las contraseñas no coinciden', true); return; }
-  if (pass.length < 6) { showMsg('authMsg', 'Mínimo 6 caracteres', true); return; }
+
+  if (!name || !email || !pass || !pass2) {
+    showMsg('authMsg', 'Completa todos los campos', true);
+    return;
+  }
+
+  if (pass !== pass2) {
+    showMsg('authMsg', 'Las contraseñas no coinciden', true);
+    return;
+  }
+
+  if (pass.length < 6) {
+    showMsg('authMsg', 'Mínimo 6 caracteres', true);
+    return;
+  }
+
   try {
     var cred = await auth.createUserWithEmailAndPassword(email, pass);
-    await cred.user.updateProfile({ displayName: name });
+
+    await cred.user.updateProfile({
+      displayName: name
+    });
+
+    var uid = cred.user.uid;
     var ft = $('regFamType').value;
     var role = $('regRole').value;
-    var labels = { mama_papa: ['Mamá', 'Papá'], papa_papa: ['Papá 1', 'Papá 2'], mama_mama: ['Mamá 1', 'Mamá 2'] };
-    var fc = { type: ft, p1Label: labels[ft][0], p2Label: labels[ft][1] };
-    var inviteCode = genCode();
+
+    var labels = {
+      mama_papa: ['Mamá', 'Papá'],
+      papa_papa: ['Papá 1', 'Papá 2'],
+      mama_mama: ['Mamá 1', 'Mamá 2']
+    };
+
+    var fc = {
+      type: ft,
+      p1Label: labels[ft][0],
+      p2Label: labels[ft][1]
+    };
+
     var famRef = await db.collection('families').add({
-      members: [cred.user.uid], config: fc,
+      adminUid: uid,
+      members: [uid],
+      memberRoles: {
+        [uid]: role
+      },
+      hasActivePendingInvitation: false,
+      config: fc,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    await db.collection('users').doc(cred.user.uid).set({
-      name: name, email: email, role: role,
-      familyConfig: fc, inviteCode: inviteCode,
-      familyId: famRef.id, coparentId: null,
+
+    await db.collection('users').doc(uid).set({
+      name: name,
+      email: email,
+      role: role,
+      familyConfig: fc,
+      familyId: famRef.id,
+      coparentId: null,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+
   } catch(e) {
     showMsg('authMsg', errMsg(e.code), true);
   }
 }
 
-async function doReset() {
-  hideMsg('authMsg');
-  var email = $('resetEmail').value.trim();
-  if (!email) { showMsg('authMsg', 'Ingresa tu correo', true); return; }
-  try {
-    await auth.sendPasswordResetEmail(email);
-    showMsg('authMsg', 'Correo enviado. Revisa tu bandeja.', false);
-  } catch(e) {
-    showMsg('authMsg', errMsg(e.code), true);
-  }
-}
-async function doGoogleLogin() {
-  try {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    const result = await auth.signInWithPopup(provider);
-    location.reload();
-  } catch (e) {
-    alert(e.code + ' | ' + e.message);
-  }
-}
-window.doGoogleLogin = doGoogleLogin;
-auth.getRedirectResult()
-  .then(function(result) {
-    if (result.user) {
-      console.log('Google login OK:', result.user.email);
-    }
-  })
-  .catch(function(e) {
-    alert(e.code + ' | ' + e.message);
-  });
-const googleLoginBtn = $('googleLoginBtn');
-if (googleLoginBtn) {
-  googleLoginBtn.addEventListener('click', doGoogleLogin);
-}
