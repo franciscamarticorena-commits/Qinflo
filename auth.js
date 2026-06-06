@@ -124,7 +124,7 @@ async function doReset() {
 }
 async function doGoogleLogin() {
   hideMsg('authMsg');
-
+  showMsg('authMsg', 'Entró al botón Google');
   try {
     const provider = new firebase.auth.GoogleAuthProvider();
    await auth.signInWithRedirect(provider);
