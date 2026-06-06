@@ -122,9 +122,19 @@ async function doReset() {
     showMsg('authMsg', errMsg(e.code), true);
   }
 }
+async function doGoogleLogin() {
+  hideMsg('authMsg');
 
+  try {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    await auth.signInWithPopup(provider);
+  } catch (e) {
+    showMsg('authMsg', errMsg(e.code), true);
+  }
+}
 window.addEventListener('DOMContentLoaded', function() {
   if ($('forgotBtn')) $('forgotBtn').addEventListener('click', switchToForgot);
   if ($('backBtn')) $('backBtn').addEventListener('click', switchToLogin);
   if ($('resetBtn')) $('resetBtn').addEventListener('click', doReset);
+  if ($('googleLoginBtn')) $('googleLoginBtn').addEventListener('click', doGoogleLogin);
 });
