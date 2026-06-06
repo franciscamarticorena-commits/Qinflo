@@ -27,12 +27,10 @@ auth.onAuthStateChanged(function(u) {
         updateLabels();
         loadApp();
       });
-    } else {
+        } else {
       updateLabels();
-      if (inviteCode) {
-        autoConnect(inviteCode);
-      } else {
-        showConnectScreen();
+      loadApp();
+    }
       }
     }
 }).catch(function(e) {
