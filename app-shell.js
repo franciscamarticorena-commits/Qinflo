@@ -35,8 +35,10 @@ auth.onAuthStateChanged(function(u) {
         showConnectScreen();
       }
     }
-  }).catch(function(e) {
-    console.log('Error loading user:', e);
+}).catch(function(e) {
+  alert('ERROR APP-SHELL: ' + e.message);
+  console.log('Error loading user:', e);
+});
   });
 });
 
