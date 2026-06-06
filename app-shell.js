@@ -31,12 +31,10 @@ auth.onAuthStateChanged(function(u) {
       updateLabels();
       loadApp();
     }
-      }
 }).catch(function(e) {
   alert('ERROR APP-SHELL: ' + e.message);
   console.log('Error loading user:', e);
 });
-  });
 });
 
 function displayNameWithRole(data, role) {
