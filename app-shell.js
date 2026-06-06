@@ -32,7 +32,6 @@ auth.onAuthStateChanged(function(u) {
       loadApp();
     }
       }
-    }
 }).catch(function(e) {
   alert('ERROR APP-SHELL: ' + e.message);
   console.log('Error loading user:', e);
