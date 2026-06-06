@@ -32,6 +32,7 @@ async function doLogin() {
     await auth.signInWithEmailAndPassword(email, pass);
   } catch(e) {
     showMsg('authMsg', errMsg(e.code), true);
+  }
 }
   
 async function doRegister() {
