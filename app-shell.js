@@ -36,7 +36,8 @@ auth.onAuthStateChanged(function(u) {
         if (co.exists) CODATA = co.data();
         updateLabels();
         loadApp();
-      }).catch(function() {
+      }).catch(function(e) {
+        console.error('[coparent fetch]', e);
         updateLabels();
         loadApp();
       });
@@ -45,6 +46,7 @@ auth.onAuthStateChanged(function(u) {
       loadApp();
     }
 }).catch(function(e) {
+  console.error('[app-shell main catch]', e);
   alert('ERROR APP-SHELL: ' + e.message);
   console.log('Error loading user:', e);
 });
@@ -75,14 +77,18 @@ function updateLabels() {
 
 // --- LOAD APP -----------------------------------------------
 function loadApp() {
-  hide('authScreen'); hide('connectScreen'); show('app');
-  updateLabels();
-  if (!FAMILY_ID) return;
-  setupListeners();
-  fetchUF();
-  renderResources();
-  renderQuickReplies();
-  renderCalendar();
+  try {
+    hide('authScreen'); hide('connectScreen'); show('app');
+    updateLabels();
+    if (!FAMILY_ID) return;
+    setupListeners();
+    fetchUF();
+    renderResources();
+    renderQuickReplies();
+    renderCalendar();
+  } catch(e) {
+    console.error('[loadApp crash]', e);
+  }
 }
 
 function setupListeners() {
