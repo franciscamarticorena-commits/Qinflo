@@ -2,23 +2,22 @@ const QINFLO_CACHE = 'qinflo-cache-v1';
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './css/styles.css',
-  './js/firebase.js',
-  './js/state.js',
-  './js/auth.js',
-  './js/connect.js',
-  './js/calendar.js',
-  './js/expenses.js',
-  './js/messages.js',
-  './js/children.js',
-  './js/agreements.js',
-  './js/reminders.js',
-  './js/resources.js',
-  './js/observability.js',
-  './js/app-shell.js',
-  './manifest.json',
-  './favicon.svg',
-  './assets/icons/qinflo-icon.svg'
+  './styles.css',
+  './firebase.js',
+  './state.js',
+  './auth.js',
+  './connect.js',
+  './calendar.js',
+  './expenses.js',
+  './messages.js',
+  './children.js',
+  './agreements.js',
+  './reminders.js',
+  './resources.js',
+  './observability.js',
+  './app-shell.js',
+  './manifest.json'
+  // favicon.svg y assets/icons/qinflo-icon.svg no existen en el repositorio actual — agregar cuando se incorporen
 ];
 
 self.addEventListener('install', event => {
