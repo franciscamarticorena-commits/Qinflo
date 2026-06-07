@@ -1,14 +1,32 @@
 // --- CONNECT ------------------------------------------------
 function showConnectScreen() {
   hide('authScreen'); hide('app'); show('connectScreen');
-  if (USERDATA && USERDATA.inviteCode) {
+
+  function buildInviteLink(code) {
     var baseUrl = window.location.origin + window.location.pathname.replace(/index\.html$/, '');
-    var link = baseUrl + '?invite=' + USERDATA.inviteCode;
+    var link = baseUrl + '?invite=' + code;
     $('inviteLinkDisplay').textContent = link;
     $('whatsappBtn').onclick = function() {
       var msg = encodeURIComponent('Hola! Te invito a conectarte en Qinflo para coordinar mejor los temas de nuestros hijos. Entra aqui: ' + link);
       window.open('https://wa.me/?text=' + msg, '_blank');
     };
+  }
+
+  if (USERDATA && USERDATA.inviteCode) {
+    buildInviteLink(USERDATA.inviteCode);
+  } else {
+    // Fallback defensivo: usuarios anteriores al Sprint 2 sin inviteCode en Firestore.
+    // inviteCode se genera aquí únicamente como recuperación — el flujo normal lo crea en doRegister().
+    var newCode = genCode();
+    db.collection('users').doc(USER.uid).update({ inviteCode: newCode })
+      .then(function() {
+        USERDATA.inviteCode = newCode;
+        buildInviteLink(newCode);
+      })
+      .catch(function(e) {
+        $('inviteLinkDisplay').textContent = 'No se pudo generar el link. Intenta de nuevo.';
+        console.error('Error generando inviteCode (fallback):', e);
+      });
   }
 }
 
