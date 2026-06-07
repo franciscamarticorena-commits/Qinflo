@@ -106,6 +106,9 @@ async function doRegister() {
     });
 
   } catch(e) {
+    console.error('REGISTER ERROR', e);
+    console.error('CODE', e.code);
+    console.error('MESSAGE', e.message);
     showMsg('authMsg', errMsg(e.code), true);
   }
 }
