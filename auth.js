@@ -34,7 +34,7 @@ async function doLogin() {
     showMsg('authMsg', errMsg(e.code), true);
   }
 }
-  
+
 async function doRegister() {
   hideMsg('authMsg');
 
@@ -92,6 +92,8 @@ async function doRegister() {
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
+    var inviteCode = genCode();
+
     await db.collection('users').doc(uid).set({
       name: name,
       email: email,
@@ -99,6 +101,7 @@ async function doRegister() {
       familyConfig: fc,
       familyId: famRef.id,
       coparentId: null,
+      inviteCode: inviteCode,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
@@ -125,7 +128,6 @@ async function doReset() {
 }
 async function doGoogleLogin() {
   hideMsg('authMsg');
-  showMsg('authMsg', 'Entró al botón Google');
   try {
     const provider = new firebase.auth.GoogleAuthProvider();
    await auth.signInWithRedirect(provider);
@@ -133,9 +135,5 @@ async function doGoogleLogin() {
     showMsg('authMsg', errMsg(e.code), true);
   }
 }
-window.addEventListener('DOMContentLoaded', function() {
-  if ($('forgotBtn')) $('forgotBtn').addEventListener('click', switchToForgot);
-  if ($('backBtn')) $('backBtn').addEventListener('click', switchToLogin);
-  if ($('resetBtn')) $('resetBtn').addEventListener('click', doReset);
-  if ($('googleLoginBtn')) $('googleLoginBtn').addEventListener('click', doGoogleLogin);
-});
+// Listeners de auth registrados exclusivamente en app-shell.js DOMContentLoaded.
+// forgotBtn, backBtn, resetBtn y googleLoginBtn NO se registran aquí para evitar duplicados.
