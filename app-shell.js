@@ -7,6 +7,7 @@ auth.onAuthStateChanged(function(u) {
     hide('connectScreen'); hide('app');
     return;
   }
+  if (IS_REGISTERING) return;
   hide('authScreen');
   document.getElementById('app').style.display = 'block';
 
