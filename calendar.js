@@ -1,6 +1,6 @@
 // --- CALENDARIO ---------------------------------------------
 function calKey() { return calYear + '-' + String(calMonth + 1).padStart(2, '0'); }
-function getCustody(d) { return custodyMap[calKey()] && custodyMap[calKey()][d] ? custodyMap[calKey()][d] : (d % 7 < 3 ? 'mama' : d % 7 === 3 ? 'transition' : 'papa'); }
+function getCustody(d) { return custodyMap[calKey()] && custodyMap[calKey()][d] ? custodyMap[calKey()][d] : 'none'; }
 function getEvs(d) { return calEventsMap[calKey()] && calEventsMap[calKey()][d] ? calEventsMap[calKey()][d] : []; }
 function remindersForDay(day) {
   return reminders.filter(function(r) {
@@ -61,6 +61,7 @@ function proposalRequestedLabel(pr) {
 function custodySymbol(c) {
   if (c === 'mama') return '<span class="custody-mark mama">M</span>';
   if (c === 'papa') return '<span class="custody-mark papa">P</span>';
+  if (c === 'none') return '<span class="custody-mark" style="opacity:0.2">·</span>';
   return '<span class="custody-mark transition">↔</span>';
 }
 

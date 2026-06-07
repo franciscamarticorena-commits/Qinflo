@@ -9,14 +9,27 @@ auth.onAuthStateChanged(function(u) {
   }
   hide('authScreen');
   document.getElementById('app').style.display = 'block';
-  var urlParams = new URLSearchParams(window.location.search);
-  var inviteCode = urlParams.get('invite');
 
   db.collection('users').doc(u.uid).get().then(function(snap) {
-    if (!snap.exists) return;
+    if (!snap.exists) {
+      auth.signOut();
+      show('authScreen');
+      hide('app');
+      showMsg('authMsg', 'No encontramos tu cuenta. Regístrate primero.', true);
+      return;
+    }
+
     USERDATA = snap.data();
     FAMILY_ID = USERDATA.familyId;
     if (typeof identifyObservabilityUser === 'function') identifyObservabilityUser(USER, USERDATA);
+
+    // Conectar inviteCode desde URL si el usuario aún no tiene coparentId
+    var urlParams = new URLSearchParams(window.location.search);
+    var inviteCode = urlParams.get('invite');
+    if (inviteCode && !USERDATA.coparentId) {
+      autoConnect(inviteCode);
+      return;
+    }
 
     if (USERDATA.coparentId) {
       db.collection('users').doc(USERDATA.coparentId).get().then(function(co) {
@@ -120,6 +133,7 @@ window.addEventListener('DOMContentLoaded', function() {
   $('resetBtn').addEventListener('click', doReset);
   $('forgotBtn').addEventListener('click', switchToForgot);
   $('backBtn').addEventListener('click', switchToLogin);
+  if ($('googleLoginBtn')) $('googleLoginBtn').addEventListener('click', doGoogleLogin);
   $('regFamType').addEventListener('change', updateRoleOptions);
 
   // Connect

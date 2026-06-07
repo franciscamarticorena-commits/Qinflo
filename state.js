@@ -12,6 +12,8 @@ const show = id => $(id).classList.remove('hidden');
 const hide = id => $(id).classList.add('hidden');
 const fmtCLP = n => '$' + Math.round(n).toLocaleString('es-CL');
 const fmtUF = n => 'UF ' + parseFloat(n).toFixed(2).replace('.', ',');
+// FLUJO DE INVITACIONES: genCode() genera el código alfanumérico de 6 chars para el link de invitación.
+// Se llama en showConnectScreen() cuando USERDATA.inviteCode no existe. No eliminar.
 const genCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 const p1 = () => USERDATA && USERDATA.familyConfig ? USERDATA.familyConfig.p1Label : 'Mamá';
 const p2 = () => USERDATA && USERDATA.familyConfig ? USERDATA.familyConfig.p2Label : 'Papá';
