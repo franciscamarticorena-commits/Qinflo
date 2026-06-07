@@ -59,6 +59,7 @@ async function doRegister() {
   }
 
   try {
+    IS_REGISTERING = true;
     var cred = await auth.createUserWithEmailAndPassword(email, pass);
 
     await cred.user.updateProfile({
@@ -105,7 +106,14 @@ async function doRegister() {
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
+    IS_REGISTERING = false;
+    USERDATA = { name: name, email: email, role: role, familyConfig: fc, familyId: famRef.id, coparentId: null, inviteCode: inviteCode };
+    FAMILY_ID = famRef.id;
+    updateLabels();
+    loadApp();
+
   } catch(e) {
+    IS_REGISTERING = false;
     console.error('REGISTER ERROR', e);
     console.error('CODE', e.code);
     console.error('MESSAGE', e.message);
