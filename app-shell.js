@@ -10,59 +10,18 @@ auth.onAuthStateChanged(function(u) {
   hide('authScreen');
   document.getElementById('app').style.display = 'block';
 
-  db.collection('users').doc(u.uid).get().then(async function(snap) {
+  db.collection('users').doc(u.uid).get().then(function(snap) {
     if (!snap.exists) {
-      // Usuario nuevo autenticado vía Google — no tiene documento Firestore.
-      // Crear schema mínimo para evitar bloqueo. role/familyConfig quedan null
-      // hasta que complete el onboarding. NO asignar defaults inventados.
-      var newInviteCode = genCode();
-
-      // Family mínima: necesaria para que famCol() no explote si loadApp() se llama accidentalmente.
-      // configurationStatus: 'incomplete' marca que no está lista para uso real.
-      var famRef = await db.collection('families').add({
-        adminUid: u.uid,
-        members: [u.uid],
-        memberRoles: { [u.uid]: null },
-        hasActivePendingInvitation: false,
-        config: null,
-        configurationStatus: 'incomplete',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      var minimalUser = {
-        name: u.displayName || '',
-        email: u.email || '',
-        role: null,
-        familyConfig: null,
-        familyId: famRef.id,
-        coparentId: null,
-        inviteCode: newInviteCode,
-        requiresOnboarding: true,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      };
-
-      await db.collection('users').doc(u.uid).set(minimalUser);
-      USERDATA = minimalUser;
-      FAMILY_ID = famRef.id;
-
-      // Mostrar onboarding — no continuar a loadApp()
-      hide('authScreen'); hide('app'); hide('connectScreen');
-      document.getElementById('onboardingScreen').style.display = 'flex';
-      document.getElementById('onboardingScreen').classList.remove('hidden');
+      auth.signOut();
+      show('authScreen');
+      hide('app');
+      showMsg('authMsg', 'No encontramos tu cuenta. Regístrate primero.', true);
       return;
     }
 
     USERDATA = snap.data();
     FAMILY_ID = USERDATA.familyId;
     if (typeof identifyObservabilityUser === 'function') identifyObservabilityUser(USER, USERDATA);
-
-    // Usuario con onboarding pendiente (Google login anterior sin completar)
-    if (USERDATA.requiresOnboarding) {
-      hide('authScreen'); hide('app'); hide('connectScreen');
-      document.getElementById('onboardingScreen').style.display = 'flex';
-      document.getElementById('onboardingScreen').classList.remove('hidden');
-      return;
-    }
 
     // Conectar inviteCode desde URL si el usuario aún no tiene coparentId
     var urlParams = new URLSearchParams(window.location.search);
@@ -179,35 +138,6 @@ window.addEventListener('DOMContentLoaded', function() {
 
   // Connect
   $('skipBtn').addEventListener('click', function() { loadApp(); });
-
-  // Onboarding (usuario Google nuevo)
-  if ($('onbSaveBtn')) $('onbSaveBtn').addEventListener('click', async function() {
-    var famType = $('onbFamType').value;
-    var role = $('onbRole').value;
-    var labels = { mama_papa: ['Mamá', 'Papá'], papa_papa: ['Papá 1', 'Papá 2'], mama_mama: ['Mamá 1', 'Mamá 2'] };
-    var fc = { type: famType, p1Label: labels[famType][0], p2Label: labels[famType][1] };
-    try {
-      var uid = USER.uid;
-      await db.collection('users').doc(uid).update({
-        role: role,
-        familyConfig: fc,
-        requiresOnboarding: false
-      });
-      await db.collection('families').doc(FAMILY_ID).update({
-        config: fc,
-        configurationStatus: 'active',
-        ['memberRoles.' + uid]: role
-      });
-      USERDATA.role = role;
-      USERDATA.familyConfig = fc;
-      USERDATA.requiresOnboarding = false;
-      document.getElementById('onboardingScreen').classList.add('hidden');
-      hide('onboardingScreen');
-      loadApp();
-    } catch(e) {
-      showMsg('onbMsg', 'Error guardando configuración. Intenta de nuevo.', true);
-    }
-  });
 
   // App header
   $('inviteBtn').addEventListener('click', showConnectScreen);
