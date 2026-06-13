@@ -132,11 +132,12 @@ function setupListeners() {
     renderProposals();
   });
   famCol('calendar').onSnapshot(function(s) {
-    custodyMap = {}; calEventsMap = {};
+    custodyMap = {}; calEventsMap = {}; custodyOverridesMap = {};
     s.docs.forEach(function(d) {
       var data = d.data();
       if (data.custody) custodyMap[d.id] = data.custody;
       if (data.events) calEventsMap[d.id] = data.events;
+      if (data.custodyOverrides) custodyOverridesMap[d.id] = data.custodyOverrides;
     });
     renderCalendar();
   });

@@ -45,6 +45,11 @@ function cycleCustody() {
 
 var editDaySelectedVal = null;
 
+function hasOverride(d) {
+  var mo = custodyOverridesMap[calKey()];
+  return !!(mo && mo[String(d)]);
+}
+
 function openEditDay() {
   if (!selDay) return;
   editDaySelectedVal = getCustody(selDay);
@@ -56,6 +61,8 @@ function openEditDay() {
     if (b) b.classList.toggle('active', v === editDaySelectedVal);
   });
   if ($('editDayReason')) $('editDayReason').value = '';
+  var restoreBtn = $('restoreBaseBtn');
+  if (restoreBtn) restoreBtn.classList.toggle('hidden', !hasOverride(selDay));
   show('editDayForm');
 }
 
@@ -83,6 +90,31 @@ async function saveManualOverride() {
     .set(update, { merge: true });
   hide('editDayForm');
   editDaySelectedVal = null;
+}
+
+async function restoreBaseRule() {
+  if (!selDay || !FAMILY_ID) return;
+  try {
+    var famSnap = await db.collection('families').doc(FAMILY_ID).get();
+    var config = famSnap.exists ? famSnap.data().custodyConfig : null;
+    var date = new Date(calYear, calMonth, selDay);
+    var baseCustody = (config && typeof getOnbCustodyForDate === 'function')
+      ? getOnbCustodyForDate(date, config)
+      : null;
+    var key = calKey();
+    var updateObj = {};
+    updateObj['custodyOverrides.' + String(selDay)] = firebase.firestore.FieldValue.delete();
+    if (baseCustody) {
+      updateObj['custody.' + String(selDay)] = baseCustody;
+    } else {
+      updateObj['custody.' + String(selDay)] = firebase.firestore.FieldValue.delete();
+    }
+    await db.collection('families').doc(FAMILY_ID).collection('calendar').doc(key).update(updateObj);
+    hide('editDayForm');
+    editDaySelectedVal = null;
+  } catch(e) {
+    console.error('[restoreBaseRule]', e);
+  }
 }
 
 function prevMonth() {
