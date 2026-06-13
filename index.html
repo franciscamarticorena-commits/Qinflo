@@ -131,8 +131,282 @@
 </div>
 
 <!-- ===========================================================
-     APP
+     ONBOARDING
 ============================================================ -->
+<div id="onboardingScreen" class="hidden">
+  <div class="authBox" style="max-width:440px;width:100%">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="7" r="3"/><circle cx="16" cy="7" r="3"/>
+          <path d="M3 20c0-3.31 2.69-6 6-6s6 2.69 6 6"/>
+          <path d="M19 18c0-2.21-1.34-4-3-4"/>
+        </svg>
+      </div>
+      <h1>Qinflo</h1>
+    </div>
+
+    <div style="margin-bottom:22px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+        <span id="onbStepLabel" style="font-size:12px;font-weight:700;color:var(--text-s);text-transform:uppercase;letter-spacing:.5px"></span>
+        <span id="onbStepNum" style="font-size:11px;color:var(--text-s)"></span>
+      </div>
+      <div style="height:4px;background:var(--border);border-radius:4px;overflow:hidden">
+        <div id="onbProgressFill" style="height:100%;background:var(--primary);border-radius:4px;transition:width 0.35s ease;width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Panel: Tipo de custodia -->
+    <div id="onbPanelType">
+      <h2 style="font-size:18px;font-weight:800;margin-bottom:6px;color:var(--text)">¿Cómo se organizan actualmente?</h2>
+      <p style="font-size:13px;color:var(--text-s);margin-bottom:20px">Qinflo configurará tu calendario automáticamente.</p>
+      <div style="display:grid;gap:10px">
+        <button onclick="selectOnbCustodyType('alternating_weeks')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:1.5px solid var(--border);border-radius:14px;background:#fff;cursor:pointer;text-align:left;width:100%;transition:border-color .2s">
+          <span style="font-size:24px">📅</span>
+          <div><div style="font-weight:700;font-size:14px;color:var(--text)">Semana por medio</div><div style="font-size:12px;color:var(--text-s);margin-top:2px">Una semana cada uno, rotando</div></div>
+        </button>
+        <button onclick="selectOnbCustodyType('fixed_days')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:1.5px solid var(--border);border-radius:14px;background:#fff;cursor:pointer;text-align:left;width:100%;transition:border-color .2s">
+          <span style="font-size:24px">🗓️</span>
+          <div><div style="font-weight:700;font-size:14px;color:var(--text)">Días fijos por semana</div><div style="font-size:12px;color:var(--text-s);margin-top:2px">Lunes y martes con uno, miércoles con otro…</div></div>
+        </button>
+        <button onclick="selectOnbCustodyType('custom')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:1.5px solid var(--border);border-radius:14px;background:#fff;cursor:pointer;text-align:left;width:100%;transition:border-color .2s">
+          <span style="font-size:24px">✏️</span>
+          <div><div style="font-weight:700;font-size:14px;color:var(--text)">Calendario personalizado</div><div style="font-size:12px;color:var(--text-s);margin-top:2px">Para acuerdos más complejos</div></div>
+        </button>
+        <button onclick="selectOnbCustodyType('undefined')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:1.5px solid var(--border);border-radius:14px;background:#fff;cursor:pointer;text-align:left;width:100%;transition:border-color .2s">
+          <span style="font-size:24px">🤷</span>
+          <div><div style="font-weight:700;font-size:14px;color:var(--text)">Aún no tenemos una rutina</div><div style="font-size:12px;color:var(--text-s);margin-top:2px">Configurar el calendario después</div></div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Panel: Semana por medio -->
+    <div id="onbPanelAltWeeks" class="hidden">
+      <button class="link-btn" onclick="showOnbPanel('onbPanelType')" style="margin-bottom:14px">← Volver</button>
+      <h2 style="font-size:18px;font-weight:800;margin-bottom:6px">Semana por medio</h2>
+      <p style="font-size:13px;color:var(--text-s);margin-bottom:18px">Configura cuándo y cómo ocurre el cambio.</p>
+      <div style="display:grid;gap:13px">
+        <div class="grid-2">
+          <div>
+            <label class="lbl">Día de cambio</label>
+            <select class="sel" id="onbChangeDay">
+              <option value="1">Lunes</option><option value="2">Martes</option>
+              <option value="3">Miércoles</option><option value="4">Jueves</option>
+              <option value="5">Viernes</option><option value="6">Sábado</option>
+              <option value="0">Domingo</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl">Hora de cambio</label>
+            <input class="inp" type="time" id="onbChangeTime" value="08:00"/>
+          </div>
+        </div>
+        <div>
+          <label class="lbl">Fecha de inicio del calendario</label>
+          <input class="inp" type="date" id="onbStartDate"/>
+        </div>
+        <div>
+          <label class="lbl">La primera semana los niños están con…</label>
+          <div class="grid-2" style="margin-top:7px">
+            <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600">
+              <input type="radio" name="onbFirstWeek" value="mama"/> <span id="onbFWMama">Mamá</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600">
+              <input type="radio" name="onbFirstWeek" value="papa"/> <span id="onbFWPapa">Papá</span>
+            </label>
+          </div>
+        </div>
+        <div>
+          <label class="lbl">¿Quién tiene a los niños HOY?</label>
+          <div class="grid-2" style="margin-top:7px">
+            <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600">
+              <input type="radio" name="onbWhoToday" value="mama"/> <span id="onbWTMama">Mamá</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600">
+              <input type="radio" name="onbWhoToday" value="papa"/> <span id="onbWTPapa">Papá</span>
+            </label>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="saveOnbAltWeeks()">Continuar →</button>
+      </div>
+    </div>
+
+    <!-- Panel: Días fijos -->
+    <div id="onbPanelFixedDays" class="hidden">
+      <button class="link-btn" onclick="showOnbPanel('onbPanelType')" style="margin-bottom:14px">← Volver</button>
+      <h2 style="font-size:18px;font-weight:800;margin-bottom:6px">Días fijos por semana</h2>
+      <p style="font-size:13px;color:var(--text-s);margin-bottom:14px">¿Con quién están los niños cada día?</p>
+      <div id="onbFixedDaysTable" style="margin-bottom:16px"></div>
+      <div style="background:rgba(0,0,0,.03);border-radius:12px;padding:14px;margin-bottom:14px">
+        <p style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">¿Algunos días tienen una regla distinta?</p>
+        <div style="display:grid;gap:9px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+            <input type="radio" name="onbHasAlt" value="no" checked onchange="toggleOnbAltSection()"/> No, todos los días son fijos
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+            <input type="radio" name="onbHasAlt" value="yes" onchange="toggleOnbAltSection()"/> Sí, algunos días cambian semana a semana
+          </label>
+        </div>
+        <div id="onbAltSection" class="hidden" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
+          <p style="font-size:12px;font-weight:700;color:var(--text-s);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">¿Qué días tienen una regla distinta?</p>
+          <div id="onbAltDays" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px"></div>
+          <p style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px">¿Quién tiene los niños esos días esta semana?</p>
+          <div class="grid-2">
+            <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600">
+              <input type="radio" name="onbAltFirst" value="mama"/> <span id="onbAFMama">Mamá</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600">
+              <input type="radio" name="onbAltFirst" value="papa"/> <span id="onbAFPapa">Papá</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div style="margin-bottom:16px">
+        <label class="lbl">¿Quién tiene a los niños HOY?</label>
+        <div class="grid-2" style="margin-top:7px">
+          <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600">
+            <input type="radio" name="onbWhoTodayFixed" value="mama"/> <span id="onbWTFMama">Mamá</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600">
+            <input type="radio" name="onbWhoTodayFixed" value="papa"/> <span id="onbWTFPapa">Papá</span>
+          </label>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="saveOnbFixedDays()">Continuar →</button>
+    </div>
+
+    <!-- Panel: Personalizado -->
+    <div id="onbPanelCustom" class="hidden">
+      <button class="link-btn" onclick="showOnbPanel('onbPanelType')" style="margin-bottom:14px">← Volver</button>
+      <h2 style="font-size:18px;font-weight:800;margin-bottom:6px">Calendario personalizado</h2>
+      <p style="font-size:13px;color:var(--text-s);margin-bottom:18px">Podrás asignar manualmente cada día desde el calendario de Qinflo.</p>
+      <div style="margin-bottom:16px">
+        <label class="lbl">¿Quién tiene a los niños HOY?</label>
+        <div class="grid-2" style="margin-top:7px">
+          <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600">
+            <input type="radio" name="onbWhoTodayCustom" value="mama"/> <span id="onbWTCMama">Mamá</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600">
+            <input type="radio" name="onbWhoTodayCustom" value="papa"/> <span id="onbWTCPapa">Papá</span>
+          </label>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="saveOnbCustom()">Continuar →</button>
+    </div>
+
+    <!-- Panel: Sin rutina -->
+    <div id="onbPanelUndefined" class="hidden">
+      <button class="link-btn" onclick="showOnbPanel('onbPanelType')" style="margin-bottom:14px">← Volver</button>
+      <h2 style="font-size:18px;font-weight:800;margin-bottom:6px">Sin rutina definida</h2>
+      <p style="font-size:13px;color:var(--text-s);margin-bottom:18px">No hay problema. Podrás configurar tu calendario cuando lo necesites desde la app.</p>
+      <button class="btn-primary" onclick="goToOnbKids()">Continuar →</button>
+    </div>
+
+    <!-- Panel: Lugar de cambio -->
+    <div id="onbPanelLocation" class="hidden">
+      <h2 style="font-size:18px;font-weight:800;margin-bottom:6px">¿Dónde ocurre el cambio?</h2>
+      <p style="font-size:13px;color:var(--text-s);margin-bottom:18px">Esto nos ayuda con recordatorios y confirmaciones de entrega.</p>
+      <div style="display:grid;gap:10px;margin-bottom:18px">
+        <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;cursor:pointer;font-size:13px;font-weight:600">
+          <input type="radio" name="onbLocation" value="school"/> 🏫 Colegio
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;cursor:pointer;font-size:13px;font-weight:600">
+          <input type="radio" name="onbLocation" value="mama_home"/> 🏠 Casa de <span id="onbLocMama" style="margin-left:3px">Mamá</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;cursor:pointer;font-size:13px;font-weight:600">
+          <input type="radio" name="onbLocation" value="papa_home"/> 🏠 Casa de <span id="onbLocPapa" style="margin-left:3px">Papá</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;cursor:pointer;font-size:13px;font-weight:600">
+          <input type="radio" name="onbLocation" value="other" onchange="toggleOnbLocationOther()"/> 📍 Otro lugar
+        </label>
+        <input class="inp hidden" id="onbLocationOther" placeholder="¿Cuál lugar?"/>
+      </div>
+      <button class="btn-primary" onclick="saveOnbLocation()">Continuar →</button>
+      <p style="text-align:center;margin-top:12px">
+        <button class="link-btn" onclick="goToOnbKids()">Omitir por ahora</button>
+      </p>
+    </div>
+
+    <!-- Panel: Hijos -->
+    <div id="onbPanelKids" class="hidden">
+      <h2 style="font-size:18px;font-weight:800;margin-bottom:6px">¿Tienen hijos en común?</h2>
+      <p style="font-size:13px;color:var(--text-s);margin-bottom:14px">Agrega sus datos principales. Puedes completarlos después.</p>
+      <div id="onbKidsList" style="margin-bottom:14px"></div>
+      <div style="background:rgba(0,0,0,.03);border-radius:12px;padding:14px;margin-bottom:16px">
+        <p style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text)">Agregar hijo</p>
+        <div style="display:grid;gap:9px">
+          <div class="grid-2">
+            <div><label class="lbl">Nombre</label><input class="inp" id="onbKidName" placeholder="Nombre del niño"/></div>
+            <div><label class="lbl">Nacimiento</label><input class="inp" type="date" id="onbKidBirth" onchange="updateOnbKidAge()"/></div>
+          </div>
+          <div id="onbKidAgeDisplay" style="font-size:12px;color:var(--text-s);min-height:16px"></div>
+          <button class="btn-outline" onclick="addOnbKid()"><i data-lucide="plus"></i> Agregar hijo</button>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="saveOnbKids()">Continuar →</button>
+      <p style="text-align:center;margin-top:12px">
+        <button class="link-btn" onclick="skipOnbKids()">Agregar hijos después</button>
+      </p>
+    </div>
+
+    <!-- Panel: Invitar -->
+    <div id="onbPanelInvite" class="hidden">
+      <h2 style="font-size:18px;font-weight:800;margin-bottom:6px">Invitar al otro padre/madre</h2>
+      <p style="font-size:13px;color:var(--text-s);margin-bottom:18px">Envíale este link para que se conecte automáticamente a tu cuenta.</p>
+      <div class="invite-box" style="margin-bottom:20px">
+        <p class="lbl" style="margin-bottom:9px">Tu link de invitación</p>
+        <div id="onbInviteLinkDisplay" class="invite-link-display">Generando link...</div>
+        <button id="onbWhatsappBtn" class="btn-whatsapp" style="margin-top:10px">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+          Invitar por WhatsApp
+        </button>
+      </div>
+      <button class="btn-primary" onclick="finishOnboarding()">Entrar a Qinflo →</button>
+      <p style="text-align:center;margin-top:12px">
+        <button class="link-btn" onclick="finishOnboarding()">Invitar después</button>
+      </p>
+    </div>
+
+    <div id="onbMsg" class="hidden" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<!-- ===========================================================
+     COPARENT WELCOME SCREEN
+============================================================ -->
+<div id="coparentWelcomeScreen" class="hidden">
+  <div class="authBox">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="7" r="3"/><circle cx="16" cy="7" r="3"/>
+          <path d="M3 20c0-3.31 2.69-6 6-6s6 2.69 6 6"/>
+          <path d="M19 18c0-2.21-1.34-4-3-4"/>
+        </svg>
+      </div>
+      <h1>Qinflo</h1>
+    </div>
+    <h2 style="font-size:18px;font-weight:800;margin-bottom:8px;color:var(--text)">¡Te conectaste exitosamente!</h2>
+    <p style="font-size:13px;color:var(--text-s);margin-bottom:22px"><span id="copInviterName">Tu co-padre/madre</span> te invitó a coordinar juntos en Qinflo.</p>
+    <div style="background:rgba(0,0,0,.03);border-radius:14px;padding:16px;margin-bottom:22px;display:grid;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;font-weight:700;color:var(--text-s);text-transform:uppercase;letter-spacing:.5px">Modalidad</span>
+        <span id="copCustodyType" style="font-size:13px;font-weight:700;color:var(--text)">—</span>
+      </div>
+      <div id="copChangeDayRow" class="hidden" style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;font-weight:700;color:var(--text-s);text-transform:uppercase;letter-spacing:.5px">Día de cambio</span>
+        <span id="copChangeDay" style="font-size:13px;font-weight:700;color:var(--text)">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;font-weight:700;color:var(--text-s);text-transform:uppercase;letter-spacing:.5px">Hijos</span>
+        <span id="copKidsList" style="font-size:13px;font-weight:700;color:var(--text);text-align:right;max-width:60%">—</span>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="acceptCoparentInvite()">Comenzar a usar Qinflo →</button>
+  </div>
+</div>
+
+
 
 <div id="app">
   <header>
@@ -504,7 +778,8 @@
 <script src="agreements.js"></script>
 <script src="reminders.js"></script>
 <script src="resources.js"></script>
-<script src="observability.js"></script>    
+<script src="observability.js"></script>
+<script src="onboarding.js"></script>
 <script src="app-shell.js"></script>
 </body>
 </html>

@@ -36,15 +36,15 @@ auth.onAuthStateChanged(function(u) {
       db.collection('users').doc(USERDATA.coparentId).get().then(function(co) {
         if (co.exists) CODATA = co.data();
         updateLabels();
-        loadApp();
+        loadOrOnboard();
       }).catch(function(e) {
         console.error('[coparent fetch]', e);
         updateLabels();
-        loadApp();
+        loadOrOnboard();
       });
-        } else {
+    } else {
       updateLabels();
-      loadApp();
+      loadOrOnboard();
     }
 }).catch(function(e) {
   console.error('[app-shell main catch]', e);
@@ -73,6 +73,19 @@ function updateLabels() {
     var sub = USERDATA ? displayNameWithRole(USERDATA, myRole()) : 'by Kindflo';
     if (CODATA && CODATA.name) sub += ' · con ' + CODATA.name.split(' ')[0];
     $('headerSub').textContent = sub;
+  }
+}
+
+// --- LOAD OR ONBOARD ----------------------------------------
+function loadOrOnboard() {
+  if (USERDATA && USERDATA.onboardingCompleted === false) {
+    if (typeof startOnboarding === 'function') {
+      startOnboarding();
+    } else {
+      loadApp();
+    }
+  } else {
+    loadApp();
   }
 }
 

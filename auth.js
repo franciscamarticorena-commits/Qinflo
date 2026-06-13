@@ -103,14 +103,15 @@ async function doRegister() {
       familyId: famRef.id,
       coparentId: null,
       inviteCode: inviteCode,
+      onboardingCompleted: false,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
     IS_REGISTERING = false;
-    USERDATA = { name: name, email: email, role: role, familyConfig: fc, familyId: famRef.id, coparentId: null, inviteCode: inviteCode };
+    USERDATA = { name: name, email: email, role: role, familyConfig: fc, familyId: famRef.id, coparentId: null, inviteCode: inviteCode, onboardingCompleted: false };
     FAMILY_ID = famRef.id;
     updateLabels();
-    loadApp();
+    startOnboarding();
 
   } catch(e) {
     IS_REGISTERING = false;

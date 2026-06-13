@@ -49,7 +49,15 @@ async function autoConnect(code) {
     }
     await batch.commit();
     window.history.replaceState({}, '', './');
-    loadApp();
+    USERDATA.coparentId = otherId;
+    USERDATA.familyId = famId;
+    FAMILY_ID = famId;
+    CODATA = otherData;
+    if (typeof showCoparentWelcome === 'function') {
+      showCoparentWelcome();
+    } else {
+      loadApp();
+    }
   } catch(e) {
     loadApp();
   }
