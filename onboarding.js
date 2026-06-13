@@ -40,7 +40,6 @@ function updateOnbLabels() {
   var lbl1 = p1(), lbl2 = p2();
   var map = {
     onbFWMama: lbl1, onbFWPapa: lbl2,
-    onbWTMama: lbl1, onbWTPapa: lbl2,
     onbWTFMama: lbl1, onbWTFPapa: lbl2,
     onbWTCMama: lbl1, onbWTCPapa: lbl2,
     onbAFMama: lbl1, onbAFPapa: lbl2,
@@ -72,17 +71,15 @@ function saveOnbAltWeeks() {
   var changeTime = $('onbChangeTime') ? $('onbChangeTime').value : '08:00';
   var startDate = $('onbStartDate') ? $('onbStartDate').value : '';
   var firstWeekEl = document.querySelector('input[name="onbFirstWeek"]:checked');
-  var whoTodayEl = document.querySelector('input[name="onbWhoToday"]:checked');
   if (!startDate) { showOnbMsg('Ingresa la fecha de inicio.'); return; }
   if (!firstWeekEl) { showOnbMsg('Indica quién tiene a los niños la primera semana.'); return; }
-  if (!whoTodayEl) { showOnbMsg('Indica quién tiene a los niños hoy.'); return; }
+  // Para semana por medio el ancla es startDate + firstWeek. No se usa "hoy" para evitar
+  // dos anclas que puedan contradecirse.
   Object.assign(onbCustodyConfig, {
     changeDay: changeDay,
     changeTime: changeTime,
     startDate: startDate,
-    firstWeek: firstWeekEl.value,
-    whoHasThemToday: whoTodayEl.value,
-    whoHasTodayDate: new Date().toISOString().slice(0, 10)
+    firstWeek: firstWeekEl.value
   });
   showOnbPanel('onbPanelLocation');
   updateOnbProgress(2, 4, '¿Dónde ocurre el cambio?');
@@ -234,7 +231,17 @@ async function saveOnboardingData(includeKids) {
     var config = Object.assign({}, onbCustodyConfig, {
       configuredAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    await db.collection('families').doc(FAMILY_ID).update({ custodyConfig: config });
+    // specialRules: estructura reservada para lógica futura de fechas especiales.
+    // La lógica de prioridad (ej. Navidad con papá si esta semana era de mamá) no está
+    // implementada — solo se persiste la estructura para no tener que migrar el schema después.
+    var specialRules = {
+      mothersDay:  { enabled: false, override: null },
+      fathersDay:  { enabled: false, override: null },
+      christmas:   { enabled: false, override: null },
+      newYear:     { enabled: false, override: null },
+      vacations:   []
+    };
+    await db.collection('families').doc(FAMILY_ID).update({ custodyConfig: config, specialRules: specialRules });
     if (config.type === 'alternating_weeks' || config.type === 'fixed_days') {
       await generateOnbCalendar(config, FAMILY_ID);
     }
