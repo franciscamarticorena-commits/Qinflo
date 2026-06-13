@@ -182,7 +182,7 @@ window.addEventListener('DOMContentLoaded', function() {
   // Calendar
   $('prevMonthBtn').addEventListener('click', prevMonth);
   $('nextMonthBtn').addEventListener('click', nextMonth);
-  if ($('cycleCustBtn')) $('cycleCustBtn').addEventListener('click', cycleCustody);
+  if ($('editDayBtn')) $('editDayBtn').addEventListener('click', openEditDay);
   // Filtros de vista del calendario
   document.querySelectorAll('[data-cal-filter]').forEach(function(btn) {
     btn.addEventListener('click', function() {

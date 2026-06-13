@@ -498,8 +498,8 @@
         </div>
         <div id="detailEvents" style="margin-bottom:10px"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn-outline" id="cycleCustBtn">
-            <i data-lucide="refresh-cw"></i> Cambiar custodia
+          <button class="btn-outline" id="editDayBtn">
+            <i data-lucide="pencil"></i> Editar día
           </button>
           <button class="btn-outline" id="toggleEvBtn">
             <i data-lucide="plus"></i> Evento
@@ -507,6 +507,19 @@
           <button class="btn-outline" id="togglePropBtn">
             <i data-lucide="arrow-left-right"></i> Proponer cambio
           </button>
+        </div>
+        <div id="editDayForm" class="hidden" style="margin-top:12px;background:rgba(0,0,0,.03);border-radius:12px;padding:14px">
+          <p style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">Editar custodia · Día <span id="editDayNum"></span></p>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+            <button id="editOpt_mama" class="btn-outline" onclick="selectEditOpt('mama')" style="font-size:12px;font-weight:600"></button>
+            <button id="editOpt_papa" class="btn-outline" onclick="selectEditOpt('papa')" style="font-size:12px;font-weight:600"></button>
+            <button id="editOpt_transition" class="btn-outline" onclick="selectEditOpt('transition')" style="font-size:12px;font-weight:600">Cambio ↔</button>
+          </div>
+          <input class="inp" id="editDayReason" placeholder="Motivo (opcional)…" style="margin-bottom:9px"/>
+          <div style="display:flex;gap:8px">
+            <button class="btn-sm" onclick="saveManualOverride()">Confirmar</button>
+            <button class="btn-outline" onclick="hide('editDayForm')">Cancelar</button>
+          </div>
         </div>
         <div id="evForm" class="hidden" style="margin-top:12px;display:flex;gap:8px">
           <input class="inp" id="evInput" placeholder="Descripción del evento..." style="flex:1"/>
