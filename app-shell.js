@@ -100,6 +100,7 @@ function loadApp() {
     renderResources();
     renderQuickReplies();
     renderCalendar();
+    checkAndGenerateCalendar();
   } catch(e) {
     console.error('[loadApp crash]', e);
   }
@@ -182,6 +183,15 @@ window.addEventListener('DOMContentLoaded', function() {
   $('prevMonthBtn').addEventListener('click', prevMonth);
   $('nextMonthBtn').addEventListener('click', nextMonth);
   if ($('cycleCustBtn')) $('cycleCustBtn').addEventListener('click', cycleCustody);
+  // Filtros de vista del calendario
+  document.querySelectorAll('[data-cal-filter]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      calFilter = btn.dataset.calFilter;
+      document.querySelectorAll('[data-cal-filter]').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      renderCalendar();
+    });
+  });
   $('toggleEvBtn').addEventListener('click', function() { $('evForm').classList.toggle('hidden'); });
   $('saveEvBtn').addEventListener('click', saveEvent);
   $('togglePropBtn').addEventListener('click', function() {

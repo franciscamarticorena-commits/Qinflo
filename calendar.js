@@ -1,4 +1,22 @@
 // --- CALENDARIO ---------------------------------------------
+
+async function checkAndGenerateCalendar() {
+  if (!FAMILY_ID) return;
+  // Solo genera si el mes actual no tiene datos de custodia
+  if (custodyMap[calKey()] && Object.keys(custodyMap[calKey()]).length > 0) return;
+  try {
+    var famSnap = await db.collection('families').doc(FAMILY_ID).get();
+    if (!famSnap.exists) return;
+    var config = famSnap.data().custodyConfig;
+    if (!config || config.type === 'undefined' || config.type === 'custom') return;
+    if (typeof generateOnbCalendar === 'function') {
+      await generateOnbCalendar(config, FAMILY_ID);
+    }
+  } catch(e) {
+    console.error('[checkAndGenerateCalendar]', e);
+  }
+}
+
 function calKey() { return calYear + '-' + String(calMonth + 1).padStart(2, '0'); }
 function getCustody(d) { return custodyMap[calKey()] && custodyMap[calKey()][d] ? custodyMap[calKey()][d] : 'none'; }
 function getEvs(d) { return calEventsMap[calKey()] && calEventsMap[calKey()][d] ? calEventsMap[calKey()][d] : []; }
@@ -69,6 +87,9 @@ function renderCalendar() {
   var months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   if (!$('calMonthTitle')) return;
   $('calMonthTitle').textContent = months[calMonth] + ' ' + calYear;
+  // Actualizar labels dinámicos de los botones de filtro
+  if ($('calFilterMama')) $('calFilterMama').textContent = p1();
+  if ($('calFilterPapa')) $('calFilterPapa').textContent = p2();
   renderProposals();
   var namesEl = $('calDayNames');
   namesEl.innerHTML = '';
@@ -93,6 +114,10 @@ function renderCalendar() {
     btn.className = 'cal-day ' + c;
     if (calYear === now.getFullYear() && calMonth === now.getMonth() && d === now.getDate()) btn.classList.add('today');
     if (selDay === d) btn.classList.add('selected');
+    // Filtro de vista: atenuar días que no corresponden al padre filtrado
+    if (calFilter !== 'both' && c !== 'none' && c !== calFilter && c !== 'transition') {
+      btn.style.opacity = '0.25';
+    }
     btn.innerHTML = (prop ? '<span class="prop-flag">Pend.</span>' : '') + '<div class="cal-num">' + d + '</div>' + custodySymbol(c) + (evs.length ? '<div class="event-line" title="Evento"></div>' : '') + (rems.length ? '<div class="reminder-line" title="Recordatorio"></div>' : '');
     (function(day) {
       btn.addEventListener('click', function() { selDay = day; renderCalendar(); renderDayDetail(); });

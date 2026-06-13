@@ -475,7 +475,7 @@
 
   <div class="card">
     <div class="card-body">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <button class="btn-outline" id="prevMonthBtn" style="padding:8px 12px">
           <i data-lucide="chevron-left" style="width:16px;height:16px"></i>
         </button>
@@ -483,6 +483,11 @@
         <button class="btn-outline" id="nextMonthBtn" style="padding:8px 12px">
           <i data-lucide="chevron-right" style="width:16px;height:16px"></i>
         </button>
+      </div>
+      <div class="period-filter" style="margin-bottom:14px">
+        <button class="active" data-cal-filter="both">Todos</button>
+        <button data-cal-filter="mama" id="calFilterMama">Mamá</button>
+        <button data-cal-filter="papa" id="calFilterPapa">Papá</button>
       </div>
       <div class="cal-grid" id="calDayNames"></div>
       <div class="cal-grid" id="calGrid" style="margin-top:4px"></div>
@@ -493,6 +498,9 @@
         </div>
         <div id="detailEvents" style="margin-bottom:10px"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-outline" id="cycleCustBtn">
+            <i data-lucide="refresh-cw"></i> Cambiar custodia
+          </button>
           <button class="btn-outline" id="toggleEvBtn">
             <i data-lucide="plus"></i> Evento
           </button>
