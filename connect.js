@@ -38,27 +38,57 @@ async function autoConnect(code) {
     var otherId = otherDoc.id;
     if (otherId === USER.uid) { loadApp(); return; }
     var otherData = otherDoc.data();
-    var famId = (USERDATA && USERDATA.familyId) || otherData.familyId;
-    var batch = db.batch();
-    batch.update(db.collection('users').doc(USER.uid), { coparentId: otherId, familyId: famId });
-    batch.update(db.collection('users').doc(otherId), { coparentId: USER.uid, familyId: famId });
-    if (famId) {
-      batch.update(db.collection('families').doc(famId), {
-        members: firebase.firestore.FieldValue.arrayUnion(USER.uid, otherId)
-      });
+
+    if (otherData.inviteConsumed) {
+      alert('Este enlace de invitación ya fue utilizado.');
+      loadApp(); return;
     }
+
+    // Always join the inviting user's family
+    var famId = otherData.familyId;
+    if (!famId) { loadApp(); return; }
+
+    // Joining user gets the opposite role of the inviting user
+    var joiningRole = otherData.role === 'p1' ? 'p2' : 'p1';
+    var p1Uid = otherData.role === 'p1' ? otherId : USER.uid;
+    var p2Uid = otherData.role === 'p1' ? USER.uid : otherId;
+
+    var batch = db.batch();
+    batch.update(db.collection('users').doc(USER.uid), {
+      coparentId: otherId,
+      familyId: famId,
+      role: joiningRole,
+      familyConfig: otherData.familyConfig
+    });
+    batch.update(db.collection('users').doc(otherId), {
+      coparentId: USER.uid,
+      inviteConsumed: true
+    });
+    var famUpdate = {
+      members: firebase.firestore.FieldValue.arrayUnion(USER.uid, otherId),
+      p1Uid: p1Uid,
+      p2Uid: p2Uid
+    };
+    famUpdate['memberRoles.' + USER.uid] = joiningRole;
+    batch.update(db.collection('families').doc(famId), famUpdate);
+
     await batch.commit();
     window.history.replaceState({}, '', './');
+
     USERDATA.coparentId = otherId;
     USERDATA.familyId = famId;
+    USERDATA.role = joiningRole;
+    USERDATA.familyConfig = otherData.familyConfig;
     FAMILY_ID = famId;
     CODATA = otherData;
+
     if (typeof showCoparentWelcome === 'function') {
       showCoparentWelcome();
     } else {
       loadApp();
     }
   } catch(e) {
+    console.error('[autoConnect]', e);
     loadApp();
   }
 }

@@ -58,6 +58,11 @@ async function doRegister() {
     return;
   }
 
+  // Persist invite code across registration flow
+  var urlParams = new URLSearchParams(window.location.search);
+  var pendingInviteParam = urlParams.get('invite');
+  if (pendingInviteParam) localStorage.setItem('pendingInvite', pendingInviteParam);
+
   try {
     IS_REGISTERING = true;
     var cred = await auth.createUserWithEmailAndPassword(email, pass);
@@ -111,7 +116,14 @@ async function doRegister() {
     USERDATA = { name: name, email: email, role: role, familyConfig: fc, familyId: famRef.id, coparentId: null, inviteCode: inviteCode, onboardingCompleted: false };
     FAMILY_ID = famRef.id;
     updateLabels();
-    startOnboarding();
+
+    var storedInvite = localStorage.getItem('pendingInvite');
+    if (storedInvite) {
+      localStorage.removeItem('pendingInvite');
+      autoConnect(storedInvite);
+    } else {
+      startOnboarding();
+    }
 
   } catch(e) {
     IS_REGISTERING = false;

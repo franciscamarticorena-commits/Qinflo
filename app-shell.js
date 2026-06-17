@@ -24,10 +24,11 @@ auth.onAuthStateChanged(function(u) {
     FAMILY_ID = USERDATA.familyId;
     if (typeof identifyObservabilityUser === 'function') identifyObservabilityUser(USER, USERDATA);
 
-    // Conectar inviteCode desde URL si el usuario aún no tiene coparentId
+    // Conectar inviteCode desde URL o localStorage si el usuario aún no tiene coparentId
     var urlParams = new URLSearchParams(window.location.search);
-    var inviteCode = urlParams.get('invite');
+    var inviteCode = urlParams.get('invite') || (!USERDATA.coparentId ? localStorage.getItem('pendingInvite') : null);
     if (inviteCode && !USERDATA.coparentId) {
+      localStorage.removeItem('pendingInvite');
       autoConnect(inviteCode);
       return;
     }
