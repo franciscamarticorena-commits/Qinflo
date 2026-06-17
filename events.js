@@ -116,6 +116,8 @@ async function updateEventStatus(eventId, status) {
 }
 
 async function approveEvent(eventId) {
+  var ev = events.find(function(e) { return e.id === eventId; });
+  if (!ev || ev.approvalStatus !== 'pending') return;
   try {
     await famCol('events').doc(eventId).update({
       status: 'confirmed', approvalStatus: 'approved',
@@ -128,6 +130,8 @@ async function approveEvent(eventId) {
 }
 
 async function rejectEvent(eventId) {
+  var ev = events.find(function(e) { return e.id === eventId; });
+  if (!ev || ev.approvalStatus !== 'pending') return;
   try {
     await famCol('events').doc(eventId).update({
       status: 'cancelled', approvalStatus: 'rejected',
