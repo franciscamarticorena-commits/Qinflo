@@ -131,6 +131,12 @@ function setupListeners() {
     proposals = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
     renderProposals();
   });
+  famCol('events').orderBy('date', 'asc').onSnapshot(function(s) {
+    events = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
+    if (typeof renderEventApprovals === 'function') renderEventApprovals();
+    if (selDay && typeof renderDayDetail === 'function') renderDayDetail();
+    renderCalendar();
+  });
   famCol('calendar').onSnapshot(function(s) {
     custodyMap = {}; calEventsMap = {}; custodyOverridesMap = {};
     s.docs.forEach(function(d) {
@@ -193,8 +199,7 @@ window.addEventListener('DOMContentLoaded', function() {
       renderCalendar();
     });
   });
-  $('toggleEvBtn').addEventListener('click', function() { $('evForm').classList.toggle('hidden'); });
-  $('saveEvBtn').addEventListener('click', saveEvent);
+  $('toggleEvBtn').addEventListener('click', function() { openEventForm(null); });
   $('togglePropBtn').addEventListener('click', function() {
     var active = activePendingProposal();
     if (active) {

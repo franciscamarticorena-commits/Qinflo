@@ -181,18 +181,17 @@ function renderCalendar() {
   for (var i = 0; i < first; i++) grid.appendChild(document.createElement('div'));
   for (var d = 1; d <= days; d++) {
     var c = getCustody(d);
-    var evs = getEvs(d);
     var rems = remindersForDay(d);
     var prop = pendingProposalForDay(d);
+    var hasEv = typeof eventsForDay === 'function' && eventsForDay(calYear, calMonth, d).length > 0;
     var btn = document.createElement('button');
     btn.className = 'cal-day ' + c;
     if (calYear === now.getFullYear() && calMonth === now.getMonth() && d === now.getDate()) btn.classList.add('today');
     if (selDay === d) btn.classList.add('selected');
-    // Filtro de vista: atenuar días que no corresponden al padre filtrado
     if (calFilter !== 'both' && c !== 'none' && c !== calFilter && c !== 'transition') {
       btn.style.opacity = '0.25';
     }
-    btn.innerHTML = (prop ? '<span class="prop-flag">Pend.</span>' : '') + '<div class="cal-num">' + d + '</div>' + custodySymbol(c) + (evs.length ? '<div class="event-line" title="Evento"></div>' : '') + (rems.length ? '<div class="reminder-line" title="Recordatorio"></div>' : '');
+    btn.innerHTML = (prop ? '<span class="prop-flag">Pend.</span>' : '') + '<div class="cal-num">' + d + '</div>' + custodySymbol(c) + (hasEv ? '<div class="event-line" title="Evento"></div>' : '') + (rems.length ? '<div class="reminder-line" title="Recordatorio"></div>' : '');
     (function(day) {
       btn.addEventListener('click', function() { selDay = day; renderCalendar(); renderDayDetail(); });
     })(d);
@@ -207,13 +206,10 @@ function renderDayDetail() {
   hide('editDayForm');
   editDaySelectedVal = null;
   $('detailDay').textContent = selDay;
-  var evs = getEvs(selDay);
   var rems = remindersForDay(selDay);
   var html = '';
   html += '<div class="detail-card"><strong>Custodia:</strong> ' + (getCustody(selDay) === 'mama' ? p1() : getCustody(selDay) === 'papa' ? p2() : 'Cambio de casa ↔') + '</div>';
-  if (evs.length) {
-    html += evs.map(function(e, idx) { return '<div class="detail-card"><strong>Evento:</strong> ' + e + '<button class="event-delete-btn" onclick="deleteEvent(' + idx + ')">Borrar</button></div>'; }).join('');
-  }
+  if (typeof renderEventsForDay === 'function') html += renderEventsForDay(selDay);
   if (rems.length) {
     html += rems.map(function(r) { return '<div class="detail-card"><strong>Recordatorio:</strong> ' + r.title + '<br><strong>Fecha:</strong> ' + fmtDateTime(r.date) + '<br><strong>Para:</strong> ' + fLbl(r.for) + '</div>'; }).join('');
   }
@@ -242,28 +238,6 @@ function updateProposalButtonState() {
   var label = active.createdBy === (USER && USER.uid) ? 'Esperando respuesta' : 'Responder solicitud pendiente';
   btn.innerHTML = '<i data-lucide="lock"></i> ' + label;
   hide('propForm');
-}
-
-async function deleteEvent(idx) {
-  if (!selDay || !FAMILY_ID) return;
-  var arr = getEvs(selDay).slice();
-  arr.splice(idx, 1);
-  var key = calKey();
-  var update = { events: {} };
-  update.events[selDay] = arr;
-  await db.collection('families').doc(FAMILY_ID).collection('calendar').doc(key).set(update, { merge: true });
-}
-
-async function saveEvent() {
-  var v = $('evInput').value.trim();
-  if (!v || !selDay || !FAMILY_ID) return;
-  var existing = getEvs(selDay);
-  var key = calKey();
-  var update = { events: {} };
-  update.events[selDay] = existing.concat([v]);
-  await db.collection('families').doc(FAMILY_ID).collection('calendar').doc(key).set(update, { merge: true });
-  $('evInput').value = '';
-  hide('evForm');
 }
 
 async function saveProp() {
