@@ -472,6 +472,7 @@
   </div>
 
   <div id="pendingProposals"></div>
+  <div id="eventApprovals"></div>
 
   <div class="card">
     <div class="card-body">
@@ -502,7 +503,7 @@
             <i data-lucide="pencil"></i> Editar día
           </button>
           <button class="btn-outline" id="toggleEvBtn">
-            <i data-lucide="plus"></i> Evento
+            <i data-lucide="plus"></i> Agregar evento
           </button>
           <button class="btn-outline" id="togglePropBtn">
             <i data-lucide="arrow-left-right"></i> Proponer cambio
@@ -521,10 +522,6 @@
             <button class="btn-outline" onclick="hide('editDayForm')">Cancelar</button>
           </div>
           <button id="restoreBaseBtn" class="btn-outline hidden" onclick="restoreBaseRule()" style="width:100%;font-size:12px;color:var(--text-s)">↩ Restaurar regla original</button>
-        </div>
-        <div id="evForm" class="hidden" style="margin-top:12px;display:flex;gap:8px">
-          <input class="inp" id="evInput" placeholder="Descripción del evento..." style="flex:1"/>
-          <button class="btn-sm" id="saveEvBtn">Guardar</button>
         </div>
         <div id="propForm" class="hidden" style="margin-top:12px;display:grid;gap:9px">
           <div class="grid-2">
@@ -778,6 +775,55 @@
   <footer>Qinflo by Kindflo · Chile · 2026</footer>
 </div>
 
+<!-- ===========================================================
+     EVENT MODAL
+============================================================ -->
+<div id="evModal" class="hidden" style="position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:flex-end">
+  <div style="background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 id="evFormTitle" style="font-size:16px;font-weight:700;color:var(--text)">Nuevo evento</h3>
+      <button onclick="closeEventForm()" style="background:var(--bg);border:1.5px solid var(--border);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--text-s);font-size:20px;font-family:inherit;line-height:1">&times;</button>
+    </div>
+    <div style="display:grid;gap:10px">
+      <input class="inp" id="evTitle" placeholder="Título del evento *" style="font-size:15px;font-weight:600"/>
+      <div class="grid-2">
+        <input class="inp" type="date" id="evDate"/>
+        <input class="inp" type="time" id="evTime"/>
+      </div>
+      <select class="sel" id="evCat">
+        <option value="salud">🏥 Salud</option>
+        <option value="colegio">🏫 Colegio</option>
+        <option value="actividad">⚽ Actividad</option>
+        <option value="cumpleanos">🎂 Cumpleaños</option>
+        <option value="vacaciones">✈️ Vacaciones</option>
+        <option value="otro" selected>📋 Otro</option>
+      </select>
+      <select class="sel" id="evParticipants" onchange="updateEventFormUI()">
+        <option id="evOptMama" value="mama">Mamá</option>
+        <option id="evOptPapa" value="papa">Papá</option>
+        <option value="both" selected>Ambos</option>
+      </select>
+      <div id="evApprovalRow">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;background:var(--bg);padding:10px 12px;border-radius:10px;border:1.5px solid var(--border)">
+          <input type="checkbox" id="evRequiresApproval" style="width:16px;height:16px;accent-color:var(--primary)"/>
+          <span>Requiere confirmación del otro padre/madre</span>
+        </label>
+      </div>
+      <select class="sel" id="evReminder">
+        <option value="">Sin recordatorio</option>
+        <option value="2h">⏰ 2 horas antes</option>
+        <option value="1d">⏰ 1 día antes</option>
+        <option value="1w">⏰ 1 semana antes</option>
+      </select>
+      <textarea class="inp" id="evDescription" placeholder="Descripción (opcional)" rows="2" style="resize:none;line-height:1.4"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;padding-bottom:env(safe-area-inset-bottom,0px)">
+      <button class="btn-primary" style="flex:1" onclick="saveEvent()">Guardar evento</button>
+      <button class="btn-outline" onclick="closeEventForm()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <script src="firebase.js"></script>
 <script src="state.js"></script>
 <script src="auth.js"></script>
@@ -791,6 +837,7 @@
 <script src="resources.js"></script>
 <script src="observability.js"></script>
 <script src="onboarding.js"></script>
+<script src="events.js"></script>
 <script src="app-shell.js"></script>
 </body>
 </html>
