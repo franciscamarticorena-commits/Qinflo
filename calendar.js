@@ -43,6 +43,48 @@ function cycleCustody() {
   setCustody(selDay, o[(o.indexOf(cur) + 1) % 3]);
 }
 
+var editDaySelectedVal = null;
+
+function openEditDay() {
+  if (!selDay) return;
+  editDaySelectedVal = getCustody(selDay);
+  if ($('editDayNum')) $('editDayNum').textContent = selDay;
+  if ($('editOpt_mama')) $('editOpt_mama').textContent = p1();
+  if ($('editOpt_papa')) $('editOpt_papa').textContent = p2();
+  ['mama', 'papa', 'transition'].forEach(function(v) {
+    var b = $('editOpt_' + v);
+    if (b) b.classList.toggle('active', v === editDaySelectedVal);
+  });
+  if ($('editDayReason')) $('editDayReason').value = '';
+  show('editDayForm');
+}
+
+function selectEditOpt(val) {
+  editDaySelectedVal = val;
+  ['mama', 'papa', 'transition'].forEach(function(v) {
+    var b = $('editOpt_' + v);
+    if (b) b.classList.toggle('active', v === val);
+  });
+}
+
+async function saveManualOverride() {
+  if (!selDay || !FAMILY_ID || !editDaySelectedVal) return;
+  var reason = $('editDayReason') ? $('editDayReason').value.trim() : '';
+  var key = calKey();
+  var update = { custody: {}, custodyOverrides: {} };
+  update.custody[String(selDay)] = editDaySelectedVal;
+  update.custodyOverrides[String(selDay)] = {
+    value: editDaySelectedVal,
+    reason: reason,
+    overriddenBy: USER ? USER.uid : null,
+    overriddenAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  await db.collection('families').doc(FAMILY_ID).collection('calendar').doc(key)
+    .set(update, { merge: true });
+  hide('editDayForm');
+  editDaySelectedVal = null;
+}
+
 function prevMonth() {
   if (calMonth === 0) { calYear--; calMonth = 11; } else calMonth--;
   selDay = null; renderCalendar();
@@ -130,6 +172,8 @@ function renderCalendar() {
 function renderDayDetail() {
   if (!selDay) { hide('dayDetail'); return; }
   show('dayDetail');
+  hide('editDayForm');
+  editDaySelectedVal = null;
   $('detailDay').textContent = selDay;
   var evs = getEvs(selDay);
   var rems = remindersForDay(selDay);
