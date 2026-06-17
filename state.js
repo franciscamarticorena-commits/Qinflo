@@ -38,6 +38,8 @@ const AUTH_ERRORS = {
   'auth/weak-password': 'Mínimo 6 caracteres',
   'auth/invalid-email': 'Correo inválido',
   'auth/too-many-requests': 'Demasiados intentos. Espera unos minutos.',
-  'auth/invalid-credential': 'Correo o contraseña incorrectos'
+  'auth/invalid-credential': 'Correo o contraseña incorrectos',
+  'auth/account-exists-with-different-credential': 'Ya tienes una cuenta con ese correo. Ingresa con tu contraseña.',
+  'auth/popup-blocked': 'El popup fue bloqueado. Permite popups para este sitio e intenta de nuevo.'
 };
 const errMsg = code => AUTH_ERRORS[code] || 'Error inesperado. Intenta de nuevo.';
