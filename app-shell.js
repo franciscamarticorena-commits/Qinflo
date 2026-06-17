@@ -11,8 +11,20 @@ auth.onAuthStateChanged(function(u) {
   hide('authScreen');
   document.getElementById('app').style.display = 'block';
 
-  db.collection('users').doc(u.uid).get().then(function(snap) {
+  db.collection('users').doc(u.uid).get().then(async function(snap) {
     if (!snap.exists) {
+      var isGoogle = u.providerData && u.providerData.some(function(p) { return p.providerId === 'google.com'; });
+      if (isGoogle) {
+        try {
+          await createGoogleUserProfile(u);
+        } catch(e) {
+          console.error('[createGoogleUserProfile]', e);
+          auth.signOut();
+          show('authScreen'); hide('app');
+          showMsg('authMsg', 'Error al crear tu cuenta. Intenta de nuevo.', true);
+        }
+        return;
+      }
       auth.signOut();
       show('authScreen');
       hide('app');

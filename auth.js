@@ -152,12 +152,64 @@ async function doReset() {
 }
 async function doGoogleLogin() {
   hideMsg('authMsg');
+  // Persist invite code before popup opens (URL remains, but defensive)
+  var urlParams = new URLSearchParams(window.location.search);
+  var pendingInvite = urlParams.get('invite');
+  if (pendingInvite) localStorage.setItem('pendingInvite', pendingInvite);
   try {
-    const provider = new firebase.auth.GoogleAuthProvider();
-   await auth.signInWithRedirect(provider);
-  } catch (e) {
-    showMsg('authMsg', errMsg(e.code), true);
+    var provider = new firebase.auth.GoogleAuthProvider();
+    await auth.signInWithPopup(provider);
+    // onAuthStateChanged handles the rest
+  } catch(e) {
+    // User closed the popup — not an error worth showing
+    if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
+      showMsg('authMsg', errMsg(e.code), true);
+    }
   }
 }
+
+async function createGoogleUserProfile(u) {
+  var ft = 'mama_papa';
+  var role = 'p1';
+  var fc = { type: ft, p1Label: 'Mamá', p2Label: 'Papá' };
+  var inviteCode = genCode();
+  var name = u.displayName || (u.email ? u.email.split('@')[0] : 'Usuario');
+
+  var famRef = await db.collection('families').add({
+    adminUid: u.uid,
+    members: [u.uid],
+    memberRoles: { [u.uid]: role },
+    hasActivePendingInvitation: false,
+    config: fc,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  await db.collection('users').doc(u.uid).set({
+    name: name,
+    email: u.email || '',
+    role: role,
+    familyConfig: fc,
+    familyId: famRef.id,
+    coparentId: null,
+    inviteCode: inviteCode,
+    onboardingCompleted: false,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  USERDATA = { name: name, email: u.email || '', role: role, familyConfig: fc,
+    familyId: famRef.id, coparentId: null, inviteCode: inviteCode, onboardingCompleted: false };
+  FAMILY_ID = famRef.id;
+  updateLabels();
+
+  // autoConnect() will reassign role to p2 if there's a pending invite
+  var pending = localStorage.getItem('pendingInvite');
+  if (pending) {
+    localStorage.removeItem('pendingInvite');
+    autoConnect(pending);
+  } else {
+    startOnboarding();
+  }
+}
+
 // Listeners de auth registrados exclusivamente en app-shell.js DOMContentLoaded.
 // forgotBtn, backBtn, resetBtn y googleLoginBtn NO se registran aquí para evitar duplicados.
