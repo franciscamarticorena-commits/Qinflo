@@ -2,7 +2,7 @@
 let USER = null, USERDATA = null, CODATA = null, FAMILY_ID = null;
 let IS_REGISTERING = false;
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
-let selDay = null, custodyMap = {}, calEventsMap = {};
+let selDay = null, custodyMap = {}, calEventsMap = {}, custodyOverridesMap = {};
 let calFilter = 'both';
 let expenses = [], messages = [], children = [], agreements = [], reminders = [], proposals = [];
 let expPeriod = 'week', expCurrency = 'CLP', UF = 38650;
