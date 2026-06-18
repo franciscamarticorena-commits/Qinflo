@@ -1,3 +1,18 @@
+// --- GOOGLE REDIRECT RESULT (iOS/Safari flow) ----------------
+// Must be called on every page load; returns null if no redirect pending.
+// onAuthStateChanged fires automatically after a redirect — this is only
+// for logging and catching redirect-level errors.
+auth.getRedirectResult().then(function(result) {
+  if (result && result.user) {
+    console.log('[google] redirect result user', result.user.uid, result.user.email);
+  }
+}).catch(function(e) {
+  if (e.code) {
+    console.error('[google] redirect result error', e.code, e.message);
+    if ($('authMsg')) showMsg('authMsg', errMsg(e.code), true);
+  }
+});
+
 // --- AUTH LISTENER -------------------------------------------
 auth.onAuthStateChanged(function(u) {
   USER = u;
@@ -8,6 +23,8 @@ auth.onAuthStateChanged(function(u) {
     return;
   }
   if (IS_REGISTERING) return;
+  var providerIds = u.providerData ? u.providerData.map(function(p) { return p.providerId; }).join(',') : 'unknown';
+  console.log('[google] auth state user', u.uid, u.email, providerIds);
   hide('authScreen');
   document.getElementById('app').style.display = 'block';
 

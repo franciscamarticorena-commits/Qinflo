@@ -150,18 +150,31 @@ async function doReset() {
     showMsg('authMsg', errMsg(e.code), true);
   }
 }
+function isMobileSafari() {
+  var ua = navigator.userAgent;
+  // iPhone/iPod always; iPad (pre-13 userAgent); iPadOS 13+ reports as MacIntel with touch
+  return /iPhone|iPad|iPod/.test(ua) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
 async function doGoogleLogin() {
   hideMsg('authMsg');
-  // Persist invite code before popup opens (URL remains, but defensive)
+  // Persist invite code before auth (redirect will leave the page, popup stays)
   var urlParams = new URLSearchParams(window.location.search);
   var pendingInvite = urlParams.get('invite');
   if (pendingInvite) localStorage.setItem('pendingInvite', pendingInvite);
   try {
     var provider = new firebase.auth.GoogleAuthProvider();
-    await auth.signInWithPopup(provider);
-    // onAuthStateChanged handles the rest
+    if (isMobileSafari()) {
+      // signInWithPopup silently fails on iOS/Safari (WebKit blocks OAuth popups)
+      console.log('[google] starting redirect');
+      await auth.signInWithRedirect(provider);
+      // Page navigates away — nothing after this line runs
+    } else {
+      await auth.signInWithPopup(provider);
+      // onAuthStateChanged handles the rest
+    }
   } catch(e) {
-    // User closed the popup — not an error worth showing
     if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
       showMsg('authMsg', errMsg(e.code), true);
     }
@@ -169,6 +182,7 @@ async function doGoogleLogin() {
 }
 
 async function createGoogleUserProfile(u) {
+  console.log('[google] creating profile', u.uid, u.email);
   var ft = 'mama_papa';
   var role = 'p1';
   var fc = { type: ft, p1Label: 'Mamá', p2Label: 'Papá' };
