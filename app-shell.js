@@ -104,7 +104,7 @@ function updateLabels() {
   if ($('remOptPapa')) $('remOptPapa').textContent = p2();
   if ($('expPaidBy')) $('expPaidBy').value = myRole() === 'p1' ? 'mama' : 'papa';
   if ($('headerSub')) {
-    var sub = USERDATA ? displayNameWithRole(USERDATA, myRole()) : 'by Kindflo';
+    var sub = USERDATA ? displayNameWithRole(USERDATA, myRole()) : 'Qinflo';
     if (CODATA && CODATA.name) sub += ' · con ' + CODATA.name.split(' ')[0];
     $('headerSub').textContent = sub;
   }
