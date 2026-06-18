@@ -90,6 +90,7 @@ function _todayPendingRequests() {
   var propsReceived = (proposals || []).filter(function(p) { return p.status === 'pending' && p.createdBy !== (USER && USER.uid); });
   var propsSent     = (proposals || []).filter(function(p) { return p.status === 'pending' && p.createdBy === (USER && USER.uid); });
   var evtsToApprove = (events || []).filter(function(ev) { return ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy !== (USER && USER.uid); });
+  var evtsSent      = (events || []).filter(function(ev) { return ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy === (USER && USER.uid); });
   var remsToday     = (reminders || []).filter(function(r) {
     if (!r.date || r.done) return false;
     var d = (r.date + '').split('T')[0];
@@ -98,7 +99,7 @@ function _todayPendingRequests() {
     return true;
   });
 
-  var total = propsReceived.length + propsSent.length + evtsToApprove.length + remsToday.length;
+  var total = propsReceived.length + propsSent.length + evtsToApprove.length + evtsSent.length + remsToday.length;
 
   if (total === 0) {
     if (card) card.classList.add('hidden');
@@ -134,6 +135,15 @@ function _todayPendingRequests() {
       _badge('ESPERANDO', 'var(--primary)'),
       'Cambio de custodia — día ' + p.fromDay + ' → ' + p.toDay,
       'Esperando respuesta',
+      null
+    );
+  });
+
+  evtsSent.forEach(function(ev) {
+    html += _pendingRow(
+      _badge('ESPERANDO', 'var(--primary)'),
+      ev.title,
+      ev.date + (ev.time ? ' · ' + ev.time : '') + ' · Esperando confirmación',
       null
     );
   });

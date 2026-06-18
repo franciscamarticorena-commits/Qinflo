@@ -1,4 +1,4 @@
-const QINFLO_CACHE = 'qinflo-cache-v5';
+const QINFLO_CACHE = 'qinflo-cache-v6';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -15,6 +15,8 @@ const STATIC_ASSETS = [
   './reminders.js',
   './resources.js',
   './observability.js',
+  './onboarding.js',
+  './events.js',
   './today.js',
   './app-shell.js',
   './manifest.json'
