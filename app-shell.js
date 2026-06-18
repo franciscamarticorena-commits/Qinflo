@@ -1,20 +1,24 @@
+console.log('[boot] app-shell loaded');
+
 // --- GOOGLE REDIRECT RESULT (iOS/Safari flow) ----------------
 // Must be called on every page load; returns null if no redirect pending.
 // onAuthStateChanged fires automatically after a redirect — this is only
 // for logging and catching redirect-level errors.
+console.log('[google] checking redirect result');
 auth.getRedirectResult().then(function(result) {
   if (result && result.user) {
     console.log('[google] redirect result user', result.user.uid, result.user.email);
+  } else {
+    console.log('[google] redirect result null (no pending redirect)');
   }
 }).catch(function(e) {
-  if (e.code) {
-    console.error('[google] redirect result error', e.code, e.message);
-    if ($('authMsg')) showMsg('authMsg', errMsg(e.code), true);
-  }
+  console.error('[google] redirect result error', e.code, e.message);
+  if ($('authMsg')) showMsg('authMsg', errMsg(e.code), true);
 });
 
 // --- AUTH LISTENER -------------------------------------------
 auth.onAuthStateChanged(function(u) {
+  console.log('[auth] state changed', u ? (u.uid + ' ' + u.email) : 'null');
   USER = u;
   if (!u) {
     show('authScreen');
