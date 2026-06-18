@@ -200,24 +200,62 @@ function renderCalendar() {
   if (selDay) renderDayDetail(); else hide('dayDetail');
 }
 
+function _detailSectionHdr(label) {
+  return '<div style="font-size:10px;font-weight:700;color:var(--text-s);text-transform:uppercase;letter-spacing:.6px;margin:14px 0 6px;padding-left:2px">' + label + '</div>';
+}
+
 function renderDayDetail() {
   if (!selDay) { hide('dayDetail'); return; }
   show('dayDetail');
   hide('editDayForm');
   editDaySelectedVal = null;
   $('detailDay').textContent = selDay;
+
   var rems = remindersForDay(selDay);
   var html = '';
-  html += '<div class="detail-card"><strong>Custodia:</strong> ' + (getCustody(selDay) === 'mama' ? p1() : getCustody(selDay) === 'papa' ? p2() : 'Cambio de casa ↔') + '</div>';
-  if (typeof renderEventsForDay === 'function') html += renderEventsForDay(selDay);
-  if (rems.length) {
-    html += rems.map(function(r) { return '<div class="detail-card"><strong>Recordatorio:</strong> ' + r.title + '<br><strong>Fecha:</strong> ' + fmtDateTime(r.date) + '<br><strong>Para:</strong> ' + fLbl(r.for) + '</div>'; }).join('');
+
+  // Custody section
+  var custodyVal = getCustody(selDay);
+  var custodyLabel, custodyColor;
+  if (custodyVal === 'mama') { custodyLabel = p1(); custodyColor = 'var(--accent)'; }
+  else if (custodyVal === 'papa') { custodyLabel = p2(); custodyColor = 'var(--primary-d)'; }
+  else { custodyLabel = 'Cambio de casa ↔'; custodyColor = 'var(--text)'; }
+  html += _detailSectionHdr('Custodia');
+  html += '<div class="detail-card" style="font-weight:700;font-size:15px;color:' + custodyColor + '">' + custodyLabel + '</div>';
+
+  // Events section
+  if (typeof renderEventsForDay === 'function') {
+    var evHtml = renderEventsForDay(selDay);
+    if (evHtml) html += _detailSectionHdr('Eventos') + evHtml;
   }
+
+  // Reminders section
+  if (rems.length) {
+    html += _detailSectionHdr('Recordatorios');
+    html += rems.map(function(r) {
+      return '<div class="detail-card">' +
+        '<div style="font-weight:600;font-size:13px">' + r.title + '</div>' +
+        '<div style="font-size:12px;color:var(--text-s);margin-top:3px">' + fmtDateTime(r.date) + ' · ' + fLbl(r.for) + '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  // Proposals section
   var dayProps = proposalsForDay(selDay);
-  dayProps.forEach(function(pr) {
-    var status = pr.status === 'pending' ? 'Pendiente de respuesta' : pr.status === 'accepted' ? 'Aprobada' : 'Rechazada';
-    html += '<div class="detail-card"><strong>Solicitud de cambio de custodia:</strong><br>Día ' + pr.fromDay + ' → Día ' + pr.toDay + '<br><strong>Solicitada por:</strong> ' + proposalRequesterLabel(pr) + '<br><strong>Dirigida a:</strong> ' + proposalRequestedLabel(pr) + '<br><strong>Enviada:</strong> ' + fmtDateTime(pr.createdAt || pr.date) + '<br><strong>Estado:</strong> ' + status + (pr.reason ? '<br><strong>Motivo:</strong> ' + pr.reason : '') + '</div>';
-  });
+  if (dayProps.length) {
+    html += _detailSectionHdr('Solicitudes de cambio');
+    dayProps.forEach(function(pr) {
+      var statusLabel = pr.status === 'pending' ? '⏳ Pendiente' : pr.status === 'accepted' ? '✓ Aprobada' : '✗ Rechazada';
+      html += '<div class="detail-card">' +
+        '<div style="font-size:13px;font-weight:600">Día ' + pr.fromDay + ' → Día ' + pr.toDay + '</div>' +
+        '<div style="font-size:12px;color:var(--text-s);margin-top:3px">' +
+        proposalRequesterLabel(pr) + ' · ' + fmtDateTime(pr.createdAt || pr.date) + '</div>' +
+        '<div style="font-size:12px;margin-top:3px">' + statusLabel +
+        (pr.reason ? ' · ' + pr.reason : '') + '</div>' +
+        '</div>';
+    });
+  }
+
   $('detailEvents').innerHTML = html;
   updateProposalButtonState();
   lucide.createIcons();

@@ -1,4 +1,4 @@
-const QINFLO_CACHE = 'qinflo-cache-v4';
+const QINFLO_CACHE = 'qinflo-cache-v5';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -15,6 +15,7 @@ const STATIC_ASSETS = [
   './reminders.js',
   './resources.js',
   './observability.js',
+  './today.js',
   './app-shell.js',
   './manifest.json'
   // favicon.svg y assets/icons/qinflo-icon.svg no existen en el repositorio actual — agregar cuando se incorporen

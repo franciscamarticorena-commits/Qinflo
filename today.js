@@ -18,9 +18,75 @@ function renderToday() {
   }
 
   _todayCustody(now);
+  _todayPendingRequests();
   _todayBalance();
   _todayEvents(todayStr);
   _todayReminders(now, todayStr);
+}
+
+async function confirmKidsWithMe() {
+  if (!FAMILY_ID || !USER) return;
+  var btn = $('kidsWithMeBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    await db.collection('families').doc(FAMILY_ID).update({
+      lastPickup: {
+        uid: USER.uid,
+        role: myRole(),
+        at: firebase.firestore.FieldValue.serverTimestamp()
+      }
+    });
+    if (btn) {
+      btn.textContent = '✓ Confirmado';
+      setTimeout(function() {
+        btn.textContent = 'Los niños ya están conmigo';
+        btn.disabled = false;
+      }, 3000);
+    }
+  } catch(e) {
+    console.error('[confirmKidsWithMe]', e);
+    if (btn) { btn.textContent = 'Los niños ya están conmigo'; btn.disabled = false; }
+  }
+}
+
+function _todayPendingRequests() {
+  var el = $('todayPendingBlock');
+  if (!el) return;
+
+  var pendingProps = (proposals || []).filter(function(p) {
+    return p.status === 'pending' && p.createdBy !== (USER && USER.uid);
+  });
+  var pendingEvts = (events || []).filter(function(ev) {
+    return ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy !== (USER && USER.uid);
+  });
+
+  if (!pendingProps.length && !pendingEvts.length) {
+    el.innerHTML = '<span style="color:var(--text-s);font-size:13px">Sin solicitudes pendientes</span>';
+    return;
+  }
+
+  var html = '';
+  pendingProps.forEach(function(p) {
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">' +
+      '<span style="font-size:18px">↔</span>' +
+      '<div style="flex:1">' +
+        '<div style="font-size:13px;font-weight:600;color:var(--text)">Solicitud de cambio de custodia</div>' +
+        '<div style="font-size:12px;color:var(--text-s)">Día ' + p.fromDay + ' → Día ' + p.toDay + '</div>' +
+      '</div>' +
+      '<button class="btn-outline" style="font-size:11px;padding:4px 10px" onclick="switchTab(\'calendar\')">Ver</button>' +
+      '</div>';
+  });
+  pendingEvts.forEach(function(ev) {
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">' +
+      '<span style="font-size:18px">📅</span>' +
+      '<div style="flex:1">' +
+        '<div style="font-size:13px;font-weight:600;color:var(--text)">' + ev.title + '</div>' +
+        '<div style="font-size:12px;color:var(--text-s)">Evento · pendiente de confirmación</div>' +
+      '</div>' +
+      '<button class="btn-outline" style="font-size:11px;padding:4px 10px" onclick="switchTab(\'calendar\')">Ver</button>' +
+      '</div>';
+  });
+  el.innerHTML = html;
 }
 
 function _todayGetCustody(date) {
@@ -51,35 +117,66 @@ function _todayCustody(now) {
     return;
   }
 
-  var mainHtml, color;
+  var mainHtml, color, subHtml = '', nextHtml = '';
+
   if (custody === 'transition') {
+    // Find who had them before and who gets them after this change day
+    var fromCustody = null, toCustody = null;
+    for (var bi = 1; bi <= 14; bi++) {
+      var bd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - bi);
+      var bc = _todayGetCustody(bd);
+      if (bc && bc !== 'transition') { fromCustody = bc; break; }
+    }
+    for (var fi = 1; fi <= 14; fi++) {
+      var fd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + fi);
+      var fc = _todayGetCustody(fd);
+      if (fc && fc !== 'transition') { toCustody = fc; break; }
+    }
+
     mainHtml = '<span style="color:var(--accent)">↔ Día de cambio de casa</span>';
+
+    if (fromCustody && toCustody) {
+      var fromWho = fromCustody === 'mama' ? p1() : p2();
+      var toWho = toCustody === 'mama' ? p1() : p2();
+      var fromColor = fromCustody === 'mama' ? 'var(--accent)' : 'var(--primary-d)';
+      var toColor = toCustody === 'mama' ? 'var(--accent)' : 'var(--primary-d)';
+      subHtml += '<div style="font-size:16px;font-weight:600;margin-top:8px">' +
+        '<span style="color:' + fromColor + '">' + fromWho + '</span>' +
+        ' <span style="color:var(--text-s);font-weight:400">→</span> ' +
+        '<span style="color:' + toColor + '">' + toWho + '</span>' +
+        '</div>';
+    }
+
+    if (children && children.length) {
+      var tNames = children.map(function(c) { return c.name ? c.name.trim().split(' ')[0] : ''; }).filter(Boolean);
+      if (tNames.length) {
+        subHtml += '<div style="font-size:13px;color:var(--text-s);margin-top:5px">' + tNames.join(' · ') + '</div>';
+      }
+    }
   } else {
     var who = custody === 'mama' ? p1() : p2();
     color = custody === 'mama' ? 'var(--accent)' : 'var(--primary-d)';
     mainHtml = 'Con <span style="color:' + color + '">' + who + '</span>';
-  }
 
-  var subHtml = '';
-  if (custody !== 'transition' && children && children.length) {
-    var names = children.map(function(c) {
-      return c.name ? c.name.trim().split(' ')[0] : '';
-    }).filter(Boolean);
-    if (names.length) {
-      subHtml = '<div style="font-size:13px;color:var(--text-s);margin-top:5px">' +
-        names.join(' · ') + '</div>';
+    if (children && children.length) {
+      var names = children.map(function(c) {
+        return c.name ? c.name.trim().split(' ')[0] : '';
+      }).filter(Boolean);
+      if (names.length) {
+        subHtml = '<div style="font-size:13px;color:var(--text-s);margin-top:5px">' +
+          names.join(' · ') + '</div>';
+      }
     }
-  }
 
-  var nextHtml = '';
-  var next = _todayNextChange(now);
-  if (next) {
-    var label = next.days === 1 ? 'mañana' : 'en ' + next.days + ' días';
-    var dlabel = TODAY_DAYS_S[next.date.getDay()] + ' ' + next.date.getDate();
-    nextHtml = '<div style="font-size:12px;color:var(--text-s);margin-top:12px;display:flex;align-items:center;gap:6px">' +
-      '<span style="color:var(--accent)">↻</span> Próximo cambio ' + label +
-      ' <span style="background:var(--border);border-radius:6px;padding:1px 8px;font-size:11px;font-weight:700">' +
-      dlabel + '</span></div>';
+    var next = _todayNextChange(now);
+    if (next) {
+      var label = next.days === 1 ? 'mañana' : 'en ' + next.days + ' días';
+      var dlabel = TODAY_DAYS_S[next.date.getDay()] + ' ' + next.date.getDate();
+      nextHtml = '<div style="font-size:12px;color:var(--text-s);margin-top:12px;display:flex;align-items:center;gap:6px">' +
+        '<span style="color:var(--accent)">↻</span> Próximo cambio ' + label +
+        ' <span style="background:var(--border);border-radius:6px;padding:1px 8px;font-size:11px;font-weight:700">' +
+        dlabel + '</span></div>';
+    }
   }
 
   el.innerHTML =

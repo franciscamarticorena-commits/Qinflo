@@ -104,9 +104,12 @@ function updateLabels() {
   if ($('remOptPapa')) $('remOptPapa').textContent = p2();
   if ($('expPaidBy')) $('expPaidBy').value = myRole() === 'p1' ? 'mama' : 'papa';
   if ($('headerSub')) {
-    var sub = USERDATA ? displayNameWithRole(USERDATA, myRole()) : 'by Kindflo';
+    var sub = USERDATA ? displayNameWithRole(USERDATA, myRole()) : 'Qinflo';
     if (CODATA && CODATA.name) sub += ' · con ' + CODATA.name.split(' ')[0];
     $('headerSub').textContent = sub;
+  }
+  if ($('avatarInitial') && USERDATA && USERDATA.name) {
+    $('avatarInitial').textContent = USERDATA.name.charAt(0).toUpperCase();
   }
 }
 
@@ -169,6 +172,7 @@ function setupListeners() {
   famCol('proposals').orderBy('date', 'desc').onSnapshot(function(s) {
     proposals = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
     renderProposals();
+    renderToday();
   });
   famCol('events').orderBy('date', 'asc').onSnapshot(function(s) {
     events = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
@@ -210,6 +214,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
   // App header
   $('inviteBtn').addEventListener('click', showConnectScreen);
+  $('avatarBtn').addEventListener('click', openProfilePanel);
   $('logoutBtn').addEventListener('click', function() { auth.signOut(); });
 
   // Nav tabs
@@ -282,20 +287,48 @@ window.addEventListener('DOMContentLoaded', function() {
   $('cancelAgrBtn').addEventListener('click', function() { hide('agrForm'); });
 
   // Reminders
-  $('toggleRemBtn').addEventListener('click', function() { $('remForm').classList.toggle('hidden'); });
+  $('toggleRemBtn').addEventListener('click', function() {
+    var willOpen = $('remForm').classList.contains('hidden');
+    if (willOpen) {
+      editingRemId = null;
+      $('remTitle').value = ''; $('remDate').value = '';
+      var hdr = document.querySelector('#remForm p');
+      if (hdr) hdr.textContent = 'Nuevo recordatorio';
+    }
+    $('remForm').classList.toggle('hidden');
+  });
   $('saveRemBtn').addEventListener('click', saveRem);
-  $('cancelRemBtn').addEventListener('click', function() { hide('remForm'); });
+  $('cancelRemBtn').addEventListener('click', cancelRemForm);
 });
 
 // --- TABS ---------------------------------------------------
+var INFO_SUBTABS = ['children', 'agreements', 'reminders', 'recursos'];
+
 function switchTab(tab) {
-  ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'reminders', 'recursos'].forEach(function(t) {
+  ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'reminders', 'recursos', 'info'].forEach(function(t) {
     $('tab-' + t).classList.toggle('hidden', t !== tab);
   });
   document.querySelectorAll('#mainNav button').forEach(function(b) {
-    b.classList.toggle('active', b.dataset.tab === tab);
+    var isActive = b.dataset.tab === tab ||
+      (INFO_SUBTABS.indexOf(tab) !== -1 && b.dataset.tab === 'info');
+    b.classList.toggle('active', isActive);
   });
   if (tab === 'today') renderToday();
+  if (tab === 'info') lucide.createIcons();
+}
+
+// --- PROFILE PANEL ------------------------------------------
+function openProfilePanel() {
+  if ($('profileName') && USERDATA) $('profileName').textContent = USERDATA.name || '—';
+  if ($('profileEmail') && USER) $('profileEmail').textContent = USER.email || '—';
+  if ($('avatarInitial') && USERDATA && USERDATA.name) {
+    $('avatarInitial').textContent = USERDATA.name.charAt(0).toUpperCase();
+  }
+  $('profilePanel').classList.remove('hidden');
+  lucide.createIcons();
+}
+function closeProfilePanel() {
+  $('profilePanel').classList.add('hidden');
 }
 
 // --- UF -----------------------------------------------------

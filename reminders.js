@@ -1,13 +1,41 @@
 // --- RECORDATORIOS ------------------------------------------
+var editingRemId = null;
+
 async function saveRem() {
   var title = $('remTitle').value.trim(), date = $('remDate').value;
   if (!title || !date) return;
-  await famCol('reminders').add({
-    title: title, date: date, for: $('remFor').value, done: false,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(), createdBy: USER.uid
-  });
+  if (editingRemId) {
+    await famCol('reminders').doc(editingRemId).update({ title: title, date: date, for: $('remFor').value });
+    editingRemId = null;
+  } else {
+    await famCol('reminders').add({
+      title: title, date: date, for: $('remFor').value, done: false,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(), createdBy: USER.uid
+    });
+  }
   $('remTitle').value = ''; $('remDate').value = '';
+  var hdr = document.querySelector('#remForm p');
+  if (hdr) hdr.textContent = 'Nuevo recordatorio';
   hide('remForm');
+}
+
+function cancelRemForm() {
+  editingRemId = null;
+  $('remTitle').value = ''; $('remDate').value = '';
+  var hdr = document.querySelector('#remForm p');
+  if (hdr) hdr.textContent = 'Nuevo recordatorio';
+  hide('remForm');
+}
+
+function openRemEdit(r) {
+  editingRemId = r.id;
+  $('remTitle').value = r.title || '';
+  $('remDate').value = r.date || '';
+  $('remFor').value = r.for || 'both';
+  var hdr = document.querySelector('#remForm p');
+  if (hdr) hdr.textContent = 'Editar recordatorio';
+  $('remForm').classList.remove('hidden');
+  $('remTitle').focus();
 }
 
 function fLbl(f) { return f === 'both' ? 'Ambos' : f === 'mama' ? p1() : p2(); }
@@ -43,9 +71,11 @@ function renderReminders() {
           '<div class="rem-meta">' + d.toLocaleDateString('es-CL', { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '</div>' +
         '</div>' +
         '<div style="display:flex;gap:7px">' +
+          '<button class="btn-outline edit-rem-btn" style="padding:5px 8px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
           '<button class="btn-done done-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>' +
           '<button class="btn-danger del-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>' +
         '</div>';
+      row.querySelector('.edit-rem-btn').addEventListener('click', function() { openRemEdit(r); });
       row.querySelector('.done-btn').addEventListener('click', function() { famCol('reminders').doc(r.id).update({ done: true }); });
       row.querySelector('.del-btn').addEventListener('click', function() { famCol('reminders').doc(r.id).delete(); });
       card.appendChild(row);
