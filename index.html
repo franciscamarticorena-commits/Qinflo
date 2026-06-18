@@ -221,12 +221,21 @@
           </div>
           <div>
             <label class="lbl">Hora de cambio</label>
-            <input class="inp" type="time" id="onbChangeTime" value="08:00"/>
+            <div style="display:flex;gap:6px;align-items:center">
+              <select class="sel" id="onbChangeHour" style="flex:1"></select>
+              <span style="font-weight:800;color:var(--text);font-size:15px;padding:0 2px">:</span>
+              <select class="sel" id="onbChangeMin" style="flex:1">
+                <option value="00">00</option>
+                <option value="15">15</option>
+                <option value="30">30</option>
+                <option value="45">45</option>
+              </select>
+            </div>
           </div>
         </div>
         <div>
           <label class="lbl">Fecha de inicio del calendario</label>
-          <input class="inp" type="date" id="onbStartDate"/>
+          <input class="inp" type="text" id="onbStartDate" placeholder="DD/MM/AAAA" inputmode="numeric"/>
         </div>
         <div>
           <label class="lbl">La primera semana los niños están con…</label>
@@ -349,7 +358,7 @@
         <div style="display:grid;gap:9px">
           <div class="grid-2">
             <div><label class="lbl">Nombre</label><input class="inp" id="onbKidName" placeholder="Nombre del niño"/></div>
-            <div><label class="lbl">Nacimiento</label><input class="inp" type="date" id="onbKidBirth" onchange="updateOnbKidAge()"/></div>
+            <div><label class="lbl">Nacimiento</label><input class="inp" type="text" id="onbKidBirth" placeholder="DD/MM/AAAA" inputmode="numeric" oninput="updateOnbKidAge()"/></div>
           </div>
           <div id="onbKidAgeDisplay" style="font-size:12px;color:var(--text-s);min-height:16px"></div>
           <button class="btn-outline" onclick="addOnbKid()"><i data-lucide="plus"></i> Agregar hijo</button>
@@ -373,6 +382,8 @@
           Invitar por WhatsApp
         </button>
       </div>
+      <div id="onbWaitingForCoparent" style="text-align:center;padding:14px 0 6px;font-size:13px;color:var(--text-s)">⏳ Esperando que se conecte…</div>
+      <div id="onbCoparentConnected" class="hidden" style="text-align:center;padding:10px;font-size:14px;color:var(--success);font-weight:700;background:rgba(107,171,107,.1);border-radius:10px;margin-bottom:8px"></div>
       <button class="btn-primary" onclick="finishOnboarding()">Entrar a Qinflo →</button>
       <p style="text-align:center;margin-top:12px">
         <button class="link-btn" onclick="finishOnboarding()">Invitar después</button>
@@ -1055,11 +1066,11 @@
 <script src="reminders.js?v=8"></script>
 <script src="resources.js?v=8"></script>
 <script src="observability.js?v=8"></script>
-<script src="onboarding.js?v=8"></script>
+<script src="onboarding.js?v=9"></script>
 <script src="events.js?v=8"></script>
 <script src="documents.js?v=1"></script>
 <script src="today.js?v=9"></script>
-<script src="app-shell.js?v=8"></script>
+<script src="app-shell.js?v=9"></script>
 </body>
 </html>
 

@@ -131,6 +131,7 @@ function loadApp() {
   try {
     hide('authScreen'); hide('connectScreen'); show('app');
     updateLabels();
+    switchTab('today');
     if (!FAMILY_ID) return;
     setupListeners();
     fetchUF();
@@ -139,7 +140,6 @@ function loadApp() {
     renderCalendar();
     checkAndGenerateCalendar();
     renderToday();
-    switchTab('today');
   } catch(e) {
     console.error('[loadApp crash]', e);
   }
