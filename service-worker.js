@@ -1,4 +1,4 @@
-const QINFLO_CACHE = 'qinflo-cache-v7';
+const QINFLO_CACHE = 'qinflo-cache-v8';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -20,8 +20,11 @@ const STATIC_ASSETS = [
   './documents.js',
   './today.js',
   './app-shell.js',
-  './manifest.json'
-  // favicon.svg y assets/icons/qinflo-icon.svg no existen en el repositorio actual — agregar cuando se incorporen
+  './manifest.json',
+  './favicon.svg',
+  './assets/icons/icon-192.png',
+  './assets/icons/icon-512.png',
+  './assets/icons/icon-512-maskable.png'
 ];
 
 self.addEventListener('install', event => {
