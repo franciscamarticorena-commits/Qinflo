@@ -163,32 +163,36 @@
         <h2 style="font-size:19px;font-weight:800;color:var(--text);margin-bottom:6px">Antes de comenzar</h2>
         <p style="font-size:13px;color:var(--text-s)">Tómate un momento para leer esto</p>
       </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;display:grid;gap:14px;margin-bottom:22px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;display:grid;gap:14px;margin-bottom:18px">
         <div style="display:flex;gap:12px;align-items:flex-start">
           <span style="font-size:20px;flex-shrink:0">🤝</span>
           <div>
-            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Herramienta de coordinación</div>
-            <div style="font-size:12px;color:var(--text-s);line-height:1.5">Qinflo es un espacio para organizar la coparentalidad del día a día. <strong>No reemplaza acuerdos legales, mediaciones formales ni asesorías jurídicas.</strong> Para asuntos legales, recurre a las instituciones correspondientes.</div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Solo para coordinación</div>
+            <div style="font-size:12px;color:var(--text-s);line-height:1.5">Qinflo es una herramienta de organización del día a día. <strong>No reemplaza acuerdos legales, mediaciones formales ni asesorías jurídicas.</strong> Los registros dentro de la app no tienen valor legal vinculante.</div>
           </div>
         </div>
         <div style="border-top:1px solid var(--border)"></div>
         <div style="display:flex;gap:12px;align-items:flex-start">
           <span style="font-size:20px;flex-shrink:0">🔒</span>
           <div>
-            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Privacidad de datos</div>
-            <div style="font-size:12px;color:var(--text-s);line-height:1.5">Tus datos y los de tu familia se almacenan de forma segura y se usan exclusivamente para el funcionamiento de la app. Qinflo cumple con la legislación chilena vigente en materia de protección de datos personales (Ley 19.628).</div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Tus datos son tuyos</div>
+            <div style="font-size:12px;color:var(--text-s);line-height:1.5">Qinflo <strong>no se hace responsable de los datos ingresados</strong> por los usuarios ni de su exactitud. La información se usa <strong>exclusivamente para el funcionamiento de la app</strong> y no será utilizada para ningún otro fin. Cumplimos con la Ley 19.628 de protección de datos personales.</div>
           </div>
         </div>
         <div style="border-top:1px solid var(--border)"></div>
         <div style="display:flex;gap:12px;align-items:flex-start">
           <span style="font-size:20px;flex-shrink:0">👨‍👩‍👧</span>
           <div>
-            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Bienestar de los niños primero</div>
-            <div style="font-size:12px;color:var(--text-s);line-height:1.5">Esta plataforma fue diseñada para facilitar la comunicación entre padres. El registro de acuerdos aquí no tiene valor legal vinculante.</div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">El bienestar de los niños, primero</div>
+            <div style="font-size:12px;color:var(--text-s);line-height:1.5">Esta plataforma fue diseñada para facilitar la comunicación entre padres con foco en el bienestar de sus hijos.</div>
           </div>
         </div>
       </div>
-      <button class="btn-primary" style="width:100%" onclick="onbAcceptDisclaimer()">Entendido, continuar →</button>
+      <label style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;margin-bottom:14px;font-size:12px;color:var(--text-s);line-height:1.5">
+        <input type="checkbox" id="onbDisclaimerCheck" style="margin-top:2px;flex-shrink:0;accent-color:var(--primary)" onchange="$('onbDisclaimerBtn').disabled=!this.checked"/>
+        He leído y acepto los términos de uso descritos anteriormente.
+      </label>
+      <button id="onbDisclaimerBtn" class="btn-primary" style="width:100%" disabled onclick="onbAcceptDisclaimer()">Continuar →</button>
     </div>
 
     <!-- Panel: Tipo de custodia -->
