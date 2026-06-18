@@ -169,6 +169,7 @@ function setupListeners() {
   famCol('proposals').orderBy('date', 'desc').onSnapshot(function(s) {
     proposals = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
     renderProposals();
+    renderToday();
   });
   famCol('events').orderBy('date', 'asc').onSnapshot(function(s) {
     events = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
@@ -297,14 +298,19 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 
 // --- TABS ---------------------------------------------------
+var MAS_SUBTABS = ['children', 'agreements', 'reminders', 'recursos'];
+
 function switchTab(tab) {
-  ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'reminders', 'recursos'].forEach(function(t) {
+  ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'reminders', 'recursos', 'mas'].forEach(function(t) {
     $('tab-' + t).classList.toggle('hidden', t !== tab);
   });
   document.querySelectorAll('#mainNav button').forEach(function(b) {
-    b.classList.toggle('active', b.dataset.tab === tab);
+    var isActive = b.dataset.tab === tab ||
+      (MAS_SUBTABS.indexOf(tab) !== -1 && b.dataset.tab === 'mas');
+    b.classList.toggle('active', isActive);
   });
   if (tab === 'today') renderToday();
+  if (tab === 'mas') lucide.createIcons();
 }
 
 // --- UF -----------------------------------------------------

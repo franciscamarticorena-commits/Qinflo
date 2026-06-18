@@ -18,9 +18,75 @@ function renderToday() {
   }
 
   _todayCustody(now);
+  _todayPendingRequests();
   _todayBalance();
   _todayEvents(todayStr);
   _todayReminders(now, todayStr);
+}
+
+async function confirmKidsWithMe() {
+  if (!FAMILY_ID || !USER) return;
+  var btn = $('kidsWithMeBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    await db.collection('families').doc(FAMILY_ID).update({
+      lastPickup: {
+        uid: USER.uid,
+        role: myRole(),
+        at: firebase.firestore.FieldValue.serverTimestamp()
+      }
+    });
+    if (btn) {
+      btn.textContent = '✓ Confirmado';
+      setTimeout(function() {
+        btn.textContent = 'Los niños ya están conmigo';
+        btn.disabled = false;
+      }, 3000);
+    }
+  } catch(e) {
+    console.error('[confirmKidsWithMe]', e);
+    if (btn) { btn.textContent = 'Los niños ya están conmigo'; btn.disabled = false; }
+  }
+}
+
+function _todayPendingRequests() {
+  var el = $('todayPendingBlock');
+  if (!el) return;
+
+  var pendingProps = (proposals || []).filter(function(p) {
+    return p.status === 'pending' && p.createdBy !== (USER && USER.uid);
+  });
+  var pendingEvts = (events || []).filter(function(ev) {
+    return ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy !== (USER && USER.uid);
+  });
+
+  if (!pendingProps.length && !pendingEvts.length) {
+    el.innerHTML = '<span style="color:var(--text-s);font-size:13px">Sin solicitudes pendientes</span>';
+    return;
+  }
+
+  var html = '';
+  pendingProps.forEach(function(p) {
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">' +
+      '<span style="font-size:18px">↔</span>' +
+      '<div style="flex:1">' +
+        '<div style="font-size:13px;font-weight:600;color:var(--text)">Solicitud de cambio de custodia</div>' +
+        '<div style="font-size:12px;color:var(--text-s)">Día ' + p.fromDay + ' → Día ' + p.toDay + '</div>' +
+      '</div>' +
+      '<button class="btn-outline" style="font-size:11px;padding:4px 10px" onclick="switchTab(\'calendar\')">Ver</button>' +
+      '</div>';
+  });
+  pendingEvts.forEach(function(ev) {
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">' +
+      '<span style="font-size:18px">📅</span>' +
+      '<div style="flex:1">' +
+        '<div style="font-size:13px;font-weight:600;color:var(--text)">' + ev.title + '</div>' +
+        '<div style="font-size:12px;color:var(--text-s)">Evento · pendiente de confirmación</div>' +
+      '</div>' +
+      '<button class="btn-outline" style="font-size:11px;padding:4px 10px" onclick="switchTab(\'calendar\')">Ver</button>' +
+      '</div>';
+  });
+  el.innerHTML = html;
 }
 
 function _todayGetCustody(date) {
