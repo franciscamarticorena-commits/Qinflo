@@ -842,6 +842,84 @@
 </div>
 
 
+<!-- -- DOCUMENTOS ----------------------------------------- -->
+<div id="tab-documents" class="hidden">
+  <div class="section-header">
+    <div>
+      <button class="btn-outline" style="font-size:11px;padding:4px 10px;margin-bottom:8px" onclick="switchTab('info')">← Más</button>
+      <div class="section-title"><h2>Documentos</h2><p>Registros importantes de la familia</p></div>
+    </div>
+    <button class="btn-sm" id="toggleDocBtn"><i data-lucide="plus"></i> Agregar</button>
+  </div>
+  <div id="docForm" class="hidden form-box">
+    <p style="font-weight:700;font-size:15px;color:var(--primary);margin-bottom:14px">Nuevo documento</p>
+    <div style="display:grid;gap:10px">
+      <input class="inp" id="docTitle" placeholder="Nombre del documento"/>
+      <div class="grid-2">
+        <select class="sel" id="docType">
+          <option value="rut">RUT / Cédula</option>
+          <option value="carnet_salud">Carnet de salud</option>
+          <option value="vacunas">Vacunas</option>
+          <option value="colegio">Colegio</option>
+          <option value="legal">Legal</option>
+          <option value="seguro">Seguro</option>
+          <option value="otro" selected>Otro</option>
+        </select>
+        <select class="sel" id="docChild">
+          <option value="">Todos / General</option>
+        </select>
+      </div>
+      <input class="inp" id="docUrl" placeholder="Enlace al documento (opcional)" type="url"/>
+      <textarea class="inp" id="docNotes" placeholder="Notas…" style="min-height:60px;resize:vertical"></textarea>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sm" id="saveDocBtn">Guardar</button>
+        <button class="btn-outline" id="cancelDocBtn">Cancelar</button>
+      </div>
+    </div>
+  </div>
+  <div id="docList"></div>
+</div>
+
+<!-- -- INTEGRANTES ----------------------------------------- -->
+<div id="tab-members" class="hidden">
+  <div class="section-header">
+    <div>
+      <button class="btn-outline" style="font-size:11px;padding:4px 10px;margin-bottom:8px" onclick="switchTab('info')">← Más</button>
+      <div class="section-title"><h2>Integrantes</h2><p>Adultos de confianza del núcleo familiar</p></div>
+    </div>
+    <button class="btn-sm" id="toggleMemberBtn"><i data-lucide="plus"></i> Agregar</button>
+  </div>
+  <div id="memberForm" class="hidden form-box">
+    <p style="font-weight:700;font-size:15px;color:var(--primary);margin-bottom:14px">Nuevo integrante</p>
+    <div style="display:grid;gap:10px">
+      <input class="inp" id="memberName" placeholder="Nombre completo"/>
+      <div class="grid-2">
+        <select class="sel" id="memberRole">
+          <option value="abuelo">Abuelo</option>
+          <option value="abuela">Abuela</option>
+          <option value="tio">Tío</option>
+          <option value="tia">Tía</option>
+          <option value="cuidador">Cuidador/a</option>
+          <option value="medico">Médico</option>
+          <option value="otro" selected>Otro</option>
+        </select>
+        <select class="sel" id="memberRelatedTo">
+          <option value="both">Compartido</option>
+          <option value="p1" id="memberOptP1">Red de Mamá</option>
+          <option value="p2" id="memberOptP2">Red de Papá</option>
+        </select>
+      </div>
+      <input class="inp" id="memberPhone" placeholder="Teléfono (opcional)" type="tel"/>
+      <textarea class="inp" id="memberNotes" placeholder="Notas…" style="min-height:60px;resize:vertical"></textarea>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sm" id="saveMemberBtn">Guardar</button>
+        <button class="btn-outline" id="cancelMemberBtn">Cancelar</button>
+      </div>
+    </div>
+  </div>
+  <div id="memberList"></div>
+</div>
+
 <!-- -- INFORMACIÓN CLAVE --------------------------------- -->
 <div id="tab-info" class="hidden">
   <div class="section-header">
@@ -868,15 +946,15 @@
       <span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Recursos</span>
       <i data-lucide="chevron-right" style="color:var(--text-s);flex-shrink:0"></i>
     </button>
-    <button disabled style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;background:none;border:none;border-bottom:1px solid var(--border);cursor:default;text-align:left;opacity:.4">
-      <i data-lucide="file-text" style="color:var(--text-s);flex-shrink:0"></i>
+    <button onclick="switchTab('documents')" style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left">
+      <i data-lucide="file-text" style="color:var(--primary);flex-shrink:0"></i>
       <span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Documentos</span>
-      <span style="font-size:10px;color:var(--text-s);font-weight:600;background:var(--border);border-radius:6px;padding:2px 7px">Pronto</span>
+      <i data-lucide="chevron-right" style="color:var(--text-s);flex-shrink:0"></i>
     </button>
-    <button disabled style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;background:none;border:none;cursor:default;text-align:left;opacity:.4">
-      <i data-lucide="users" style="color:var(--text-s);flex-shrink:0"></i>
+    <button onclick="switchTab('members')" style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;background:none;border:none;cursor:pointer;text-align:left">
+      <i data-lucide="users" style="color:var(--primary);flex-shrink:0"></i>
       <span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Integrantes</span>
-      <span style="font-size:10px;color:var(--text-s);font-weight:600;background:var(--border);border-radius:6px;padding:2px 7px">Pronto</span>
+      <i data-lucide="chevron-right" style="color:var(--text-s);flex-shrink:0"></i>
     </button>
   </div>
 </div>
@@ -996,6 +1074,8 @@
 <script src="observability.js?v=8"></script>
 <script src="onboarding.js?v=8"></script>
 <script src="events.js?v=8"></script>
+<script src="documents.js?v=1"></script>
+<script src="members.js?v=1"></script>
 <script src="today.js?v=9"></script>
 <script src="app-shell.js?v=8"></script>
 </body>

@@ -111,6 +111,8 @@ function updateLabels() {
   if ($('avatarInitial') && USERDATA && USERDATA.name) {
     $('avatarInitial').textContent = USERDATA.name.charAt(0).toUpperCase();
   }
+  if ($('memberOptP1')) $('memberOptP1').textContent = 'Red de ' + p1();
+  if ($('memberOptP2')) $('memberOptP2').textContent = 'Red de ' + p2();
 }
 
 // --- LOAD OR ONBOARD ----------------------------------------
@@ -191,6 +193,14 @@ function setupListeners() {
     });
     renderCalendar();
     renderToday();
+  });
+  famCol('documents').orderBy('createdAt', 'desc').onSnapshot(function(s) {
+    documents = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
+    renderDocuments();
+  });
+  famCol('members').orderBy('name', 'asc').onSnapshot(function(s) {
+    members = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
+    renderMembers();
   });
 }
 
@@ -299,13 +309,31 @@ window.addEventListener('DOMContentLoaded', function() {
   });
   $('saveRemBtn').addEventListener('click', saveRem);
   $('cancelRemBtn').addEventListener('click', cancelRemForm);
+
+  // Documents
+  $('toggleDocBtn').addEventListener('click', function() {
+    var willOpen = $('docForm').classList.contains('hidden');
+    if (willOpen) _resetDocForm();
+    $('docForm').classList.toggle('hidden');
+  });
+  $('saveDocBtn').addEventListener('click', saveDoc);
+  $('cancelDocBtn').addEventListener('click', function() { _resetDocForm(); hide('docForm'); });
+
+  // Members
+  $('toggleMemberBtn').addEventListener('click', function() {
+    var willOpen = $('memberForm').classList.contains('hidden');
+    if (willOpen) _resetMemberForm();
+    $('memberForm').classList.toggle('hidden');
+  });
+  $('saveMemberBtn').addEventListener('click', saveMember);
+  $('cancelMemberBtn').addEventListener('click', function() { _resetMemberForm(); hide('memberForm'); });
 });
 
 // --- TABS ---------------------------------------------------
-var INFO_SUBTABS = ['children', 'agreements', 'reminders', 'recursos'];
+var INFO_SUBTABS = ['children', 'agreements', 'reminders', 'recursos', 'documents', 'members'];
 
 function switchTab(tab) {
-  ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'reminders', 'recursos', 'info'].forEach(function(t) {
+  ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'reminders', 'recursos', 'documents', 'members', 'info'].forEach(function(t) {
     $('tab-' + t).classList.toggle('hidden', t !== tab);
   });
   document.querySelectorAll('#mainNav button').forEach(function(b) {
