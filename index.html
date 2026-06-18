@@ -426,7 +426,10 @@
 
 
   <nav id="mainNav">
-    <button class="active" data-tab="calendar">
+    <button class="active" data-tab="today">
+      <i data-lucide="sun"></i> Hoy
+    </button>
+    <button data-tab="calendar">
       <i data-lucide="calendar-days"></i> Calendario
     </button>
     <button data-tab="expenses">
@@ -456,8 +459,55 @@
   <main>
 
 
+<!-- -- HOY ----------------------------------------------- -->
+<div id="tab-today" class="hidden">
+  <div class="section-header">
+    <div class="section-title">
+      <h2>Hoy</h2>
+      <p id="todayDateLbl"></p>
+    </div>
+  </div>
+
+  <!-- Custodia hoy -->
+  <div class="card">
+    <div class="card-body">
+      <div class="stat-label" style="margin-bottom:10px">CUSTODIA HOY</div>
+      <div id="todayCustodyBlock">—</div>
+    </div>
+  </div>
+
+  <!-- Balance gastos -->
+  <div class="card">
+    <div class="card-body" style="display:flex;align-items:center;gap:10px">
+      <div style="flex:1">
+        <div class="stat-label" style="margin-bottom:6px">BALANCE GASTOS</div>
+        <div id="todayBalanceBlock" style="font-size:14px">—</div>
+      </div>
+      <button class="btn-outline" style="font-size:12px;padding:7px 12px;white-space:nowrap"
+        onclick="switchTab('expenses')">Ver gastos</button>
+    </div>
+  </div>
+
+  <!-- Eventos hoy -->
+  <div class="card">
+    <div class="card-body">
+      <div class="stat-label" style="margin-bottom:8px">EVENTOS HOY</div>
+      <div id="todayEventsBlock">—</div>
+    </div>
+  </div>
+
+  <!-- Recordatorios próximos -->
+  <div class="card">
+    <div class="card-body">
+      <div class="stat-label" style="margin-bottom:8px">PRÓXIMOS 7 DÍAS</div>
+      <div id="todayRemindersBlock">—</div>
+    </div>
+  </div>
+</div>
+
+
 <!-- -- CALENDARIO ---------------------------------------- -->
-<div id="tab-calendar">
+<div id="tab-calendar" class="hidden">
   <div class="section-header">
     <div class="section-title">
       <h2>Calendario de Custodia</h2>
@@ -839,6 +889,7 @@
 <script src="observability.js?v=8"></script>
 <script src="onboarding.js?v=8"></script>
 <script src="events.js?v=8"></script>
+<script src="today.js?v=1"></script>
 <script src="app-shell.js?v=8"></script>
 </body>
 </html>

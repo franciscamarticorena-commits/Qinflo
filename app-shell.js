@@ -135,6 +135,8 @@ function loadApp() {
     renderQuickReplies();
     renderCalendar();
     checkAndGenerateCalendar();
+    renderToday();
+    switchTab('today');
   } catch(e) {
     console.error('[loadApp crash]', e);
   }
@@ -144,6 +146,7 @@ function setupListeners() {
   famCol('expenses').orderBy('date', 'desc').onSnapshot(function(s) {
     expenses = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
     renderExpenses();
+    renderToday();
   });
   famCol('messages').orderBy('createdAt', 'asc').onSnapshot(function(s) {
     messages = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
@@ -152,6 +155,7 @@ function setupListeners() {
   famCol('children').onSnapshot(function(s) {
     children = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
     renderChildren();
+    renderToday();
   });
   famCol('agreements').orderBy('date', 'desc').onSnapshot(function(s) {
     agreements = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
@@ -160,6 +164,7 @@ function setupListeners() {
   famCol('reminders').orderBy('date', 'asc').onSnapshot(function(s) {
     reminders = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
     renderReminders();
+    renderToday();
   });
   famCol('proposals').orderBy('date', 'desc').onSnapshot(function(s) {
     proposals = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
@@ -170,6 +175,7 @@ function setupListeners() {
     if (typeof renderEventApprovals === 'function') renderEventApprovals();
     if (selDay && typeof renderDayDetail === 'function') renderDayDetail();
     renderCalendar();
+    renderToday();
   });
   famCol('calendar').onSnapshot(function(s) {
     custodyMap = {}; calEventsMap = {}; custodyOverridesMap = {};
@@ -180,6 +186,7 @@ function setupListeners() {
       if (data.custodyOverrides) custodyOverridesMap[d.id] = data.custodyOverrides;
     });
     renderCalendar();
+    renderToday();
   });
 }
 
@@ -282,12 +289,13 @@ window.addEventListener('DOMContentLoaded', function() {
 
 // --- TABS ---------------------------------------------------
 function switchTab(tab) {
-  ['calendar', 'expenses', 'messages', 'children', 'agreements', 'reminders', 'recursos'].forEach(function(t) {
+  ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'reminders', 'recursos'].forEach(function(t) {
     $('tab-' + t).classList.toggle('hidden', t !== tab);
   });
   document.querySelectorAll('#mainNav button').forEach(function(b) {
     b.classList.toggle('active', b.dataset.tab === tab);
   });
+  if (tab === 'today') renderToday();
 }
 
 // --- UF -----------------------------------------------------
