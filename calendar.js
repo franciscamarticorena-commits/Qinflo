@@ -167,7 +167,7 @@ function renderCalendar() {
   renderProposals();
   var namesEl = $('calDayNames');
   namesEl.innerHTML = '';
-  ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].forEach(function(d) {
+  ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].forEach(function(d) {
     var el = document.createElement('div');
     el.className = 'cal-day-name';
     el.textContent = d;
@@ -176,7 +176,7 @@ function renderCalendar() {
   var grid = $('calGrid');
   grid.innerHTML = '';
   var days = new Date(calYear, calMonth + 1, 0).getDate();
-  var first = new Date(calYear, calMonth, 1).getDay();
+  var first = (new Date(calYear, calMonth, 1).getDay() + 6) % 7;
   var now = new Date();
   for (var i = 0; i < first; i++) grid.appendChild(document.createElement('div'));
   for (var d = 1; d <= days; d++) {
