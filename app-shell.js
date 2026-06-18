@@ -1,16 +1,52 @@
 // --- VISIBLE DEBUG PANEL (phone testing) ---------------------
 function dbg(msg) {
   console.log(msg);
+  var entry = new Date().toLocaleTimeString('es-CL') + ' ' + msg;
+  // persist across reloads so popup-flow logs survive tab reload
+  try {
+    var saved = JSON.parse(localStorage.getItem('dbgLog') || '[]');
+    saved.push(entry);
+    if (saved.length > 40) saved = saved.slice(-40);
+    localStorage.setItem('dbgLog', JSON.stringify(saved));
+  } catch(e) {}
   var overlay = document.getElementById('debugOverlay');
   var lines = document.getElementById('debugLines');
   if (overlay && lines) {
     overlay.style.display = 'block';
     var d = document.createElement('div');
-    d.textContent = new Date().toLocaleTimeString('es-CL') + ' ' + msg;
+    d.textContent = entry;
     lines.appendChild(d);
     overlay.scrollTop = overlay.scrollHeight;
   }
 }
+
+// restore previous session logs on load
+(function() {
+  try {
+    var saved = JSON.parse(localStorage.getItem('dbgLog') || '[]');
+    if (!saved.length) return;
+    var overlay = document.getElementById('debugOverlay');
+    var lines = document.getElementById('debugLines');
+    if (!overlay || !lines) return;
+    overlay.style.display = 'block';
+    var sep = document.createElement('div');
+    sep.textContent = '— sesión anterior —';
+    sep.style.color = '#888';
+    lines.appendChild(sep);
+    saved.forEach(function(e) {
+      var d = document.createElement('div');
+      d.textContent = e;
+      d.style.color = '#aaffaa';
+      lines.appendChild(d);
+    });
+    var sep2 = document.createElement('div');
+    sep2.textContent = '— sesión actual —';
+    sep2.style.color = '#888';
+    lines.appendChild(sep2);
+    overlay.scrollTop = overlay.scrollHeight;
+  } catch(e) {}
+  localStorage.removeItem('dbgLog');
+})();
 
 dbg('[boot] app-shell loaded');
 
