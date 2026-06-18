@@ -167,7 +167,7 @@ async function doGoogleLogin() {
     var provider = new firebase.auth.GoogleAuthProvider();
     if (isMobileSafari()) {
       // signInWithPopup silently fails on iOS/Safari (WebKit blocks OAuth popups)
-      console.log('[google] starting redirect');
+      dbg('[google] starting redirect (mobile)');
       await auth.signInWithRedirect(provider);
       // Page navigates away — nothing after this line runs
     } else {
@@ -182,7 +182,7 @@ async function doGoogleLogin() {
 }
 
 async function createGoogleUserProfile(u) {
-  console.log('[google] creating profile', u.uid, u.email);
+  dbg('[google] creating profile ' + u.uid + ' ' + u.email);
   var ft = 'mama_papa';
   var role = 'p1';
   var fc = { type: ft, p1Label: 'Mamá', p2Label: 'Papá' };

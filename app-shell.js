@@ -1,24 +1,38 @@
-console.log('[boot] app-shell loaded');
+// --- VISIBLE DEBUG PANEL (phone testing) ---------------------
+function dbg(msg) {
+  console.log(msg);
+  var overlay = document.getElementById('debugOverlay');
+  var lines = document.getElementById('debugLines');
+  if (overlay && lines) {
+    overlay.style.display = 'block';
+    var d = document.createElement('div');
+    d.textContent = new Date().toLocaleTimeString('es-CL') + ' ' + msg;
+    lines.appendChild(d);
+    overlay.scrollTop = overlay.scrollHeight;
+  }
+}
+
+dbg('[boot] app-shell loaded');
 
 // --- GOOGLE REDIRECT RESULT (iOS/Safari flow) ----------------
 // Must be called on every page load; returns null if no redirect pending.
 // onAuthStateChanged fires automatically after a redirect — this is only
 // for logging and catching redirect-level errors.
-console.log('[google] checking redirect result');
+dbg('[google] checking redirect result');
 auth.getRedirectResult().then(function(result) {
   if (result && result.user) {
-    console.log('[google] redirect result user', result.user.uid, result.user.email);
+    dbg('[google] redirect result user ' + result.user.uid + ' ' + result.user.email);
   } else {
-    console.log('[google] redirect result null (no pending redirect)');
+    dbg('[google] redirect result null (no pending redirect)');
   }
 }).catch(function(e) {
-  console.error('[google] redirect result error', e.code, e.message);
+  dbg('[google] redirect result ERROR ' + e.code + ' ' + e.message);
   if ($('authMsg')) showMsg('authMsg', errMsg(e.code), true);
 });
 
 // --- AUTH LISTENER -------------------------------------------
 auth.onAuthStateChanged(function(u) {
-  console.log('[auth] state changed', u ? (u.uid + ' ' + u.email) : 'null');
+  dbg('[auth] state changed ' + (u ? (u.uid + ' ' + u.email) : 'null'));
   USER = u;
   if (!u) {
     show('authScreen');
@@ -28,7 +42,7 @@ auth.onAuthStateChanged(function(u) {
   }
   if (IS_REGISTERING) return;
   var providerIds = u.providerData ? u.providerData.map(function(p) { return p.providerId; }).join(',') : 'unknown';
-  console.log('[google] auth state user', u.uid, u.email, providerIds);
+  dbg('[google] auth state user ' + u.uid + ' ' + u.email + ' providers:' + providerIds);
   hide('authScreen');
   document.getElementById('app').style.display = 'block';
 
@@ -39,7 +53,7 @@ auth.onAuthStateChanged(function(u) {
         try {
           await createGoogleUserProfile(u);
         } catch(e) {
-          console.error('[createGoogleUserProfile]', e);
+          dbg('[createGoogleUserProfile] ERROR ' + e.message);
           auth.signOut();
           show('authScreen'); hide('app');
           showMsg('authMsg', 'Error al crear tu cuenta. Intenta de nuevo.', true);
@@ -81,9 +95,7 @@ auth.onAuthStateChanged(function(u) {
       loadOrOnboard();
     }
 }).catch(function(e) {
-  console.error('[app-shell main catch]', e);
-  alert('ERROR APP-SHELL: ' + e.message);
-  console.log('Error loading user:', e);
+  dbg('[app-shell] ERROR ' + e.message);
 });
 });
 
