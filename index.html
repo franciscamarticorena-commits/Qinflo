@@ -467,16 +467,16 @@
     </div>
   </div>
 
-  <!-- Los niños ya están conmigo -->
-  <button id="kidsWithMeBtn" class="btn-primary" style="margin-bottom:14px" onclick="confirmKidsWithMe()">
-    Los niños ya están conmigo
-  </button>
-
-  <!-- Solicitudes pendientes -->
-  <div class="card">
-    <div class="card-body">
-      <div class="stat-label" style="margin-bottom:8px">SOLICITUDES PENDIENTES</div>
-      <div id="todayPendingBlock">—</div>
+  <!-- Pendientes — solo aparece si hay items -->
+  <div id="todayPendingCard" class="hidden">
+    <div class="card" style="border-left:3px solid var(--warn)">
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <div class="stat-label" style="margin-bottom:0">PENDIENTES</div>
+          <span id="todayPendingCount" style="background:var(--warn);color:#fff;border-radius:20px;padding:1px 8px;font-size:11px;font-weight:700">0</span>
+        </div>
+        <div id="todayPendingBlock"></div>
+      </div>
     </div>
   </div>
 
@@ -507,6 +507,11 @@
         onclick="switchTab('expenses')">Ver gastos</button>
     </div>
   </div>
+
+  <!-- Los niños ya están conmigo -->
+  <button id="kidsWithMeBtn" class="btn-primary" style="margin-bottom:14px" onclick="confirmKidsWithMe()">
+    Los niños ya están conmigo
+  </button>
 </div>
 
 

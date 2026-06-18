@@ -49,43 +49,104 @@ async function confirmKidsWithMe() {
   }
 }
 
+function _badge(label, color) {
+  return '<span style="background:' + color + ';color:#fff;border-radius:6px;padding:2px 7px;font-size:10px;font-weight:700;flex-shrink:0">' + label + '</span>';
+}
+
+function _pendingRow(badge, title, sub, actions) {
+  return '<div style="padding:10px 0;border-bottom:1px solid var(--border)">' +
+    '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:' + (actions ? '8' : '0') + 'px">' +
+      badge +
+      '<div style="flex:1">' +
+        '<div style="font-size:13px;font-weight:600;color:var(--text)">' + title + '</div>' +
+        (sub ? '<div style="font-size:12px;color:var(--text-s);margin-top:2px">' + sub + '</div>' : '') +
+      '</div>' +
+    '</div>' +
+    (actions ? '<div style="display:flex;gap:8px">' + actions + '</div>' : '') +
+    '</div>';
+}
+
+function acceptPropInline(propId) {
+  var p = (proposals || []).find(function(x) { return x.id === propId; });
+  if (!p) return;
+  famCol('proposals').doc(propId).update({ status: 'accepted', respondedAt: firebase.firestore.FieldValue.serverTimestamp(), respondedBy: USER.uid });
+  if (typeof setCustody === 'function') setCustody(Number(p.toDay), 'transition');
+}
+
+function rejectPropInline(propId) {
+  famCol('proposals').doc(propId).update({ status: 'rejected', respondedAt: firebase.firestore.FieldValue.serverTimestamp(), respondedBy: USER.uid });
+}
+
 function _todayPendingRequests() {
   var el = $('todayPendingBlock');
+  var card = $('todayPendingCard');
+  var countEl = $('todayPendingCount');
   if (!el) return;
 
-  var pendingProps = (proposals || []).filter(function(p) {
-    return p.status === 'pending' && p.createdBy !== (USER && USER.uid);
-  });
-  var pendingEvts = (events || []).filter(function(ev) {
-    return ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy !== (USER && USER.uid);
+  var now = new Date();
+  var todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+  var role = myRole();
+
+  var propsReceived = (proposals || []).filter(function(p) { return p.status === 'pending' && p.createdBy !== (USER && USER.uid); });
+  var propsSent     = (proposals || []).filter(function(p) { return p.status === 'pending' && p.createdBy === (USER && USER.uid); });
+  var evtsToApprove = (events || []).filter(function(ev) { return ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy !== (USER && USER.uid); });
+  var remsToday     = (reminders || []).filter(function(r) {
+    if (!r.date || r.done) return false;
+    var d = (r.date + '').split('T')[0];
+    if (d !== todayStr) return false;
+    if (r.for !== 'both' && r.for !== (role === 'p1' ? 'mama' : 'papa')) return false;
+    return true;
   });
 
-  if (!pendingProps.length && !pendingEvts.length) {
-    el.innerHTML = '<span style="color:var(--text-s);font-size:13px">Sin solicitudes pendientes</span>';
+  var total = propsReceived.length + propsSent.length + evtsToApprove.length + remsToday.length;
+
+  if (total === 0) {
+    if (card) card.classList.add('hidden');
     return;
   }
+  if (card) card.classList.remove('hidden');
+  if (countEl) countEl.textContent = total;
 
   var html = '';
-  pendingProps.forEach(function(p) {
-    html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">' +
-      '<span style="font-size:18px">↔</span>' +
-      '<div style="flex:1">' +
-        '<div style="font-size:13px;font-weight:600;color:var(--text)">Solicitud de cambio de custodia</div>' +
-        '<div style="font-size:12px;color:var(--text-s)">Día ' + p.fromDay + ' → Día ' + p.toDay + '</div>' +
-      '</div>' +
-      '<button class="btn-outline" style="font-size:11px;padding:4px 10px" onclick="switchTab(\'calendar\')">Ver</button>' +
-      '</div>';
+
+  propsReceived.forEach(function(p) {
+    html += _pendingRow(
+      _badge('RESPONDER', 'var(--warn)'),
+      'Cambio de custodia — día ' + p.fromDay + ' → ' + p.toDay,
+      p.reason || null,
+      '<button class="btn-sm" style="background:var(--success);font-size:12px;padding:6px 14px" onclick="acceptPropInline(\'' + p.id + '\')">Aceptar</button>' +
+      '<button class="btn-outline" style="font-size:12px;padding:6px 14px" onclick="rejectPropInline(\'' + p.id + '\')">Rechazar</button>'
+    );
   });
-  pendingEvts.forEach(function(ev) {
-    html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">' +
-      '<span style="font-size:18px">📅</span>' +
-      '<div style="flex:1">' +
-        '<div style="font-size:13px;font-weight:600;color:var(--text)">' + ev.title + '</div>' +
-        '<div style="font-size:12px;color:var(--text-s)">Evento · pendiente de confirmación</div>' +
-      '</div>' +
-      '<button class="btn-outline" style="font-size:11px;padding:4px 10px" onclick="switchTab(\'calendar\')">Ver</button>' +
-      '</div>';
+
+  evtsToApprove.forEach(function(ev) {
+    html += _pendingRow(
+      _badge('CONFIRMAR', 'var(--warn)'),
+      ev.title,
+      ev.date + (ev.time ? ' · ' + ev.time : ''),
+      '<button class="btn-sm" style="background:var(--success);font-size:12px;padding:6px 14px" onclick="approveEvent(\'' + ev.id + '\')">Confirmar</button>' +
+      '<button class="btn-outline" style="font-size:12px;padding:6px 14px" onclick="rejectEvent(\'' + ev.id + '\')">Rechazar</button>'
+    );
   });
+
+  propsSent.forEach(function(p) {
+    html += _pendingRow(
+      _badge('ESPERANDO', 'var(--primary)'),
+      'Cambio de custodia — día ' + p.fromDay + ' → ' + p.toDay,
+      'Esperando respuesta',
+      null
+    );
+  });
+
+  remsToday.forEach(function(r) {
+    html += _pendingRow(
+      _badge('HOY', 'var(--accent)'),
+      r.title,
+      fLbl(r.for),
+      null
+    );
+  });
+
   el.innerHTML = html;
 }
 
