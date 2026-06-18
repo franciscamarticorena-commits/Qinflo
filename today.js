@@ -182,6 +182,8 @@ function _todayCustody(now) {
   if (!el) return;
 
   var custody = _todayGetCustody(now);
+  var btn = $('kidsWithMeBtn');
+  if (btn) btn.classList.toggle('hidden', custody !== 'transition');
 
   if (!custody) {
     el.innerHTML = '<span style="color:var(--text-s);font-size:14px">Calendario no configurado aún</span>';
