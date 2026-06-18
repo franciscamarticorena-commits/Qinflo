@@ -286,9 +286,13 @@ window.addEventListener('DOMContentLoaded', function() {
   $('cancelKidBtn').addEventListener('click', function() { hide('kidForm'); });
 
   // Agreements
-  $('toggleAgrBtn').addEventListener('click', function() { $('agrForm').classList.toggle('hidden'); });
+  $('toggleAgrBtn').addEventListener('click', function() {
+    var willOpen = $('agrForm').classList.contains('hidden');
+    if (willOpen) _resetAgrForm();
+    $('agrForm').classList.toggle('hidden');
+  });
   $('saveAgrBtn').addEventListener('click', saveAgr);
-  $('cancelAgrBtn').addEventListener('click', function() { hide('agrForm'); });
+  $('cancelAgrBtn').addEventListener('click', function() { _resetAgrForm(); hide('agrForm'); });
 
   // Reminders
   $('toggleRemBtn').addEventListener('click', function() {
