@@ -418,8 +418,8 @@
           <button class="icon-btn" id="inviteBtn" title="Invitar">
             <i data-lucide="link" style="width:16px;height:16px"></i>
           </button>
-          <button class="icon-btn" id="logoutBtn" title="Salir">
-            <i data-lucide="log-out" style="width:16px;height:16px"></i>
+          <button class="icon-btn" id="avatarBtn" title="Mi perfil" style="background:var(--primary);color:#fff;border-radius:50%;width:32px;height:32px;font-weight:700;font-size:13px;padding:0;display:flex;align-items:center;justify-content:center" id="avatarBtn">
+            <span id="avatarInitial">?</span>
           </button>
         </div>
       </div>
@@ -438,8 +438,8 @@
     <button data-tab="messages">
       <i data-lucide="message-circle"></i> Mensajes
     </button>
-    <button data-tab="mas">
-      <i data-lucide="grid-2x2"></i> Más
+    <button data-tab="info">
+      <i data-lucide="book-open"></i> Información
     </button>
   </nav>
 </div>
@@ -725,7 +725,7 @@
 <div id="tab-children" class="hidden">
   <div class="section-header">
     <div>
-      <button class="btn-outline" style="font-size:11px;padding:4px 10px;margin-bottom:8px" onclick="switchTab('mas')">← Más</button>
+      <button class="btn-outline" style="font-size:11px;padding:4px 10px;margin-bottom:8px" onclick="switchTab('info')">← Más</button>
       <div class="section-title"><h2>Hijos</h2><p>Información importante</p></div>
     </div>
     <button class="btn-sm" id="openKidFormBtn"><i data-lucide="plus"></i> Agregar</button>
@@ -765,7 +765,7 @@
 <div id="tab-agreements" class="hidden">
   <div class="section-header">
     <div>
-      <button class="btn-outline" style="font-size:11px;padding:4px 10px;margin-bottom:8px" onclick="switchTab('mas')">← Más</button>
+      <button class="btn-outline" style="font-size:11px;padding:4px 10px;margin-bottom:8px" onclick="switchTab('info')">← Más</button>
       <div class="section-title"><h2>Acuerdos</h2><p>Registro de acuerdos entre ambos padres</p></div>
     </div>
     <button class="btn-sm" id="toggleAgrBtn"><i data-lucide="plus"></i> Nuevo</button>
@@ -792,7 +792,7 @@
 <div id="tab-reminders" class="hidden">
   <div class="section-header">
     <div>
-      <button class="btn-outline" style="font-size:11px;padding:4px 10px;margin-bottom:8px" onclick="switchTab('mas')">← Más</button>
+      <button class="btn-outline" style="font-size:11px;padding:4px 10px;margin-bottom:8px" onclick="switchTab('info')">← Más</button>
       <div class="section-title"><h2>Recordatorios</h2><p>No olvides ningún compromiso</p></div>
     </div>
     <button class="btn-sm" id="toggleRemBtn"><i data-lucide="plus"></i> Agregar</button>
@@ -822,7 +822,7 @@
 <div id="tab-recursos" class="hidden">
   <div class="section-header">
     <div>
-      <button class="btn-outline" style="font-size:11px;padding:4px 10px;margin-bottom:8px" onclick="switchTab('mas')">← Más</button>
+      <button class="btn-outline" style="font-size:11px;padding:4px 10px;margin-bottom:8px" onclick="switchTab('info')">← Más</button>
       <div class="section-title"><h2>Recursos de Apoyo</h2><p>Organismos clave para familias en Chile</p></div>
     </div>
   </div>
@@ -837,10 +837,10 @@
 </div>
 
 
-<!-- -- MÁS ----------------------------------------------- -->
-<div id="tab-mas" class="hidden">
+<!-- -- INFORMACIÓN CLAVE --------------------------------- -->
+<div id="tab-info" class="hidden">
   <div class="section-header">
-    <div class="section-title"><h2>Más</h2></div>
+    <div class="section-title"><h2>Información clave</h2><p>Lo permanente y compartido</p></div>
   </div>
   <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
     <button onclick="switchTab('children')" style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left">
@@ -849,7 +849,7 @@
       <i data-lucide="chevron-right" style="color:var(--text-s);flex-shrink:0"></i>
     </button>
     <button onclick="switchTab('agreements')" style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left">
-      <i data-lucide="folder-open" style="color:var(--primary);flex-shrink:0"></i>
+      <i data-lucide="file-check" style="color:var(--primary);flex-shrink:0"></i>
       <span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Acuerdos</span>
       <i data-lucide="chevron-right" style="color:var(--text-s);flex-shrink:0"></i>
     </button>
@@ -858,10 +858,20 @@
       <span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Recordatorios</span>
       <i data-lucide="chevron-right" style="color:var(--text-s);flex-shrink:0"></i>
     </button>
-    <button onclick="switchTab('recursos')" style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;background:none;border:none;cursor:pointer;text-align:left">
+    <button onclick="switchTab('recursos')" style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left">
       <i data-lucide="landmark" style="color:var(--primary);flex-shrink:0"></i>
       <span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Recursos</span>
       <i data-lucide="chevron-right" style="color:var(--text-s);flex-shrink:0"></i>
+    </button>
+    <button disabled style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;background:none;border:none;border-bottom:1px solid var(--border);cursor:default;text-align:left;opacity:.4">
+      <i data-lucide="file-text" style="color:var(--text-s);flex-shrink:0"></i>
+      <span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Documentos</span>
+      <span style="font-size:10px;color:var(--text-s);font-weight:600;background:var(--border);border-radius:6px;padding:2px 7px">Pronto</span>
+    </button>
+    <button disabled style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;background:none;border:none;cursor:default;text-align:left;opacity:.4">
+      <i data-lucide="users" style="color:var(--text-s);flex-shrink:0"></i>
+      <span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Integrantes</span>
+      <span style="font-size:10px;color:var(--text-s);font-weight:600;background:var(--border);border-radius:6px;padding:2px 7px">Pronto</span>
     </button>
   </div>
 </div>
@@ -869,6 +879,52 @@
 
   </main>
   <footer>Qinflo · Chile · 2026</footer>
+</div>
+
+<!-- ===========================================================
+     PROFILE PANEL
+============================================================ -->
+<div id="profilePanel" class="hidden" style="position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.45);display:flex;align-items:flex-end" onclick="if(event.target===this)closeProfilePanel()">
+  <div style="background:var(--surface);border-radius:20px 20px 0 0;width:100%;padding:0 0 24px">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 20px 16px">
+      <div>
+        <div id="profileName" style="font-size:16px;font-weight:700;color:var(--text)">—</div>
+        <div id="profileEmail" style="font-size:12px;color:var(--text-s);margin-top:2px">—</div>
+      </div>
+      <button onclick="closeProfilePanel()" style="background:var(--bg);border:1.5px solid var(--border);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--text-s);font-size:20px;font-family:inherit;line-height:1">&times;</button>
+    </div>
+    <div style="border-top:1px solid var(--border)">
+      <button disabled style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 20px;background:none;border:none;border-bottom:1px solid var(--border);cursor:default;text-align:left;opacity:.4">
+        <i data-lucide="user" style="color:var(--text-s);flex-shrink:0;width:18px;height:18px"></i>
+        <span style="flex:1;font-size:14px;color:var(--text)">Datos personales</span>
+        <span style="font-size:10px;color:var(--text-s);font-weight:600;background:var(--border);border-radius:6px;padding:2px 7px">Pronto</span>
+      </button>
+      <button disabled style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 20px;background:none;border:none;border-bottom:1px solid var(--border);cursor:default;text-align:left;opacity:.4">
+        <i data-lucide="bell" style="color:var(--text-s);flex-shrink:0;width:18px;height:18px"></i>
+        <span style="flex:1;font-size:14px;color:var(--text)">Notificaciones</span>
+        <span style="font-size:10px;color:var(--text-s);font-weight:600;background:var(--border);border-radius:6px;padding:2px 7px">Pronto</span>
+      </button>
+      <button disabled style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 20px;background:none;border:none;border-bottom:1px solid var(--border);cursor:default;text-align:left;opacity:.4">
+        <i data-lucide="credit-card" style="color:var(--text-s);flex-shrink:0;width:18px;height:18px"></i>
+        <span style="flex:1;font-size:14px;color:var(--text)">Suscripción</span>
+        <span style="font-size:10px;color:var(--text-s);font-weight:600;background:var(--border);border-radius:6px;padding:2px 7px">Pronto</span>
+      </button>
+      <button disabled style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 20px;background:none;border:none;border-bottom:1px solid var(--border);cursor:default;text-align:left;opacity:.4">
+        <i data-lucide="settings" style="color:var(--text-s);flex-shrink:0;width:18px;height:18px"></i>
+        <span style="flex:1;font-size:14px;color:var(--text)">Configuración</span>
+        <span style="font-size:10px;color:var(--text-s);font-weight:600;background:var(--border);border-radius:6px;padding:2px 7px">Pronto</span>
+      </button>
+      <button disabled style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 20px;background:none;border:none;border-bottom:1px solid var(--border);cursor:default;text-align:left;opacity:.4">
+        <i data-lucide="life-buoy" style="color:var(--text-s);flex-shrink:0;width:18px;height:18px"></i>
+        <span style="flex:1;font-size:14px;color:var(--text)">Ayuda y soporte</span>
+        <span style="font-size:10px;color:var(--text-s);font-weight:600;background:var(--border);border-radius:6px;padding:2px 7px">Pronto</span>
+      </button>
+      <button id="logoutBtn" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 20px;background:none;border:none;cursor:pointer;text-align:left;color:var(--error)">
+        <i data-lucide="log-out" style="flex-shrink:0;width:18px;height:18px"></i>
+        <span style="font-size:14px;font-weight:600">Cerrar sesión</span>
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- ===========================================================

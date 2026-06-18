@@ -108,6 +108,9 @@ function updateLabels() {
     if (CODATA && CODATA.name) sub += ' · con ' + CODATA.name.split(' ')[0];
     $('headerSub').textContent = sub;
   }
+  if ($('avatarInitial') && USERDATA && USERDATA.name) {
+    $('avatarInitial').textContent = USERDATA.name.charAt(0).toUpperCase();
+  }
 }
 
 // --- LOAD OR ONBOARD ----------------------------------------
@@ -211,6 +214,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
   // App header
   $('inviteBtn').addEventListener('click', showConnectScreen);
+  $('avatarBtn').addEventListener('click', openProfilePanel);
   $('logoutBtn').addEventListener('click', function() { auth.signOut(); });
 
   // Nav tabs
@@ -298,19 +302,33 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 
 // --- TABS ---------------------------------------------------
-var MAS_SUBTABS = ['children', 'agreements', 'reminders', 'recursos'];
+var INFO_SUBTABS = ['children', 'agreements', 'reminders', 'recursos'];
 
 function switchTab(tab) {
-  ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'reminders', 'recursos', 'mas'].forEach(function(t) {
+  ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'reminders', 'recursos', 'info'].forEach(function(t) {
     $('tab-' + t).classList.toggle('hidden', t !== tab);
   });
   document.querySelectorAll('#mainNav button').forEach(function(b) {
     var isActive = b.dataset.tab === tab ||
-      (MAS_SUBTABS.indexOf(tab) !== -1 && b.dataset.tab === 'mas');
+      (INFO_SUBTABS.indexOf(tab) !== -1 && b.dataset.tab === 'info');
     b.classList.toggle('active', isActive);
   });
   if (tab === 'today') renderToday();
-  if (tab === 'mas') lucide.createIcons();
+  if (tab === 'info') lucide.createIcons();
+}
+
+// --- PROFILE PANEL ------------------------------------------
+function openProfilePanel() {
+  if ($('profileName') && USERDATA) $('profileName').textContent = USERDATA.name || '—';
+  if ($('profileEmail') && USER) $('profileEmail').textContent = USER.email || '—';
+  if ($('avatarInitial') && USERDATA && USERDATA.name) {
+    $('avatarInitial').textContent = USERDATA.name.charAt(0).toUpperCase();
+  }
+  $('profilePanel').classList.remove('hidden');
+  lucide.createIcons();
+}
+function closeProfilePanel() {
+  $('profilePanel').classList.add('hidden');
 }
 
 // --- UF -----------------------------------------------------
