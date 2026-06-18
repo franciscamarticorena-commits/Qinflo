@@ -4,6 +4,7 @@
     "ignore": [
       "firebase.json",
       ".firebaserc",
+      "firestore.rules",
       "CLAUDE.md",
       "README.md",
       ".github/**",
@@ -16,5 +17,8 @@
         "destination": "/index.html"
       }
     ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
   }
 }
