@@ -4,7 +4,7 @@ let IS_REGISTERING = false;
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
 let selDay = null, custodyMap = {}, calEventsMap = {}, custodyOverridesMap = {};
 let calFilter = 'both';
-let expenses = [], messages = [], children = [], agreements = [], reminders = [], proposals = [], events = [], documents = [], members = [];
+let expenses = [], messages = [], children = [], agreements = [], reminders = [], proposals = [], events = [], documents = [];
 let expPeriod = 'week', expCurrency = 'CLP', UF = 38650;
 let expandedAgr = null;
 

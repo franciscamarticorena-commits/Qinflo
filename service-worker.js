@@ -18,7 +18,6 @@ const STATIC_ASSETS = [
   './onboarding.js',
   './events.js',
   './documents.js',
-  './members.js',
   './today.js',
   './app-shell.js',
   './manifest.json'
