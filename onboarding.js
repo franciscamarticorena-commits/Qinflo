@@ -4,6 +4,7 @@ var onbCustodyConfig = {};
 var onbKidsList = [];
 
 var ONB_PANELS = [
+  'onbPanelDisclaimer',
   'onbPanelType', 'onbPanelAltWeeks', 'onbPanelFixedDays',
   'onbPanelCustom', 'onbPanelUndefined', 'onbPanelLocation',
   'onbPanelKids', 'onbPanelInvite'
@@ -19,9 +20,16 @@ function startOnboarding() {
   onbKidsList = [];
   renderOnbFixedDaysTable();
   renderOnbAltDays();
+  showOnbPanel('onbPanelDisclaimer');
+  if ($('onbProgressFill')) $('onbProgressFill').style.width = '0%';
+  if ($('onbStepLabel')) $('onbStepLabel').textContent = '';
+  if ($('onbStepNum')) $('onbStepNum').textContent = '';
+  updateOnbLabels();
+}
+
+function onbAcceptDisclaimer() {
   showOnbPanel('onbPanelType');
   updateOnbProgress(1, 4, 'Configuración de cuidado');
-  updateOnbLabels();
 }
 
 function showOnbPanel(panelId) {
