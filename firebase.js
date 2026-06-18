@@ -1,6 +1,6 @@
 const firebaseConfig = {
   apiKey: "AIzaSyDAGDPQXw_7IXfd1y_AyBaxm6pvZt0jOWM",
-  authDomain: "qinflo.cl",
+  authDomain: "quinflo.firebaseapp.com",
   projectId: "quinflo",
   storageBucket: "quinflo.firebasestorage.app", // Configurado pero NO instanciado. Ver nota abajo.
   messagingSenderId: "662940889446",
