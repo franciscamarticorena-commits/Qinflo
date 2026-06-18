@@ -157,11 +157,16 @@ async function doGoogleLogin() {
   if (pendingInvite) localStorage.setItem('pendingInvite', pendingInvite);
   try {
     var provider = new firebase.auth.GoogleAuthProvider();
-    dbg('[google] starting popup');
-    await auth.signInWithPopup(provider);
-    dbg('[google] popup resolved — waiting onAuthStateChanged');
+    if (/Android/i.test(navigator.userAgent)) {
+      dbg('[google] starting redirect (Android)');
+      await auth.signInWithRedirect(provider);
+    } else {
+      dbg('[google] starting popup');
+      await auth.signInWithPopup(provider);
+      dbg('[google] popup resolved — waiting onAuthStateChanged');
+    }
   } catch(e) {
-    dbg('[google] popup error ' + e.code + ' ' + e.message);
+    dbg('[google] error ' + e.code + ' ' + e.message);
     if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
       showMsg('authMsg', errMsg(e.code), true);
     }
