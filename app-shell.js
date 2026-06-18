@@ -282,9 +282,18 @@ window.addEventListener('DOMContentLoaded', function() {
   $('cancelAgrBtn').addEventListener('click', function() { hide('agrForm'); });
 
   // Reminders
-  $('toggleRemBtn').addEventListener('click', function() { $('remForm').classList.toggle('hidden'); });
+  $('toggleRemBtn').addEventListener('click', function() {
+    var willOpen = $('remForm').classList.contains('hidden');
+    if (willOpen) {
+      editingRemId = null;
+      $('remTitle').value = ''; $('remDate').value = '';
+      var hdr = document.querySelector('#remForm p');
+      if (hdr) hdr.textContent = 'Nuevo recordatorio';
+    }
+    $('remForm').classList.toggle('hidden');
+  });
   $('saveRemBtn').addEventListener('click', saveRem);
-  $('cancelRemBtn').addEventListener('click', function() { hide('remForm'); });
+  $('cancelRemBtn').addEventListener('click', cancelRemForm);
 });
 
 // --- TABS ---------------------------------------------------
