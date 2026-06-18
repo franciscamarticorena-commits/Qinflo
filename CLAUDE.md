@@ -76,6 +76,11 @@ createdAt, createdBy, createdByName, createdByRole, requestedToRole,
 respondedAt, respondedBy
 ```
 
+### `/families/{famId}/settlements/{id}`
+```
+amount (CLP), fromRole (mama|papa), toRole (mama|papa), date, createdAt, createdBy
+```
+
 ### `/families/{famId}/expenses/{id}`, `/messages/{id}`, `/children/{id}`, `/agreements/{id}`, `/reminders/{id}`
 Ver código de cada módulo para el schema exacto.
 
@@ -89,14 +94,14 @@ Ver código de cada módulo para el schema exacto.
 | 4 | Módulo de Eventos completo (events.js, aprobaciones, privados) | `9f7810e` |
 | 5 | Flujo de invitación robusto: batch atómico, p1/p2, inviteConsumed, familyConfig heredado | `ec4be59` |
 | 5b | Google auth Safari/iOS fix + migración a Firebase Hosting | `140e76c` |
+| 6 | Firestore Rules desplegadas via CI, Documentos, PWA store assets, T&C onboarding | `3619277..a4b1b1f` |
+| 7 | Acuerdos — edición, firma simple, cambio de estado inline, cards mejoradas | `a5a390a` |
+| 8 | Gastos — liquidar balance, exportar resumen texto, historial de liquidaciones | (actual) |
 
 ## Roadmap pendiente (en orden estricto)
 
 | Fase | Descripción | Prioridad |
 |------|-------------|-----------|
-| **6** | **Firestore Rules** — datos cerrados: users solo lectura propia + coparent, families/subcol solo members[] | Alta |
-| 7 | Acuerdos — mejorar UI, firma digital simple, historial | Media |
-| 8 | Gastos — liquidar balance, exportar resumen texto, historial de pagos | Media |
 | 9 | Dashboard "Hoy" — card resumen: quién tiene hoy, próximo cambio, balance pendiente, recordatorios | Media |
 | 10 | Push notifications — FCM para mensajes nuevos, cambios pendientes, recordatorios | Baja |
 

@@ -196,6 +196,10 @@ function setupListeners() {
     documents = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
     renderDocuments();
   });
+  famCol('settlements').orderBy('createdAt', 'desc').onSnapshot(function(s) {
+    settlements = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
+    renderExpenses();
+  });
 }
 
 // --- EVENT LISTENERS ----------------------------------------
@@ -274,6 +278,8 @@ window.addEventListener('DOMContentLoaded', function() {
   updateExpenseTreatmentUI();
   $('btnCLP').addEventListener('click', function() { setCurrency('CLP'); });
   $('btnUF').addEventListener('click', function() { setCurrency('UF'); });
+  if ($('liquidarBtn')) $('liquidarBtn').addEventListener('click', liquidarBalance);
+  if ($('exportResumenBtn')) $('exportResumenBtn').addEventListener('click', exportarResumen);
 
   // Messages
   $('sendMsgBtn').addEventListener('click', sendMsg);

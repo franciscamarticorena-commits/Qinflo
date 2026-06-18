@@ -90,6 +90,21 @@ function filterPeriod(list) {
 
 function toCLP(e) { return e.currency === 'UF' ? e.amount * UF : e.amount; }
 
+function _computeSharedNet(visList) {
+  return visList.filter(function(e){ return e.treatment === 'shared'; }).reduce(function(s, e) {
+    var amount = toCLP(e);
+    var mShould = amount * ((e.pctMama == null ? 50 : e.pctMama) / 100);
+    var mPaid = e.paidBy === 'mama' ? amount : 0;
+    return s + (mPaid - mShould);
+  }, 0);
+}
+
+function _computeSettlAdjust(settlList) {
+  return settlList.reduce(function(s, sl) {
+    return s + (sl.fromRole === 'papa' ? sl.amount : -sl.amount);
+  }, 0);
+}
+
 async function saveExp() {
   var desc = $('expDesc').value.trim(), amt = $('expAmount').value;
   if (!desc || !amt) return;
@@ -118,6 +133,92 @@ async function saveExp() {
   hide('expForm');
 }
 
+async function liquidarBalance() {
+  var vis = filterPeriod(expenses).filter(function(e){ return !e.voided; });
+  var net = _computeSharedNet(vis);
+  var adjNet = net - _computeSettlAdjust(filterPeriod(settlements));
+  if (Math.abs(adjNet) < 1) return;
+
+  var debtorRole = adjNet > 0 ? 'papa' : 'mama';
+  var creditorRole = adjNet > 0 ? 'mama' : 'papa';
+  var debtor = adjNet > 0 ? p2() : p1();
+  var creditor = adjNet > 0 ? p1() : p2();
+  var amount = Math.round(Math.abs(adjNet));
+
+  if (!confirm('Confirmar liquidación\n\n' + debtor + ' pagó ' + fmtCLP(amount) + ' a ' + creditor + '.\n\n¿Registrar este pago?')) return;
+
+  await famCol('settlements').add({
+    amount: amount,
+    fromRole: debtorRole,
+    toRole: creditorRole,
+    date: new Date().toISOString().slice(0, 10),
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    createdBy: USER.uid
+  });
+}
+
+function exportarResumen() {
+  var vis = filterPeriod(expenses).filter(function(e){ return !e.voided; });
+  var periodLabel = { week: 'Última semana', month: 'Este mes', year: 'Este año', all: 'Todo el historial' }[expPeriod] || 'Este período';
+  var mT = vis.filter(function(e){ return e.paidBy === 'mama'; }).reduce(function(s, e){ return s + toCLP(e); }, 0);
+  var pT = vis.filter(function(e){ return e.paidBy === 'papa'; }).reduce(function(s, e){ return s + toCLP(e); }, 0);
+  var net = _computeSharedNet(vis);
+  var filteredSettl = filterPeriod(settlements);
+  var adjNet = net - _computeSettlAdjust(filteredSettl);
+
+  var balanceLine = Math.abs(adjNet) < 1
+    ? '✓ Sin saldos compartidos pendientes'
+    : (adjNet > 0
+        ? p2() + ' debe ' + fmtCLP(adjNet) + ' a ' + p1()
+        : p1() + ' debe ' + fmtCLP(Math.abs(adjNet)) + ' a ' + p2());
+
+  var lines = [
+    '═══════════════════════════════════',
+    'Resumen Qinflo — ' + periodLabel,
+    new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' }),
+    '═══════════════════════════════════',
+    '',
+    p1() + ' pagó:  ' + fmtCLP(mT),
+    p2() + ' pagó:  ' + fmtCLP(pT),
+    'Total:        ' + fmtCLP(mT + pT),
+    '',
+    'Balance compartido:',
+    balanceLine
+  ];
+
+  if (filteredSettl.length) {
+    lines.push('');
+    lines.push('Liquidaciones (' + filteredSettl.length + '):');
+    filteredSettl.forEach(function(sl) {
+      var debtor = sl.fromRole === 'papa' ? p2() : p1();
+      var creditor = sl.fromRole === 'papa' ? p1() : p2();
+      lines.push('• ' + (sl.date || '') + ' — ' + debtor + ' pagó ' + fmtCLP(sl.amount) + ' a ' + creditor);
+    });
+  }
+
+  if (vis.length) {
+    lines.push('');
+    lines.push('Gastos (' + vis.length + '):');
+    vis.forEach(function(ex) {
+      var paidByLabel = ex.paidBy === 'mama' ? p1() : p2();
+      var amtStr = ex.currency === 'UF' ? fmtUF(ex.amount) + ' (' + fmtCLP(toCLP(ex)) + ')' : fmtCLP(ex.amount);
+      lines.push('• ' + (ex.date || '') + ' — ' + ex.description + ' — ' + amtStr + ' — ' + paidByLabel);
+    });
+  }
+
+  lines.push('');
+  lines.push('Generado por Qinflo.cl');
+
+  var text = lines.join('\n');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      alert('✓ Resumen copiado al portapapeles');
+    }).catch(function() { prompt('Copia este resumen:', text); });
+  } else {
+    prompt('Copia este resumen:', text);
+  }
+}
+
 function renderExpenses() {
   if (!$('expStats')) return;
   var vis = filterPeriod(expenses).filter(function(e){ return !e.voided; });
@@ -126,26 +227,49 @@ function renderExpenses() {
   var pT = vis.filter(function(e) { return e.paidBy === 'papa'; }).reduce(function(s, e) { return s + toCLP(e); }, 0);
   var tot = vis.reduce(function(s, e) { return s + toCLP(e); }, 0);
   var nonCharge = vis.filter(function(e) { return e.treatment === 'pension'; }).reduce(function(s, e) { return s + toCLP(e); }, 0);
-  var unp = chargeable.filter(function(e) { return !e.paid; }).reduce(function(s, e) { return s + toCLP(e); }, 0);
-  var netBase = chargeable.filter(function(e){ return e.treatment === 'shared'; });
-  var net = netBase.reduce(function(s, e) {
-    var amount = toCLP(e);
-    var mShould = amount * ((e.pctMama == null ? 50 : e.pctMama) / 100);
-    var mPaid = e.paidBy === 'mama' ? amount : 0;
-    return s + (mPaid - mShould);
-  }, 0);
+
+  var net = _computeSharedNet(vis);
+  var filteredSettl = filterPeriod(settlements);
+  var adjNet = net - _computeSettlAdjust(filteredSettl);
+
   $('expStats').innerHTML =
     '<div class="stat-card" style="border-top-color:var(--accent)"><div class="stat-label">' + p1() + '</div><div class="stat-val">' + fmtCLP(mT) + '</div></div>' +
     '<div class="stat-card" style="border-top-color:var(--primary-d)"><div class="stat-label">' + p2() + '</div><div class="stat-val">' + fmtCLP(pT) + '</div></div>' +
     '<div class="stat-card" style="border-top-color:var(--warn)"><div class="stat-label">Total registrado</div><div class="stat-val">' + fmtCLP(tot) + '</div></div>' +
     '<div class="stat-card" style="border-top-color:var(--beige)"><div class="stat-label">Registro no cobrable</div><div class="stat-val">' + fmtCLP(nonCharge) + '</div></div>';
-  if (Math.abs(net) < 1) {
+
+  if (Math.abs(adjNet) < 1) {
     $('balanceBar').innerHTML = '<span style="color:var(--success);font-weight:600">✓ Sin saldos compartidos pendientes</span>';
-  } else if (net > 0) {
-    $('balanceBar').innerHTML = p2() + ' debe <b style="color:var(--warn)">' + fmtCLP(net) + '</b> a ' + p1() + ' por gastos compartidos';
+  } else if (adjNet > 0) {
+    $('balanceBar').innerHTML = p2() + ' debe <b style="color:var(--warn)">' + fmtCLP(adjNet) + '</b> a ' + p1() + ' por gastos compartidos';
   } else {
-    $('balanceBar').innerHTML = p1() + ' debe <b style="color:var(--warn)">' + fmtCLP(Math.abs(net)) + '</b> a ' + p2() + ' por gastos compartidos';
+    $('balanceBar').innerHTML = p1() + ' debe <b style="color:var(--warn)">' + fmtCLP(Math.abs(adjNet)) + '</b> a ' + p2() + ' por gastos compartidos';
   }
+
+  if ($('liquidarBtn')) $('liquidarBtn').classList.toggle('hidden', Math.abs(adjNet) < 1);
+
+  // settlements history
+  var sh = $('settlementsHistory');
+  if (sh) {
+    if (filteredSettl.length) {
+      var sRows = filteredSettl.map(function(sl) {
+        var debtor = sl.fromRole === 'papa' ? p2() : p1();
+        var creditor = sl.fromRole === 'papa' ? p1() : p2();
+        var dateStr = sl.date ? new Date(sl.date + 'T12:00').toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">' +
+          '<span style="color:var(--text-s)">' + dateStr + ' — ' + debtor + ' pagó a ' + creditor + '</span>' +
+          '<span style="font-weight:700;color:var(--success)">' + fmtCLP(sl.amount) + '</span>' +
+          '</div>';
+      }).join('');
+      sh.innerHTML = '<div style="margin-top:14px;background:rgba(107,171,107,.07);border:1px solid rgba(107,171,107,.25);border-radius:12px;padding:12px 16px">' +
+        '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--success);margin-bottom:4px">Liquidaciones del período</div>' +
+        sRows +
+        '</div>';
+    } else {
+      sh.innerHTML = '';
+    }
+  }
+
   $('expCount').textContent = vis.length + ' registros';
   var el = $('expList');
   if (!vis.length) { el.innerHTML = '<p class="empty-state">Sin gastos en este período</p>'; return; }
