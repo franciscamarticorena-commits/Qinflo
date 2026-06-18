@@ -2,7 +2,7 @@
 
 ## Repositorio
 - **GitHub**: franciscamarticorena-commits/Qinflo
-- **Rama de desarrollo activa**: `claude/qinflo-dev-continue-4cbkft`
+- **Rama principal**: `main` (desarrollo directo en main desde Fase 6)
 - **Rama anterior con Fases 3–5**: `origin/claude/agreements-list-ui-pGDd9` (ya mergeada)
 
 ## Regla crítica al comenzar cada sesión
@@ -17,7 +17,7 @@ Todos los archivos están en la **raíz del repo** (estructura plana, sin subcar
 Archivos principales:
 - `index.html` — HTML completo, carga todos los scripts al final del body
 - `styles.css` — estilos únicos
-- `firebase.js` — config Firebase (proyecto `kindflo-copadres`, no cambiar hasta tener proyecto definitivo)
+- `firebase.js` — config Firebase (proyecto `quinflo`, authDomain `qinflo.cl`)
 - `state.js` — variables globales: USER, USERDATA, CODATA, FAMILY_ID, custodyMap, etc.
 - `auth.js` — login, registro (email + Google), recuperación
 - `connect.js` — `showConnectScreen()`, `autoConnect(inviteCode)` — flujo de invitación
@@ -88,6 +88,7 @@ Ver código de cada módulo para el schema exacto.
 | 3 | Calendario automático, filtros, cambiar custodia, editar día, restaurar regla | `f2d1024`, `6b8084f`, `2c624e8` |
 | 4 | Módulo de Eventos completo (events.js, aprobaciones, privados) | `9f7810e` |
 | 5 | Flujo de invitación robusto: batch atómico, p1/p2, inviteConsumed, familyConfig heredado | `ec4be59` |
+| 5b | Google auth Safari/iOS fix + migración a Firebase Hosting | `140e76c` |
 
 ## Roadmap pendiente (en orden estricto)
 
@@ -101,14 +102,38 @@ Ver código de cada módulo para el schema exacto.
 
 ## Decisiones de diseño importantes
 - **Firebase compat SDK v10.12.0** (no modular), todo via `firebase.*` y `auth`/`db` globales
-- **Sin build step** — JS vanilla, sin bundler, desplegable directo con GitHub Pages / Firebase Hosting
+- **Sin build step** — JS vanilla, sin bundler, desplegable directo con Firebase Hosting
 - **p1 = la persona que se registró primero** (invitante), p2 = quien acepta la invitación
 - **Labels dinámicos**: `p1()` y `p2()` devuelven el label según `familyConfig` (ej. "Mamá" / "Papá")
 - **`inviteConsumed`**: guard idempotente para que el link solo funcione una vez
 - **Overrides manuales**: se guardan en `custodyOverrides` para poder restaurar la regla base
 - **Eventos privados**: `participants === 'mama'` solo los ve quien tiene `myRole() === 'p1'`
 
+## Google Auth en Safari/iOS — solución definitiva
+
+**Problema raíz**: Safari anula `window.opener` para tabs cross-origin. El popup de Google abre `/__/auth/handler` en el dominio de `authDomain`. Si `authDomain` es `quinflo.firebaseapp.com` pero la app está en `qinflo.cl`, son orígenes distintos → `window.opener` es null → Firebase no puede recibir el resultado.
+
+**Solución implementada**:
+1. Migrar hosting de GitHub Pages a **Firebase Hosting** → la app se sirve desde `qinflo.cl`
+2. `authDomain: "qinflo.cl"` en `firebase.js` → el handler corre en el mismo origen
+3. `signInWithPopup` para todas las plataformas (sin detección de Safari)
+4. Service worker excluye URLs `/__/auth/` para no interceptar el handler
+
+**Pasos de configuración que deben existir** (ya realizados, no tocar):
+- DNS: `qinflo.cl` A record → `199.36.158.100`, `www.qinflo.cl` CNAME → `quinflo.web.app`
+- Cloudflare: DNS only (sin proxy) para ambos registros
+- Firebase Hosting: dominio `qinflo.cl` conectado al proyecto `quinflo`
+- Google Cloud Console → OAuth Client → Authorized redirect URIs incluye `https://qinflo.cl/__/auth/handler`
+- Firebase Auth → Authorized domains incluye `qinflo.cl`
+
+**Si en el futuro Google auth deja de funcionar**, verificar en este orden:
+1. ¿`authDomain` en `firebase.js` sigue siendo `qinflo.cl`?
+2. ¿Firebase Hosting sigue sirviendo `qinflo.cl`? (Firebase Console → Hosting → estado "Conectado")
+3. ¿El redirect URI `https://qinflo.cl/__/auth/handler` sigue en Google Cloud Console?
+
 ## Notas de deployment
-- Dominio custom: ver `CNAME`
-- Firebase proyecto actual: `kindflo-copadres` (producción real, no romper)
-- Cuando exista proyecto Firebase definitivo de Qinflo: actualizar `firebase.js` y migrar reglas
+- **Hosting**: Firebase Hosting (proyecto `quinflo`)
+- **Dominio**: `qinflo.cl` → Firebase Hosting, `www.qinflo.cl` → `quinflo.web.app`
+- **Deploy automático**: GitHub Actions (`.github/workflows/firebase-hosting-deploy.yml`) en cada push a `main`
+- **Secret requerido**: `FIREBASE_SERVICE_ACCOUNT_QUINFLO` en GitHub repo secrets
+- **Firebase proyecto**: `quinflo` (ID y nombre con u — el dominio `qinflo.cl` no tiene u, son cosas distintas)
