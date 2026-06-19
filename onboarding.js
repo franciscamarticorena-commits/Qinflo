@@ -1,10 +1,14 @@
 // --- ONBOARDING -----------------------------------------------
 
+var LEGAL_TOS_VERSION     = '1.0';
+var LEGAL_PRIVACY_VERSION = '1.0';
+
 var onbCustodyConfig = {};
 var onbKidsList = [];
 var _coparentWatcher = null;
 
 var ONB_PANELS = [
+  'onbPanelWelcome',
   'onbPanelDisclaimer',
   'onbPanelType', 'onbPanelAltWeeks', 'onbPanelFixedDays',
   'onbPanelCustom', 'onbPanelUndefined', 'onbPanelLocation',
@@ -56,16 +60,48 @@ function startOnboarding() {
   _initOnbHourSelect();
   renderOnbFixedDaysTable();
   renderOnbAltDays();
-  showOnbPanel('onbPanelDisclaimer');
+  showOnbPanel('onbPanelWelcome');
   if ($('onbProgressFill')) $('onbProgressFill').style.width = '0%';
   if ($('onbStepLabel')) $('onbStepLabel').textContent = '';
   if ($('onbStepNum')) $('onbStepNum').textContent = '';
   updateOnbLabels();
 }
 
-function onbAcceptDisclaimer() {
+function goToOnbDisclaimer() {
+  showOnbPanel('onbPanelDisclaimer');
+  updateOnbProgress(1, 5, 'Aspectos legales');
+}
+
+function _onbCheckLegal() {
+  var ok = ($('onbCheckTOS') && $('onbCheckTOS').checked) &&
+           ($('onbCheckPrivacy') && $('onbCheckPrivacy').checked);
+  if ($('onbDisclaimerBtn')) $('onbDisclaimerBtn').disabled = !ok;
+}
+
+async function onbAcceptDisclaimer() {
+  if (!($('onbCheckTOS') && $('onbCheckTOS').checked) ||
+      !($('onbCheckPrivacy') && $('onbCheckPrivacy').checked)) {
+    showOnbMsg('Debes aceptar los Términos y la Política de Privacidad para continuar.');
+    return;
+  }
+  var newsletter = $('onbCheckNewsletter') ? $('onbCheckNewsletter').checked : false;
+  try {
+    if (USER) {
+      await db.collection('users').doc(USER.uid).update({
+        legalAcceptance: {
+          tosVersion:     LEGAL_TOS_VERSION,
+          privacyVersion: LEGAL_PRIVACY_VERSION,
+          tosAccepted:    true,
+          privacyAccepted: true,
+          newsletter:     newsletter,
+          acceptedAt:     firebase.firestore.FieldValue.serverTimestamp()
+        }
+      });
+    }
+  } catch(e) {
+    console.error('[legalAcceptance]', e);
+  }
   showOnbPanel('onbPanelType');
-  updateOnbProgress(1, 4, 'Configuración de cuidado');
 }
 
 function showOnbPanel(panelId) {
@@ -99,16 +135,16 @@ function selectOnbCustodyType(type) {
       $('onbStartDate').value = _todayDDMMAAAA();
     }
     showOnbPanel('onbPanelAltWeeks');
-    updateOnbProgress(1, 4, 'Semana por medio');
+    updateOnbProgress(2, 5, 'Semana por medio');
   } else if (type === 'fixed_days') {
     showOnbPanel('onbPanelFixedDays');
-    updateOnbProgress(1, 4, 'Días fijos por semana');
+    updateOnbProgress(2, 5, 'Días fijos por semana');
   } else if (type === 'custom') {
     showOnbPanel('onbPanelCustom');
-    updateOnbProgress(1, 4, 'Calendario personalizado');
+    updateOnbProgress(2, 5, 'Calendario personalizado');
   } else {
     showOnbPanel('onbPanelUndefined');
-    updateOnbProgress(1, 4, 'Sin rutina definida');
+    updateOnbProgress(2, 5, 'Sin rutina definida');
   }
 }
 
@@ -129,7 +165,7 @@ function saveOnbAltWeeks() {
     firstWeek: firstWeekEl.value
   });
   showOnbPanel('onbPanelLocation');
-  updateOnbProgress(2, 4, '¿Dónde ocurre el cambio?');
+  updateOnbProgress(3, 5, '¿Dónde ocurre el cambio?');
 }
 
 function renderOnbFixedDaysTable() {
@@ -197,7 +233,7 @@ function saveOnbFixedDays() {
     whoHasTodayDate: new Date().toISOString().slice(0, 10)
   });
   showOnbPanel('onbPanelLocation');
-  updateOnbProgress(2, 4, '¿Dónde ocurre el cambio?');
+  updateOnbProgress(3, 5, '¿Dónde ocurre el cambio?');
 }
 
 function saveOnbCustom() {
@@ -208,12 +244,12 @@ function saveOnbCustom() {
     whoHasTodayDate: new Date().toISOString().slice(0, 10)
   });
   showOnbPanel('onbPanelLocation');
-  updateOnbProgress(2, 4, '¿Dónde ocurre el cambio?');
+  updateOnbProgress(3, 5, '¿Dónde ocurre el cambio?');
 }
 
 function goToOnbKids() {
   showOnbPanel('onbPanelKids');
-  updateOnbProgress(3, 4, 'Hijos');
+  updateOnbProgress(4, 5, 'Hijos');
 }
 
 function toggleOnbLocationOther() {
@@ -302,7 +338,7 @@ async function saveOnboardingData(includeKids) {
       }));
     }
     showOnbPanel('onbPanelInvite');
-    updateOnbProgress(4, 4, 'Invitar al otro padre/madre');
+    updateOnbProgress(5, 5, 'Invitar al otro padre/madre');
     buildOnbInviteLink();
   } catch(e) {
     console.error('[onboarding save]', e);

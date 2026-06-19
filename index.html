@@ -166,24 +166,39 @@
       </div>
     </div>
 
-    <!-- Panel: Términos y Condiciones -->
-    <div id="onbPanelDisclaimer">
-      <div style="margin-bottom:24px">
-        <h2 style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:6px">Antes de comenzar</h2>
+    <!-- Panel: Bienvenida -->
+    <div id="onbPanelWelcome" class="hidden">
+      <div style="padding:8px 0 28px">
+        <h2 style="font-size:24px;font-weight:800;color:var(--text);margin-bottom:12px;line-height:1.3">Organiza la vida cotidiana de tus hijos en un solo lugar.</h2>
+        <p style="font-size:14px;color:var(--text-s);line-height:1.65">Qinflo te ayuda a coordinar la custodia, los gastos y los compromisos con el otro padre o madre, de forma clara y sin conflictos.</p>
+      </div>
+      <button class="btn-primary" style="width:100%" onclick="goToOnbDisclaimer()">Comenzar →</button>
+    </div>
+
+    <!-- Panel: Aspectos legales -->
+    <div id="onbPanelDisclaimer" class="hidden">
+      <h2 style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:16px">Aspectos legales</h2>
+
+      <div style="background:var(--primary-pale);border:1px solid rgba(20,184,166,.25);border-radius:12px;padding:14px 16px;margin-bottom:18px">
+        <p style="font-size:13px;color:var(--text);line-height:1.65;margin:0"><strong>Qinflo es una herramienta de organización y registro.</strong> No reemplaza acuerdos legales, mediación ni asesoría profesional. La información registrada en Qinflo es responsabilidad de sus usuarios.</p>
       </div>
 
-      <label style="display:flex;align-items:flex-start;gap:12px;padding:16px;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;cursor:pointer;margin-bottom:14px">
-        <input type="checkbox" id="onbDisclaimerCheck" style="margin-top:3px;flex-shrink:0;width:18px;height:18px;accent-color:var(--primary)" onchange="$('onbDisclaimerBtn').disabled=!this.checked"/>
-        <span style="font-size:13px;color:var(--text);line-height:1.6">He leído y acepto los <strong>Términos y Condiciones</strong> y la <strong>Política de Privacidad</strong> de Qinflo. Entiendo que Qinflo es una herramienta digital destinada a facilitar la organización y coordinación cotidiana del cuidado de los hijos. La información registrada es responsabilidad de sus usuarios y Qinflo no reemplaza la comunicación entre las partes, la asesoría profesional, los acuerdos notariales, los procesos de mediación ni las resoluciones judiciales.</span>
+      <label style="display:flex;align-items:flex-start;gap:12px;padding:14px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;margin-bottom:10px">
+        <input type="checkbox" id="onbCheckTOS" style="margin-top:3px;flex-shrink:0;width:18px;height:18px;accent-color:var(--primary)" onchange="_onbCheckLegal()"/>
+        <span style="font-size:13px;color:var(--text);line-height:1.5">He leído y acepto los <a href="terms.html" target="_blank" style="color:var(--primary-d);font-weight:600;text-decoration:none">Términos y Condiciones</a> de Qinflo.</span>
       </label>
 
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:22px;padding-left:2px">
-        <a href="terms.html" target="_blank" style="font-size:13px;color:var(--primary-d);font-weight:600;text-decoration:none">🔗 Ver Términos y Condiciones</a>
-        <a href="privacy.html" target="_blank" style="font-size:13px;color:var(--primary-d);font-weight:600;text-decoration:none">🔗 Ver Política de Privacidad</a>
-      </div>
+      <label style="display:flex;align-items:flex-start;gap:12px;padding:14px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;margin-bottom:10px">
+        <input type="checkbox" id="onbCheckPrivacy" style="margin-top:3px;flex-shrink:0;width:18px;height:18px;accent-color:var(--primary)" onchange="_onbCheckLegal()"/>
+        <span style="font-size:13px;color:var(--text);line-height:1.5">He leído y acepto la <a href="privacy.html" target="_blank" style="color:var(--primary-d);font-weight:600;text-decoration:none">Política de Privacidad</a> de Qinflo.</span>
+      </label>
+
+      <label style="display:flex;align-items:flex-start;gap:12px;padding:14px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;margin-bottom:20px">
+        <input type="checkbox" id="onbCheckNewsletter" style="margin-top:3px;flex-shrink:0;width:18px;height:18px;accent-color:var(--primary)"/>
+        <span style="font-size:13px;color:var(--text);line-height:1.5">Autorizo recibir novedades y consejos de Qinflo. <span style="color:var(--text-s)">(opcional)</span></span>
+      </label>
 
       <button id="onbDisclaimerBtn" class="btn-primary" style="width:100%" disabled onclick="onbAcceptDisclaimer()">Aceptar y continuar</button>
-      <p style="text-align:center;font-size:11px;color:var(--text-s);margin-top:10px;line-height:1.5">Al continuar, aceptas los Términos y Condiciones<br>y la Política de Privacidad de Qinflo.</p>
     </div>
 
     <!-- Panel: Tipo de custodia -->
@@ -1057,7 +1072,7 @@
 <script src="reminders.js?v=9"></script>
 <script src="resources.js?v=8"></script>
 <script src="observability.js?v=8"></script>
-<script src="onboarding.js?v=10"></script>
+<script src="onboarding.js?v=11"></script>
 <script src="events.js?v=10"></script>
 <script src="documents.js?v=1"></script>
 <script src="today.js?v=12"></script>
