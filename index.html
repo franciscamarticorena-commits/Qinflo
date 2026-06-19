@@ -933,37 +933,18 @@
   <div id="docList"></div>
 </div>
 
-<!-- -- INFORMACIÓN CLAVE --------------------------------- -->
+<!-- -- INFO / GUÍAS -------------------------------------- -->
 <div id="tab-info" class="hidden">
-  <div class="section-header">
-    <div class="section-title"><h2>Información clave</h2><p>Lo permanente y compartido</p></div>
+  <p class="section-lbl">Info</p>
+  <div class="card" style="padding:0;overflow:hidden;margin-bottom:24px">
+    <button onclick="switchTab('children')" class="info-nav-btn">Hijos<span>›</span></button>
+    <button onclick="switchTab('agreements')" class="info-nav-btn">Acuerdos<span>›</span></button>
+    <button onclick="switchTab('reminders')" class="info-nav-btn" style="border-bottom:none">Avisos<span>›</span></button>
   </div>
-  <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
-    <button onclick="switchTab('children')" style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left">
-      <i data-lucide="users-round" style="color:var(--primary);flex-shrink:0"></i>
-      <span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Hijos</span>
-      <i data-lucide="chevron-right" style="color:var(--text-s);flex-shrink:0"></i>
-    </button>
-    <button onclick="switchTab('agreements')" style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left">
-      <i data-lucide="file-check" style="color:var(--primary);flex-shrink:0"></i>
-      <span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Acuerdos</span>
-      <i data-lucide="chevron-right" style="color:var(--text-s);flex-shrink:0"></i>
-    </button>
-    <button onclick="switchTab('reminders')" style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left">
-      <i data-lucide="bell" style="color:var(--primary);flex-shrink:0"></i>
-      <span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Avisos</span>
-      <i data-lucide="chevron-right" style="color:var(--text-s);flex-shrink:0"></i>
-    </button>
-    <button onclick="switchTab('recursos')" style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left">
-      <i data-lucide="landmark" style="color:var(--primary);flex-shrink:0"></i>
-      <span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Recursos</span>
-      <i data-lucide="chevron-right" style="color:var(--text-s);flex-shrink:0"></i>
-    </button>
-    <button onclick="switchTab('documents')" style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left">
-      <i data-lucide="file-text" style="color:var(--primary);flex-shrink:0"></i>
-      <span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Documentos</span>
-      <i data-lucide="chevron-right" style="color:var(--text-s);flex-shrink:0"></i>
-    </button>
+  <p class="section-lbl">Guías</p>
+  <div class="card" style="padding:0;overflow:hidden">
+    <button onclick="switchTab('recursos')" class="info-nav-btn">Recursos<span>›</span></button>
+    <button onclick="switchTab('documents')" class="info-nav-btn" style="border-bottom:none">Documentos<span>›</span></button>
   </div>
 </div>
 

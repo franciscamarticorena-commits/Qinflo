@@ -666,6 +666,16 @@ main { max-width: 880px; margin: 0 auto; padding: 24px 16px 80px; }
   color: var(--text-s); text-transform: uppercase; letter-spacing: 1px;
 }
 
+/* --- INFO / GUÍAS NAV ------------------------------ */
+.info-nav-btn {
+  width: 100%; display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 18px; background: none; border: none;
+  border-bottom: 1px solid var(--border); cursor: pointer;
+  font-size: 15px; font-weight: 600; color: var(--text); font-family: inherit;
+  text-align: left;
+}
+.info-nav-btn span { color: var(--text-s); font-size: 18px; font-weight: 300; line-height: 1; }
+
 /* --- PROPOSALS ------------------------------------- */
 .proposal-card {
   background: var(--bg); border: 1px solid var(--border);
