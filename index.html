@@ -742,17 +742,17 @@
   </div>
 
   <div class="card">
-    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-      <div>
+    <div style="padding:12px 16px 10px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <span style="color:var(--text);font-weight:700;font-size:13px">Historial</span>
-        <span id="expCount" style="font-size:11px;color:var(--text-s);font-weight:400;margin-left:8px"></span>
+        <span id="expCount" style="font-size:11px;color:var(--text-s);font-weight:400"></span>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:10px;color:var(--text-s);font-weight:700;text-transform:uppercase;letter-spacing:.6px">Periodo</span><div class="period-filter" style="margin-bottom:0;flex:1;min-width:0">
+      <div class="period-filter" style="margin-bottom:0">
         <button class="active" data-period="week">Semana</button>
         <button data-period="month">Mes</button>
         <button data-period="year">Año</button>
         <button data-period="all">Todo</button>
-      </div></div>
+      </div>
     </div>
     <div id="expList"></div>
   </div>
@@ -1085,7 +1085,7 @@
 <script src="auth.js?v=9"></script>
 <script src="connect.js?v=8"></script>
 <script src="calendar.js?v=10"></script>
-<script src="expenses.js?v=12"></script>
+<script src="expenses.js?v=13"></script>
 <script src="messages.js?v=8"></script>
 <script src="children.js?v=8"></script>
 <script src="agreements.js?v=8"></script>

@@ -24,6 +24,13 @@ function treatmentLabel(v) {
   if (v === 'papa_only') return 'Pagado solo por ' + p2();
   return 'Compartido entre ambos';
 }
+function treatmentShortLabel(v) {
+  if (v === 'pension') return 'Pensión';
+  if (v === 'shared') return 'Compartido';
+  if (v === 'mama_only') return 'Solo ' + p1();
+  if (v === 'papa_only') return 'Solo ' + p2();
+  return 'Compartido';
+}
 function treatmentClass(v, paid) {
   if (v === 'pension') return 'no-charge';
   if (paid) return 'closed';
@@ -348,24 +355,36 @@ function renderExpenses() {
     var isPaid = ex.paid || ex.treatment === 'pension';
     var chipClass = treatmentClass(ex.treatment || 'shared', isPaid);
     row.innerHTML =
-      '<div style="flex:1">' +
-        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">' +
-          '<span style="font-weight:600;font-size:13px;color:var(--text)">' + ex.description + '</span>' +
-          '<span class="status-chip ' + chipClass + '">' + treatmentLabel(ex.treatment || 'shared') + '</span>' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px">' +
+        '<span style="font-weight:600;font-size:14px;color:var(--text);flex:1;line-height:1.3">' + ex.description + '</span>' +
+        '<div style="text-align:right;flex-shrink:0">' +
+          '<div style="font-weight:700;font-size:15px;color:var(--text)">' + (ex.currency === 'UF' ? fmtUF(ex.amount) : fmtCLP(ex.amount)) + '</div>' +
+          (ex.currency === 'UF' ? '<div style="font-size:10px;color:var(--text-s);margin-top:1px">' + fmtCLP(ex.amount * UF) + '</div>' : '') +
         '</div>' +
-        '<div style="font-size:11px;color:var(--text-s)">' + ex.date + ' · ' + ex.category + (ex.subcategory ? ' · ' + ex.subcategory : '') + ' · ' + frequencyLabel(ex.frequency || 'unique') + (ex.treatment === 'shared' ? ' · Distribución: ' + p1() + ' ' + (ex.pctMama == null ? 50 : ex.pctMama) + '% / ' + p2() + ' ' + (ex.pctPapa == null ? 50 : ex.pctPapa) + '%' : '') + (ex.category === 'Salud' && ex.healthRefund ? ' · Reembolso salud: ' + (ex.healthRefund === 'yes' ? 'Sí genera' : ex.healthRefund === 'no' ? 'No genera' : 'Pendiente') : '') + ' · Pagado por: ' + (ex.paidBy === 'mama' ? p1() : p2()) + '</div>' +
-        (ex.attachmentName ? '<div class="file-pill">📎 Respaldo gasto: ' + ex.attachmentName + '</div>' : '') +
-        (ex.reimbursementAttachmentName ? '<div class="file-pill">📎 Respaldo reembolso: ' + ex.reimbursementAttachmentName + '</div>' : '') +
       '</div>' +
-      '<div style="text-align:right;display:flex;align-items:center;gap:9px">' +
-        '<div>' +
-          '<div style="font-weight:700;font-size:14px;color:var(--text)">' + (ex.currency === 'UF' ? fmtUF(ex.amount) : fmtCLP(ex.amount)) + '</div>' +
-          (ex.currency === 'UF' ? '<div style="font-size:10px;color:var(--text-s)">' + fmtCLP(ex.amount * UF) + '</div>' : '') +
+      '<div style="display:flex;align-items:center;gap:6px">' +
+        '<span class="status-chip ' + chipClass + '" style="flex-shrink:0">' + treatmentShortLabel(ex.treatment || 'shared') + '</span>' +
+        '<span style="font-size:11px;color:var(--text-s);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + ex.date + ' · ' + ex.category + (ex.subcategory ? ' · ' + ex.subcategory : '') + '</span>' +
+        '<div style="display:flex;gap:5px;flex-shrink:0">' +
+          '<button class="exp-act-btn toggle-paid-btn" style="' + (ex.paid ? 'color:var(--success);border-color:#A7F3D0;background:#ECFDF5' : '') + '" title="' + (ex.paid ? 'Confirmado' : 'Marcar como pagado') + '">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+          '</button>' +
+          '<button class="exp-act-btn edit-btn" title="Editar">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+          '</button>' +
+          '<button class="exp-act-btn exp-act-danger void-btn" title="Anular">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>' +
+          '</button>' +
         '</div>' +
-        '<button class="btn-outline toggle-paid-btn" style="padding:7px 10px">' + (ex.paid ? 'Confirmado' : 'Marcar OK') + '</button>' +
-        '<button class="btn-outline edit-btn" title="Editar" style="padding:7px 10px">✏️</button>' +
-        '<button class="btn-danger void-btn" title="Anular"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>' +
-      '</div>';
+      '</div>' +
+      '<div style="font-size:11px;color:var(--text-s);margin-top:5px;display:flex;gap:6px;flex-wrap:wrap">' +
+        '<span>Pagado por ' + (ex.paidBy === 'mama' ? p1() : p2()) + '</span>' +
+        (ex.treatment === 'shared' ? '<span style="color:var(--border)">·</span><span>' + p1() + ' ' + (ex.pctMama == null ? 50 : ex.pctMama) + '% / ' + p2() + ' ' + (ex.pctPapa == null ? 50 : ex.pctPapa) + '%</span>' : '') +
+        (ex.frequency && ex.frequency !== 'unique' ? '<span style="color:var(--border)">·</span><span>' + frequencyLabel(ex.frequency) + '</span>' : '') +
+        (ex.category === 'Salud' && ex.healthRefund ? '<span style="color:var(--border)">·</span><span>Reembolso: ' + (ex.healthRefund === 'yes' ? 'Sí' : ex.healthRefund === 'no' ? 'No' : 'Pendiente') + '</span>' : '') +
+      '</div>' +
+      (ex.attachmentName ? '<div class="file-pill" style="margin-top:5px">📎 ' + ex.attachmentName + '</div>' : '') +
+      (ex.reimbursementAttachmentName ? '<div class="file-pill" style="margin-top:3px">📎 Reembolso: ' + ex.reimbursementAttachmentName + '</div>' : '');
     row.querySelector('.toggle-paid-btn').addEventListener('click', function() { famCol('expenses').doc(ex.id).update({ paid: !ex.paid, lastActionAt: firebase.firestore.FieldValue.serverTimestamp(), lastActionBy: USER.uid }); });
     row.querySelector('.edit-btn').addEventListener('click', function() { openExpEdit(ex); });
     row.querySelector('.void-btn').addEventListener('click', function() { if (confirm('Este gasto no se eliminará. Quedará anulado en el historial.')) famCol('expenses').doc(ex.id).update({ voided: true, voidedAt: firebase.firestore.FieldValue.serverTimestamp(), voidedBy: USER.uid }); });
