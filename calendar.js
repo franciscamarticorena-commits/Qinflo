@@ -232,7 +232,7 @@ function renderDayDetail() {
 
   // Reminders section
   if (rems.length) {
-    html += _detailSectionHdr('Recordatorios');
+    html += _detailSectionHdr('Avisos');
     html += rems.map(function(r) {
       return '<div class="detail-card">' +
         '<div style="font-weight:600;font-size:13px">' + r.title + '</div>' +

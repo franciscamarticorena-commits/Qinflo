@@ -532,10 +532,10 @@
     </div>
   </div>
 
-  <!-- Recordatorios próximos -->
+  <!-- Avisos próximos -->
   <div class="card">
     <div class="card-body">
-      <div class="stat-label" style="margin-bottom:8px">PRÓXIMOS 7 DÍAS</div>
+      <div class="stat-label" style="margin-bottom:8px">AVISOS PRÓXIMOS 7 DÍAS</div>
       <div id="todayRemindersBlock">—</div>
     </div>
   </div>
@@ -600,15 +600,15 @@
         <div class="day-detail-title">
           <i data-lucide="calendar-days"></i> Día <span id="detailDay"></span>
         </div>
-        <div id="detailEvents" style="margin-bottom:10px"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn-outline" id="editDayBtn">
-            <i data-lucide="pencil"></i> Editar día
+        <div id="detailEvents" style="margin-bottom:12px"></div>
+        <button class="btn-sm" id="toggleEvBtn" style="width:100%;justify-content:center;margin-bottom:14px">
+          <i data-lucide="plus"></i> Agregar evento
+        </button>
+        <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-outline" id="editDayBtn" style="font-size:12px">
+            <i data-lucide="pencil"></i> Editar custodia
           </button>
-          <button class="btn-outline" id="toggleEvBtn">
-            <i data-lucide="plus"></i> Agregar evento
-          </button>
-          <button class="btn-outline" id="togglePropBtn">
+          <button class="btn-outline" id="togglePropBtn" style="font-size:12px">
             <i data-lucide="arrow-left-right"></i> Proponer cambio
           </button>
         </div>
@@ -851,12 +851,12 @@
   <div class="section-header">
     <div>
       <button class="btn-outline" style="font-size:11px;padding:4px 10px;margin-bottom:8px" onclick="switchTab('info')">← Más</button>
-      <div class="section-title"><h2>Recordatorios</h2><p>No olvides ningún compromiso</p></div>
+      <div class="section-title"><h2>Avisos</h2><p>Notas rápidas entre ambos padres</p></div>
     </div>
     <button class="btn-sm" id="toggleRemBtn"><i data-lucide="plus"></i> Agregar</button>
   </div>
   <div id="remForm" class="hidden form-box">
-    <p style="font-weight:700;font-size:15px;color:var(--primary);margin-bottom:14px">Nuevo recordatorio</p>
+    <p style="font-weight:700;font-size:15px;color:var(--primary);margin-bottom:14px">Nuevo aviso</p>
     <div style="display:grid;gap:10px">
       <input class="inp" id="remTitle" placeholder="Título"/>
       <div class="grid-2">
@@ -951,7 +951,7 @@
     </button>
     <button onclick="switchTab('reminders')" style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left">
       <i data-lucide="bell" style="color:var(--primary);flex-shrink:0"></i>
-      <span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Recordatorios</span>
+      <span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Avisos</span>
       <i data-lucide="chevron-right" style="color:var(--text-s);flex-shrink:0"></i>
     </button>
     <button onclick="switchTab('recursos')" style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left">
@@ -1059,13 +1059,18 @@
           <span>Requiere confirmación del otro padre/madre</span>
         </label>
       </div>
-      <select class="sel" id="evReminder">
-        <option value="">Sin recordatorio</option>
-        <option value="2h">⏰ 2 horas antes</option>
-        <option value="1d">⏰ 1 día antes</option>
-        <option value="1w">⏰ 1 semana antes</option>
-      </select>
-      <textarea class="inp" id="evDescription" placeholder="Descripción (opcional)" rows="2" style="resize:none;line-height:1.4"></textarea>
+      <div style="background:var(--bg);border-radius:16px;padding:14px;border:1px solid var(--border)">
+        <div style="font-size:10px;font-weight:700;color:var(--text-s);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Aviso o tarea (opcional)</div>
+        <div style="display:grid;gap:8px">
+          <textarea class="inp" id="evDescription" placeholder="Ej: llevar las zapatillas rojas, confirmar turno, etc." rows="2" style="resize:none;line-height:1.4"></textarea>
+          <select class="sel" id="evReminder">
+            <option value="">Sin recordatorio anticipado</option>
+            <option value="2h">⏰ Recordar 2 horas antes</option>
+            <option value="1d">⏰ Recordar 1 día antes</option>
+            <option value="1w">⏰ Recordar 1 semana antes</option>
+          </select>
+        </div>
+      </div>
     </div>
     <div style="display:flex;gap:8px;margin-top:16px;padding-bottom:env(safe-area-inset-bottom,0px)">
       <button class="btn-primary" style="flex:1" onclick="saveEvent()">Guardar evento</button>
@@ -1079,18 +1084,18 @@
 <script src="state.js?v=8"></script>
 <script src="auth.js?v=9"></script>
 <script src="connect.js?v=8"></script>
-<script src="calendar.js?v=9"></script>
+<script src="calendar.js?v=10"></script>
 <script src="expenses.js?v=12"></script>
 <script src="messages.js?v=8"></script>
 <script src="children.js?v=8"></script>
 <script src="agreements.js?v=8"></script>
-<script src="reminders.js?v=8"></script>
+<script src="reminders.js?v=9"></script>
 <script src="resources.js?v=8"></script>
 <script src="observability.js?v=8"></script>
 <script src="onboarding.js?v=9"></script>
 <script src="events.js?v=8"></script>
 <script src="documents.js?v=1"></script>
-<script src="today.js?v=10"></script>
+<script src="today.js?v=11"></script>
 <script src="theme.js?v=1"></script>
 <script src="app-shell.js?v=12"></script>
 </body>

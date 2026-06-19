@@ -316,7 +316,7 @@ function _todayReminders(now, todayStr) {
   }).slice(0, 4);
 
   if (!upcoming.length) {
-    el.innerHTML = '<span style="color:var(--text-s);font-size:13px">Sin recordatorios esta semana</span>';
+    el.innerHTML = '<span style="color:var(--text-s);font-size:13px">Sin avisos esta semana</span>';
     return;
   }
 

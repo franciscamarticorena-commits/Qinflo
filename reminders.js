@@ -15,7 +15,7 @@ async function saveRem() {
   }
   $('remTitle').value = ''; $('remDate').value = '';
   var hdr = document.querySelector('#remForm p');
-  if (hdr) hdr.textContent = 'Nuevo recordatorio';
+  if (hdr) hdr.textContent = 'Nuevo aviso';
   hide('remForm');
 }
 
@@ -23,7 +23,7 @@ function cancelRemForm() {
   editingRemId = null;
   $('remTitle').value = ''; $('remDate').value = '';
   var hdr = document.querySelector('#remForm p');
-  if (hdr) hdr.textContent = 'Nuevo recordatorio';
+  if (hdr) hdr.textContent = 'Nuevo aviso';
   hide('remForm');
 }
 
@@ -33,7 +33,7 @@ function openRemEdit(r) {
   $('remDate').value = r.date || '';
   $('remFor').value = r.for || 'both';
   var hdr = document.querySelector('#remForm p');
-  if (hdr) hdr.textContent = 'Editar recordatorio';
+  if (hdr) hdr.textContent = 'Editar aviso';
   $('remForm').classList.remove('hidden');
   $('remTitle').focus();
 }
@@ -46,7 +46,7 @@ function renderReminders() {
   if (!el) return;
   var up = reminders.filter(function(r) { return !r.done; }).sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
   var done = reminders.filter(function(r) { return r.done; });
-  if (!reminders.length) { el.innerHTML = '<div class="empty-state">Sin recordatorios</div>'; return; }
+  if (!reminders.length) { el.innerHTML = '<div class="empty-state">Sin avisos</div>'; return; }
   el.innerHTML = '';
   if (up.length) {
     var hdr = document.createElement('p');
