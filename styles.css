@@ -910,3 +910,89 @@ footer {
   font-size:14px;
   margin:12px 0 12px;
 }
+
+/* --- DARK MODE --------------------------------------------- */
+[data-theme="dark"] {
+  --bg:        #111614;
+  --surface:   #1B2220;
+  --primary:   #7AA896;
+  --primary-d: #AACEC4;
+  --accent:    #E39A70;
+  --beige:     #272219;
+  --text:      #E4E2DD;
+  --text-s:    #8A9690;
+  --border:    #28322E;
+  --success:   #7A9B76;
+  --warn:      #D8A45F;
+  --error:     #C87878;
+  --shadow:    0 2px 16px rgba(0,0,0,.5);
+  --shadow-md: 0 6px 28px rgba(0,0,0,.6);
+}
+
+[data-theme="dark"] body { background: var(--bg); color: var(--text); }
+
+[data-theme="dark"] header {
+  background: rgba(27,34,32,.97) !important;
+  border-bottom-color: var(--border) !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,.4) !important;
+  backdrop-filter: blur(14px);
+}
+
+[data-theme="dark"] nav {
+  background: var(--surface) !important;
+  border-top-color: var(--border) !important;
+}
+[data-theme="dark"] nav button { color: var(--text-s) !important; }
+[data-theme="dark"] nav button.active { color: var(--primary-d) !important; border-bottom-color: var(--primary) !important; }
+[data-theme="dark"] nav button:hover:not(.active) { background: rgba(255,255,255,.04) !important; color: var(--text) !important; }
+
+[data-theme="dark"] .card { background: var(--surface) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .authBox,
+[data-theme="dark"] .connectBox,
+[data-theme="dark"] .form-box,
+[data-theme="dark"] .day-detail,
+[data-theme="dark"] .resource-card { background: var(--surface) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .legend-item,
+[data-theme="dark"] .uf-banner,
+[data-theme="dark"] .balance-bar,
+[data-theme="dark"] .info-tip { background: var(--surface) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .stat-card { background: var(--surface) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .detail-card { background: var(--bg) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .file-pill { background: var(--bg) !important; border-color: var(--border) !important; }
+
+[data-theme="dark"] .inp,
+[data-theme="dark"] .sel,
+[data-theme="dark"] textarea { background: var(--bg) !important; border-color: var(--border) !important; color: var(--text) !important; }
+[data-theme="dark"] .inp:focus,
+[data-theme="dark"] .sel:focus { border-color: var(--primary) !important; background: var(--surface) !important; }
+
+[data-theme="dark"] .quick-reply-btn { background: var(--surface) !important; border-color: var(--border) !important; color: var(--text-s) !important; }
+[data-theme="dark"] .msg-bubble.me { background: var(--primary-d) !important; color: #111 !important; }
+[data-theme="dark"] .msg-bubble.other { background: var(--surface) !important; border-color: var(--border) !important; }
+
+[data-theme="dark"] .cal-day { background: var(--surface) !important; border-color: var(--border) !important; color: var(--text) !important; }
+[data-theme="dark"] .cal-day.mama { background: rgba(197,106,69,.20) !important; border-color: rgba(197,106,69,.36) !important; }
+[data-theme="dark"] .cal-day.papa { background: rgba(111,123,75,.20) !important; border-color: rgba(111,123,75,.34) !important; }
+[data-theme="dark"] .cal-day.transition { background: rgba(242,231,219,.10) !important; border-color: rgba(182,166,146,.28) !important; }
+[data-theme="dark"] .cal-day.today { border-color: var(--accent) !important; color: var(--accent) !important; }
+[data-theme="dark"] .cal-day.selected { border-color: var(--primary) !important; box-shadow: 0 0 0 4px rgba(122,168,150,.18) !important; }
+
+[data-theme="dark"] .period-filter { background: var(--surface) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .period-filter button:not(.active) { color: var(--text-s) !important; background: transparent !important; }
+
+[data-theme="dark"] .btn-danger { background: rgba(200,120,120,.18) !important; }
+[data-theme="dark"] .btn-done { background: var(--bg) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .btn-undo { background: var(--bg) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .btn-outline { background: rgba(255,255,255,.04) !important; border-color: var(--border) !important; color: var(--text) !important; }
+[data-theme="dark"] .icon-btn { background: var(--surface) !important; border-color: var(--border) !important; color: var(--text) !important; }
+
+[data-theme="dark"] #expDistributionBox { background: rgba(255,255,255,.04) !important; border-color: var(--border) !important; }
+[data-theme="dark"] #authScreen { background: var(--bg) !important; }
+[data-theme="dark"] .btn-google { background: var(--surface) !important; border-color: var(--border) !important; color: var(--text) !important; }
+
+[data-theme="dark"] .exp-row { border-color: var(--border) !important; }
+[data-theme="dark"] .rem-row { border-color: var(--border) !important; }
+[data-theme="dark"] .agr-row { border-color: var(--border) !important; }
+[data-theme="dark"] .tabs { background: var(--bg) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .tabs button.active { background: var(--surface) !important; }
+

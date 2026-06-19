@@ -13,6 +13,13 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <meta name="apple-mobile-web-app-title" content="Qinflo"/>
+<script>
+(function(){
+  var t=localStorage.getItem('qinflo-theme');
+  if(t==='dark'||(t==null&&window.matchMedia('(prefers-color-scheme:dark)').matches))
+    document.documentElement.setAttribute('data-theme','dark');
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
@@ -451,6 +458,9 @@
         <div class="header-actions">
           <button class="icon-btn" id="inviteBtn" title="Invitar">
             <i data-lucide="link" style="width:16px;height:16px"></i>
+          </button>
+          <button class="icon-btn" id="themeToggleBtn" title="Cambiar a modo oscuro" style="width:36px;height:36px;padding:0;display:flex;align-items:center;justify-content:center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           </button>
           <button class="icon-btn" id="avatarBtn" title="Mi perfil" style="background:var(--primary);color:#fff;border-radius:50%;width:32px;height:32px;font-weight:700;font-size:13px;padding:0;display:flex;align-items:center;justify-content:center">
             <span id="avatarInitial">?</span>
@@ -1000,6 +1010,13 @@
         <span style="flex:1;font-size:14px;color:var(--text)">Ayuda y soporte</span>
         <span style="font-size:10px;color:var(--text-s);font-weight:600;background:var(--border);border-radius:6px;padding:2px 7px">Pronto</span>
       </button>
+      <button id="themeTogglePanelBtn" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 20px;background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left">
+        <span id="themeIconPanel" style="flex-shrink:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:var(--text-s)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
+        <span id="themeToggleLbl" style="flex:1;font-size:14px;color:var(--text)">Modo oscuro</span>
+        <div id="themeTrack" style="width:36px;height:20px;background:var(--border);border-radius:99px;position:relative;transition:background .2s;flex-shrink:0">
+          <div id="themeKnob" style="position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.25)"></div>
+        </div>
+      </button>
       <button id="logoutBtn" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 20px;background:none;border:none;cursor:pointer;text-align:left;color:var(--error)">
         <i data-lucide="log-out" style="flex-shrink:0;width:18px;height:18px"></i>
         <span style="font-size:14px;font-weight:600">Cerrar sesión</span>
@@ -1074,7 +1091,8 @@
 <script src="events.js?v=8"></script>
 <script src="documents.js?v=1"></script>
 <script src="today.js?v=10"></script>
-<script src="app-shell.js?v=11"></script>
+<script src="theme.js?v=1"></script>
+<script src="app-shell.js?v=12"></script>
 </body>
 </html>
 

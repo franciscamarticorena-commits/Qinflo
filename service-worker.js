@@ -1,4 +1,4 @@
-const QINFLO_CACHE = 'qinflo-cache-v12';
+const QINFLO_CACHE = 'qinflo-cache-v13';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -19,6 +19,7 @@ const STATIC_ASSETS = [
   './events.js',
   './documents.js',
   './today.js',
+  './theme.js',
   './app-shell.js',
   './manifest.json',
   './favicon.svg',

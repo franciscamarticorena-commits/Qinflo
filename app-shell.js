@@ -207,6 +207,7 @@ function setupListeners() {
 // --- EVENT LISTENERS ----------------------------------------
 window.addEventListener('DOMContentLoaded', function() {
   lucide.createIcons();
+  if (typeof initTheme === 'function') initTheme();
 
   // Auth
   $('tabLoginBtn').addEventListener('click', switchToLogin);
