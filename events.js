@@ -205,15 +205,18 @@ function renderEventApprovals() {
       '</div>';
     el.appendChild(div);
   });
-  pendingByMe.forEach(function(ev) {
-    var icon = CAT_ICONS[ev.category] || '📋';
-    var div = document.createElement('div');
-    div.className = 'proposal-alert';
-    div.innerHTML = '<div><strong>' + icon + ' Esperando confirmación</strong><br>' +
-      '<strong>' + ev.title + '</strong> — ' + ev.date + (ev.time ? ' · ' + ev.time : '') + '<br>' +
-      '<em style="font-size:12px;color:var(--text-s)">Esperando respuesta del otro padre/madre.</em></div>';
-    el.appendChild(div);
-  });
+  if (pendingByMe.length) {
+    var waitDiv = document.createElement('div');
+    waitDiv.className = 'ev-waiting-group';
+    waitDiv.innerHTML = pendingByMe.map(function(ev) {
+      return '<div class="ev-waiting-row">' +
+        '<span class="ev-waiting-title">' + ev.title + '</span>' +
+        '<span class="ev-waiting-meta">' + ev.date + (ev.time ? ' · ' + ev.time : '') + '</span>' +
+        '<span class="ev-waiting-badge">Pend. confirmación</span>' +
+      '</div>';
+    }).join('');
+    el.appendChild(waitDiv);
+  }
 }
 
 window.renderEventApprovals = renderEventApprovals;

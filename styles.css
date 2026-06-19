@@ -454,6 +454,24 @@ main { max-width: 880px; margin: 0 auto; padding: 24px 16px 80px; }
 }
 .proposal-alert strong { color: var(--text); font-weight: 700; }
 
+/* Minimal waiting indicator — no action needed, no emphasis */
+.ev-waiting-group {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 14px; margin-bottom: 14px; overflow: hidden;
+}
+.ev-waiting-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.ev-waiting-row:last-child { border-bottom: none; }
+.ev-waiting-title { font-weight: 600; color: var(--text); flex-shrink: 0; }
+.ev-waiting-meta { color: var(--text-s); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ev-waiting-badge {
+  flex-shrink: 0; font-size: 10px; font-weight: 600; color: var(--text-s);
+  background: var(--border); border-radius: 6px; padding: 2px 7px; white-space: nowrap;
+}
+
 /* --- DAY DETAIL ------------------------------------ */
 .day-detail {
   margin-top: 16px; background: var(--bg); border-radius: 20px;
