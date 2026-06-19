@@ -22,6 +22,7 @@ function renderToday() {
   _todayBalance();
   _todayEvents(todayStr);
   _todayReminders(now, todayStr);
+  if (typeof renderTodayActivity === 'function') renderTodayActivity();
 }
 
 async function confirmKidsWithMe(btnEl) {
@@ -35,6 +36,9 @@ async function confirmKidsWithMe(btnEl) {
         at: firebase.firestore.FieldValue.serverTimestamp()
       }
     });
+    if (typeof logActivity === 'function') {
+      logActivity('custody_confirmed', myLabel() + ' confirmó que los niños ya están en casa');
+    }
     if (btnEl) {
       btnEl.textContent = '✓ Confirmado';
       setTimeout(function() { renderToday(); }, 2000);
@@ -67,10 +71,17 @@ function acceptPropInline(propId) {
   if (!p) return;
   famCol('proposals').doc(propId).update({ status: 'accepted', respondedAt: firebase.firestore.FieldValue.serverTimestamp(), respondedBy: USER.uid });
   if (typeof setCustody === 'function') setCustody(Number(p.toDay), 'transition');
+  if (typeof logActivity === 'function') {
+    logActivity('proposal_accepted', myLabel() + ' aprobó cambio de custodia: Día ' + p.fromDay + ' → Día ' + p.toDay, { proposalId: propId });
+  }
 }
 
 function rejectPropInline(propId) {
+  var p = (proposals || []).find(function(x) { return x.id === propId; });
   famCol('proposals').doc(propId).update({ status: 'rejected', respondedAt: firebase.firestore.FieldValue.serverTimestamp(), respondedBy: USER.uid });
+  if (typeof logActivity === 'function' && p) {
+    logActivity('proposal_rejected', myLabel() + ' rechazó cambio de custodia: Día ' + p.fromDay + ' → Día ' + p.toDay, { proposalId: propId });
+  }
 }
 
 function _todayPendingRequests() {
