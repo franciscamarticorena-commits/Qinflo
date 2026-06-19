@@ -508,6 +508,16 @@
     </div>
   </div>
 
+  <!-- Actividad reciente — solo aparece si hay registros -->
+  <div id="todayActivityCard" class="hidden">
+    <div class="card">
+      <div class="card-body">
+        <div class="stat-label" style="margin-bottom:8px">ACTIVIDAD RECIENTE</div>
+        <div id="todayActivityBlock"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Los niños ya están conmigo -->
   <button id="kidsWithMeBtn" class="btn-primary" style="margin-bottom:14px" onclick="confirmKidsWithMe()">
     Los niños ya están conmigo
@@ -983,10 +993,10 @@
 
 
 <script src="firebase.js?v=8"></script>
-<script src="state.js?v=8"></script>
+<script src="state.js?v=9"></script>
 <script src="auth.js?v=8"></script>
 <script src="connect.js?v=8"></script>
-<script src="calendar.js?v=8"></script>
+<script src="calendar.js?v=9"></script>
 <script src="expenses.js?v=8"></script>
 <script src="messages.js?v=8"></script>
 <script src="children.js?v=8"></script>
@@ -995,9 +1005,10 @@
 <script src="resources.js?v=8"></script>
 <script src="observability.js?v=8"></script>
 <script src="onboarding.js?v=8"></script>
-<script src="events.js?v=8"></script>
-<script src="today.js?v=9"></script>
-<script src="app-shell.js?v=8"></script>
+<script src="events.js?v=9"></script>
+<script src="activity.js?v=1"></script>
+<script src="today.js?v=10"></script>
+<script src="app-shell.js?v=9"></script>
 </body>
 </html>
 

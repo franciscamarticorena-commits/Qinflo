@@ -92,6 +92,9 @@ async function saveEvent() {
       data.approvedBy = null; data.approvedAt = null;
       data.rejectedBy = null; data.rejectedAt = null;
       await famCol('events').add(data);
+      if (typeof logActivity === 'function') {
+        logActivity('event_created', myLabel() + ' creó el evento: ' + title + ' (' + date + ')', { title: title, date: date });
+      }
     }
     closeEventForm();
   } catch(e) {
@@ -126,6 +129,9 @@ async function approveEvent(eventId) {
       modifiedBy: USER ? USER.uid : null,
       modifiedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    if (typeof logActivity === 'function') {
+      logActivity('event_approved', myLabel() + ' confirmó el evento: ' + (ev.title || '') + ' (' + (ev.date || '') + ')', { eventId: eventId });
+    }
   } catch(e) { console.error('[approveEvent]', e); }
 }
 
@@ -140,6 +146,9 @@ async function rejectEvent(eventId) {
       modifiedBy: USER ? USER.uid : null,
       modifiedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    if (typeof logActivity === 'function') {
+      logActivity('event_rejected', myLabel() + ' rechazó el evento: ' + (ev.title || '') + ' (' + (ev.date || '') + ')', { eventId: eventId });
+    }
   } catch(e) { console.error('[rejectEvent]', e); }
 }
 

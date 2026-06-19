@@ -299,6 +299,9 @@ async function saveProp() {
     createdByRole: myRole(),
     requestedToRole: oppositeRole(myRole())
   });
+  if (typeof logActivity === 'function') {
+    logActivity('proposal_created', myLabel() + ' solicitó cambio de custodia: Día ' + from + ' → Día ' + to, { fromDay: from, toDay: to });
+  }
   $('propFrom').value = ''; $('propTo').value = ''; $('propReason').value = '';
   hide('propForm');
 }
@@ -314,8 +317,15 @@ function renderProposals() {
     var div = document.createElement('div');
     div.className = 'proposal-alert';
     div.innerHTML = '<div><strong>Solicitud de cambio de custodia pendiente</strong><br><strong>' + proposalRequesterLabel(pr) + '</strong> solicita a <strong>' + proposalRequestedLabel(pr) + '</strong><br>Cambio solicitado: Día ' + pr.fromDay + ' → Día ' + pr.toDay + '<br>Enviada: ' + fmtDateTime(pr.createdAt || pr.date) + (pr.reason ? '<br>' + pr.reason : '') + '<div class="proposal-flow-note">Debes aprobar o rechazar esta solicitud antes de crear una nueva.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm accept-btn" style="background:var(--success)">Aceptar</button><button class="btn-outline reject-btn">Rechazar</button></div>';
-    div.querySelector('.accept-btn').addEventListener('click', async function() { await famCol('proposals').doc(pr.id).update({ status: 'accepted', respondedAt: firebase.firestore.FieldValue.serverTimestamp(), respondedBy: USER.uid }); setCustody(Number(pr.toDay), 'transition'); });
-    div.querySelector('.reject-btn').addEventListener('click', function() { famCol('proposals').doc(pr.id).update({ status: 'rejected', respondedAt: firebase.firestore.FieldValue.serverTimestamp(), respondedBy: USER.uid }); });
+    div.querySelector('.accept-btn').addEventListener('click', async function() {
+      await famCol('proposals').doc(pr.id).update({ status: 'accepted', respondedAt: firebase.firestore.FieldValue.serverTimestamp(), respondedBy: USER.uid });
+      setCustody(Number(pr.toDay), 'transition');
+      if (typeof logActivity === 'function') logActivity('proposal_accepted', myLabel() + ' aprobó cambio de custodia: Día ' + pr.fromDay + ' → Día ' + pr.toDay, { proposalId: pr.id });
+    });
+    div.querySelector('.reject-btn').addEventListener('click', function() {
+      famCol('proposals').doc(pr.id).update({ status: 'rejected', respondedAt: firebase.firestore.FieldValue.serverTimestamp(), respondedBy: USER.uid });
+      if (typeof logActivity === 'function') logActivity('proposal_rejected', myLabel() + ' rechazó cambio de custodia: Día ' + pr.fromDay + ' → Día ' + pr.toDay, { proposalId: pr.id });
+    });
     el.appendChild(div);
   });
   pendingSent.forEach(function(pr) {

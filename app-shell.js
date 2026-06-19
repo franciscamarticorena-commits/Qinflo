@@ -192,6 +192,10 @@ function setupListeners() {
     renderCalendar();
     renderToday();
   });
+  famCol('activity').orderBy('createdAt', 'desc').limit(20).onSnapshot(function(s) {
+    activityLog = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
+    if (typeof renderTodayActivity === 'function') renderTodayActivity();
+  });
 }
 
 // --- EVENT LISTENERS ----------------------------------------
