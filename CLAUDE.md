@@ -1,5 +1,34 @@
 # Qinflo — Contexto del proyecto para Claude
 
+## Visión de producto (norte estratégico)
+
+> "Qinflo no reemplaza al otro padre o madre. Reemplaza la necesidad de recordar y volver a conversar lo mismo."
+
+**Qinflo es un sistema de verdad compartida**, no un calendario ni un chat ni una app de gastos.
+
+**Principio de producto**: Disminuir carga mental, conversaciones repetidas y dependencia de la memoria. La coordinación debe basarse en hechos, no en mensajes.
+
+**Principio de diseño**: Menos módulos. Más hechos. Menos conversaciones. Más claridad compartida.
+
+### Qué NO hacer
+No incorporar: IA, chat complejo, transferencias de dinero, fotos, álbumes, geolocalización, videollamadas, módulos adicionales innecesarios.
+
+### Priorización de producto (por orden de impacto)
+
+1. **Pantalla Hoy (centro de mando)** — Al abrir, entender qué pasa en < 5 segundos: con quién están los niños, próximo cambio, próximos eventos (7 días), esperando respuesta, recordatorios, balance.
+
+2. **"Esperando respuesta"** (no llamarlo "Pendientes") — Una sola tarjeta que agrupa: cambio de custodia pendiente, evento por confirmar, gasto por confirmar, acuerdo por revisar. Mostrar: quién solicitó, fecha, estado.
+
+3. **Actividad** — Tarjeta dentro de Pantalla Hoy, no módulo independiente. Lista cronológica de hechos: "Mamá confirmó recepción de los niños", "Papá aprobó cambio Día del Padre", "Gasto uniforme registrado". Objetivo: transformar conversaciones en hechos, la coordinación deja de depender de la memoria.
+
+4. **Timeline histórico** — Historial único por fecha que incluye eventos, gastos, cambios de custodia, acuerdos, confirmaciones. Objetivo: eliminar "no me acuerdo", "nunca me dijiste", "¿cuándo fue?"
+
+5. **Confirmaciones** — Solo para días de cambio de casa. Registra: quién confirmó, fecha y hora exacta. Genera realidad compartida verificable.
+
+6. **Google Calendar** — Sincronización bidireccional para no duplicar trabajo (largo plazo).
+
+---
+
 ## Repositorio
 - **GitHub**: franciscamarticorena-commits/Qinflo
 - **Rama principal**: `main` (desarrollo directo en main desde Fase 6)
@@ -22,15 +51,16 @@ Archivos principales:
 - `auth.js` — login, registro (email + Google), recuperación
 - `connect.js` — `showConnectScreen()`, `autoConnect(inviteCode)` — flujo de invitación
 - `app-shell.js` — listener auth, `loadApp()`, `setupListeners()`, listeners DOM, tabs, fetchUF
-- `calendar.js` — renderCalendar, setCustody, overrides manuales, restoreBaseRule, proposals
-- `events.js` — módulo de eventos: CRUD, aprobaciones, eventos privados, renderEventApprovals
+- `calendar.js` — renderCalendar, setCustody, proposals (sin edición directa de custodia)
+- `events.js` — módulo de eventos: CRUD, aprobaciones, eventos privados
 - `onboarding.js` — onboarding completo + `generateOnbCalendar()` + `getOnbCustodyForDate()`
 - `expenses.js` — gastos, UF, balance, marcar pagado, anular
-- `messages.js` — mensajes en tiempo real, quick replies
+- `messages.js` — mensajes en tiempo real, quick replies editables, divisor de tema
 - `children.js` — perfiles de hijos
 - `agreements.js` — acuerdos
 - `reminders.js` — recordatorios
 - `resources.js` — recursos de apoyo Chile
+- `today.js` — dashboard Hoy: custodia, pendientes, eventos, avisos, balance
 - `observability.js` — Sentry + PostHog desactivados (sin llaves reales)
 - `manifest.json` + `service-worker.js` — PWA base
 
@@ -39,13 +69,20 @@ Archivos principales:
 ### `/users/{uid}`
 ```
 name, email, role (p1|p2), familyId, coparentId, inviteCode, inviteConsumed,
-onboardingCompleted, familyConfig { p1Label, p2Label }, createdAt
+onboardingCompleted, familyConfig { p1Label, p2Label }, createdAt,
+quickReplies [],
+legalAcceptance {
+  tosVersion, privacyVersion,
+  tosAccepted, privacyAccepted,
+  newsletter,
+  acceptedAt (Timestamp)
+}
 ```
 
 ### `/families/{famId}`
 ```
 members[], p1Uid, p2Uid, memberRoles.{uid}, custodyConfig, specialRules,
-createdBy, createdAt
+createdBy, createdAt, calAlgVersion
 ```
 **`custodyConfig`** puede ser:
 - `{ type: 'alternating_weeks', changeDay, changeTime, startDate, firstWeek, changeLocation }`
@@ -71,9 +108,18 @@ cancelledBy, cancelledAt, approvedBy, approvedAt, rejectedBy, rejectedAt
 
 ### `/families/{famId}/proposals/{id}`
 ```
-fromDay, toDay, reason, status (pending|accepted|rejected), date,
+fromDate (ISO), toDate (ISO),
+fromDay, toDay (numérico, compat),
+reason, status (pending|accepted|rejected), date,
 createdAt, createdBy, createdByName, createdByRole, requestedToRole,
 respondedAt, respondedBy
+```
+**Nota**: Las propuestas solo se crean vía flujo de aprobación (no hay edición directa de custodia).
+Mínimo = mañana. El remitente puede retirar su propia solicitud pendiente.
+
+### `/families/{famId}/settlements/{id}`
+```
+amount (CLP), fromRole (mama|papa), toRole (mama|papa), date, createdAt, createdBy
 ```
 
 ### `/families/{famId}/expenses/{id}`, `/messages/{id}`, `/children/{id}`, `/agreements/{id}`, `/reminders/{id}`
@@ -89,16 +135,36 @@ Ver código de cada módulo para el schema exacto.
 | 4 | Módulo de Eventos completo (events.js, aprobaciones, privados) | `9f7810e` |
 | 5 | Flujo de invitación robusto: batch atómico, p1/p2, inviteConsumed, familyConfig heredado | `ec4be59` |
 | 5b | Google auth Safari/iOS fix + migración a Firebase Hosting | `140e76c` |
+| 6 | Firestore Rules desplegadas via CI, Documentos, PWA store assets, T&C onboarding | `3619277..a4b1b1f` |
+| 7 | Acuerdos — edición, firma simple, cambio de estado inline, cards mejoradas | `a5a390a` |
+| 8 | Gastos — liquidar balance, exportar resumen texto, historial de liquidaciones | — |
+| 9 | Dashboard "Hoy" — custodia, pendientes, eventos, avisos, balance con liquidaciones | `1898133` |
+| 9b | Onboarding legal — panel Bienvenida, 3 checkboxes separados, audit trail Firestore | `d2b6896` |
 
 ## Roadmap pendiente (en orden estricto)
 
 | Fase | Descripción | Prioridad |
 |------|-------------|-----------|
-| **6** | **Firestore Rules** — datos cerrados: users solo lectura propia + coparent, families/subcol solo members[] | Alta |
-| 7 | Acuerdos — mejorar UI, firma digital simple, historial | Media |
-| 8 | Gastos — liquidar balance, exportar resumen texto, historial de pagos | Media |
-| 9 | Dashboard "Hoy" — card resumen: quién tiene hoy, próximo cambio, balance pendiente, recordatorios | Media |
 | 10 | Push notifications — FCM para mensajes nuevos, cambios pendientes, recordatorios | Baja |
+
+## Backlog (sin fecha — requiere análisis previo)
+
+### Multi-familia (un usuario con coparents distintos)
+**Contexto**: Un padre/madre puede tener hijos con distintas parejas. Cada relación debe tener su propio espacio independiente.
+
+**Diseño propuesto**:
+- Migrar `users/{uid}.familyId` (string) → `users/{uid}.families[]` (array de `{famId, coparentId, role, label}`)
+- Agregar `activeFamilyId` para saber qué espacio está activo
+- Selector de espacio en header/perfil que actualiza `FAMILY_ID` y reinicia listeners
+- Antes de crear un segundo espacio: validar que el nuevo coparent no exista ya en `families[]` (evitar duplicados)
+- **Migración**: todos los usuarios existentes deben pasar al nuevo schema
+
+**Pendiente de definir (business case)**:
+- ¿Se monetiza por espacio adicional, por usuario total, por familia, o es flat?
+- Evaluar si el modelo de negocio justifica la complejidad de la migración
+- Considerar que el mismo coparent podría estar en el espacio de múltiples usuarios
+
+**Recuperación de contraseña**: ya existe (`doReset()` con `sendPasswordResetEmail`). Hacer más visible el "¿Ya tienes cuenta?" durante el registro para evitar cuentas duplicadas.
 
 ## Decisiones de diseño importantes
 - **Firebase compat SDK v10.12.0** (no modular), todo via `firebase.*` y `auth`/`db` globales
@@ -106,8 +172,10 @@ Ver código de cada módulo para el schema exacto.
 - **p1 = la persona que se registró primero** (invitante), p2 = quien acepta la invitación
 - **Labels dinámicos**: `p1()` y `p2()` devuelven el label según `familyConfig` (ej. "Mamá" / "Papá")
 - **`inviteConsumed`**: guard idempotente para que el link solo funcione una vez
-- **Overrides manuales**: se guardan en `custodyOverrides` para poder restaurar la regla base
+- **Overrides de custodia**: se guardan en `custodyOverrides`. La edición directa de días fue eliminada — solo existe el flujo de propuesta/aprobación entre ambos padres.
 - **Eventos privados**: `participants === 'mama'` solo los ve quien tiene `myRole() === 'p1'`
+- **Aceptación legal activa**: 3 checkboxes separados (TOS obligatorio, Privacy obligatorio, Newsletter opcional). Se guarda `legalAcceptance` en Firestore con `tosVersion`/`privacyVersion` para futuras migraciones de términos. Constantes `LEGAL_TOS_VERSION` y `LEGAL_PRIVACY_VERSION` en `onboarding.js`.
+- **Posición jurídica de Qinflo**: herramienta de organización y registro, no reemplaza mediación ni acuerdos legales. Texto explícito antes de los checkboxes. TOS debe incluir: no es servicio de mediación, no determina quién tiene razón, no valida acuerdos judiciales, registros son referenciales no prueba legal formal, cada usuario es responsable de su información, datos de menores se tratan conforme a legislación vigente.
 
 ## Google Auth en Safari/iOS — solución definitiva
 

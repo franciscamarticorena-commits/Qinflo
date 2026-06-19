@@ -1,16 +1,26 @@
 // --- CALENDARIO ---------------------------------------------
 
+// Increment when the custody algorithm changes to force a full calendar regeneration.
+var CAL_ALG_VERSION = 2;
+
 async function checkAndGenerateCalendar() {
   if (!FAMILY_ID) return;
-  // Solo genera si el mes actual no tiene datos de custodia
-  if (custodyMap[calKey()] && Object.keys(custodyMap[calKey()]).length > 0) return;
   try {
     var famSnap = await db.collection('families').doc(FAMILY_ID).get();
     if (!famSnap.exists) return;
-    var config = famSnap.data().custodyConfig;
+    var data = famSnap.data();
+    var config = data.custodyConfig;
     if (!config || config.type === 'undefined' || config.type === 'custom') return;
+    // Regenerate if the stored algorithm version is outdated (fixes wrong-Sunday bug),
+    // or if the current month simply has no data yet.
+    var storedVersion = data.calAlgVersion || 0;
+    var monthHasData = custodyMap[calKey()] && Object.keys(custodyMap[calKey()]).length > 0;
+    if (storedVersion >= CAL_ALG_VERSION && monthHasData) return;
     if (typeof generateOnbCalendar === 'function') {
       await generateOnbCalendar(config, FAMILY_ID);
+      if (storedVersion < CAL_ALG_VERSION) {
+        await db.collection('families').doc(FAMILY_ID).update({ calAlgVersion: CAL_ALG_VERSION });
+      }
     }
   } catch(e) {
     console.error('[checkAndGenerateCalendar]', e);
@@ -18,7 +28,12 @@ async function checkAndGenerateCalendar() {
 }
 
 function calKey() { return calYear + '-' + String(calMonth + 1).padStart(2, '0'); }
-function getCustody(d) { return custodyMap[calKey()] && custodyMap[calKey()][d] ? custodyMap[calKey()][d] : 'none'; }
+function getCustody(d) {
+  var key = calKey();
+  var mo = custodyOverridesMap[key];
+  if (mo && mo[String(d)]) return mo[String(d)].value;
+  return custodyMap[key] && custodyMap[key][d] ? custodyMap[key][d] : 'none';
+}
 function getEvs(d) { return calEventsMap[calKey()] && calEventsMap[calKey()][d] ? calEventsMap[calKey()][d] : []; }
 function remindersForDay(day) {
   return reminders.filter(function(r) {
@@ -34,87 +49,6 @@ function setCustody(d, val) {
   var update = { custody: {} };
   update.custody[d] = val;
   db.collection('families').doc(FAMILY_ID).collection('calendar').doc(key).set(update, { merge: true });
-}
-
-function cycleCustody() {
-  if (!selDay) return;
-  var o = ['mama', 'papa', 'transition'];
-  var cur = getCustody(selDay);
-  setCustody(selDay, o[(o.indexOf(cur) + 1) % 3]);
-}
-
-var editDaySelectedVal = null;
-
-function hasOverride(d) {
-  var mo = custodyOverridesMap[calKey()];
-  return !!(mo && mo[String(d)]);
-}
-
-function openEditDay() {
-  if (!selDay) return;
-  editDaySelectedVal = getCustody(selDay);
-  if ($('editDayNum')) $('editDayNum').textContent = selDay;
-  if ($('editOpt_mama')) $('editOpt_mama').textContent = p1();
-  if ($('editOpt_papa')) $('editOpt_papa').textContent = p2();
-  ['mama', 'papa', 'transition'].forEach(function(v) {
-    var b = $('editOpt_' + v);
-    if (b) b.classList.toggle('active', v === editDaySelectedVal);
-  });
-  if ($('editDayReason')) $('editDayReason').value = '';
-  var restoreBtn = $('restoreBaseBtn');
-  if (restoreBtn) restoreBtn.classList.toggle('hidden', !hasOverride(selDay));
-  show('editDayForm');
-}
-
-function selectEditOpt(val) {
-  editDaySelectedVal = val;
-  ['mama', 'papa', 'transition'].forEach(function(v) {
-    var b = $('editOpt_' + v);
-    if (b) b.classList.toggle('active', v === val);
-  });
-}
-
-async function saveManualOverride() {
-  if (!selDay || !FAMILY_ID || !editDaySelectedVal) return;
-  var reason = $('editDayReason') ? $('editDayReason').value.trim() : '';
-  var key = calKey();
-  var update = { custody: {}, custodyOverrides: {} };
-  update.custody[String(selDay)] = editDaySelectedVal;
-  update.custodyOverrides[String(selDay)] = {
-    value: editDaySelectedVal,
-    reason: reason,
-    overriddenBy: USER ? USER.uid : null,
-    overriddenAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
-  await db.collection('families').doc(FAMILY_ID).collection('calendar').doc(key)
-    .set(update, { merge: true });
-  hide('editDayForm');
-  editDaySelectedVal = null;
-}
-
-async function restoreBaseRule() {
-  if (!selDay || !FAMILY_ID) return;
-  try {
-    var famSnap = await db.collection('families').doc(FAMILY_ID).get();
-    var config = famSnap.exists ? famSnap.data().custodyConfig : null;
-    var date = new Date(calYear, calMonth, selDay);
-    var baseCustody = (config && typeof getOnbCustodyForDate === 'function')
-      ? getOnbCustodyForDate(date, config)
-      : null;
-    var key = calKey();
-    var updateObj = {};
-    updateObj['custodyOverrides.' + String(selDay)] = firebase.firestore.FieldValue.delete();
-    if (baseCustody) {
-      updateObj['custody.' + String(selDay)] = baseCustody;
-    } else {
-      updateObj['custody.' + String(selDay)] = firebase.firestore.FieldValue.delete();
-    }
-    await db.collection('families').doc(FAMILY_ID).collection('calendar').doc(key).update(updateObj);
-    hide('editDayForm');
-    editDaySelectedVal = null;
-  } catch(e) {
-    console.error('[restoreBaseRule]', e);
-  }
 }
 
 function prevMonth() {
@@ -133,7 +67,23 @@ function fmtDateTime(v) {
     return d.toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) + ' · ' + d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
   } catch(e) { return ''; }
 }
-function proposalTouchesDay(pr, day) { return String(pr.fromDay) === String(day) || String(pr.toDay) === String(day); }
+function fmtShortDate(isoStr) {
+  try {
+    var p = isoStr.split('-');
+    var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+    return d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch(e) { return isoStr; }
+}
+function fmtProposalDates(pr) {
+  var from = pr.fromDate ? fmtShortDate(pr.fromDate) : 'día ' + pr.fromDay;
+  var to   = pr.toDate   ? fmtShortDate(pr.toDate)   : 'día ' + pr.toDay;
+  return from + ' → ' + to;
+}
+function proposalTouchesDay(pr, day) {
+  var dateStr = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+  if (pr.fromDate === dateStr || pr.toDate === dateStr) return true;
+  return String(pr.fromDay) === String(day) || String(pr.toDay) === String(day);
+}
 function activePendingProposal() { return proposals.find(function(pr) { return pr.status === 'pending'; }); }
 function pendingProposalForDay(day) { return proposals.find(function(pr) { return pr.status === 'pending' && proposalTouchesDay(pr, day); }); }
 function proposalsForDay(day) { return proposals.filter(function(pr) { return proposalTouchesDay(pr, day); }); }
@@ -207,8 +157,8 @@ function _detailSectionHdr(label) {
 function renderDayDetail() {
   if (!selDay) { hide('dayDetail'); return; }
   show('dayDetail');
-  hide('editDayForm');
-  editDaySelectedVal = null;
+  setTimeout(function() { $('dayDetail').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 80);
+  hide('propForm');
   $('detailDay').textContent = selDay;
 
   var rems = remindersForDay(selDay);
@@ -231,7 +181,7 @@ function renderDayDetail() {
 
   // Reminders section
   if (rems.length) {
-    html += _detailSectionHdr('Recordatorios');
+    html += _detailSectionHdr('Avisos');
     html += rems.map(function(r) {
       return '<div class="detail-card">' +
         '<div style="font-weight:600;font-size:13px">' + r.title + '</div>' +
@@ -247,7 +197,7 @@ function renderDayDetail() {
     dayProps.forEach(function(pr) {
       var statusLabel = pr.status === 'pending' ? '⏳ Pendiente' : pr.status === 'accepted' ? '✓ Aprobada' : '✗ Rechazada';
       html += '<div class="detail-card">' +
-        '<div style="font-size:13px;font-weight:600">Día ' + pr.fromDay + ' → Día ' + pr.toDay + '</div>' +
+        '<div style="font-size:13px;font-weight:600">' + fmtProposalDates(pr) + '</div>' +
         '<div style="font-size:12px;color:var(--text-s);margin-top:3px">' +
         proposalRequesterLabel(pr) + ' · ' + fmtDateTime(pr.createdAt || pr.date) + '</div>' +
         '<div style="font-size:12px;margin-top:3px">' + statusLabel +
@@ -279,19 +229,30 @@ function updateProposalButtonState() {
 }
 
 async function saveProp() {
-  var from = $('propFrom').value, to = $('propTo').value, reason = $('propReason').value;
-  if (!from || !to) return;
+  var fromDate = $('propFrom') ? $('propFrom').value : '';
+  var toDate   = $('propTo')   ? $('propTo').value   : '';
+  var reason   = $('propReason') ? $('propReason').value.trim() : '';
+  if (!fromDate || !toDate) { alert('Selecciona ambas fechas.'); return; }
+  var tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+  var minDate = tomorrow.toISOString().slice(0, 10);
+  if (fromDate < minDate || toDate < minDate) {
+    alert('Las fechas deben ser a partir de mañana. No es posible solicitar cambios para hoy o días anteriores.');
+    return;
+  }
   var active = activePendingProposal();
   if (active) {
     alert(active.createdBy === (USER && USER.uid)
       ? 'Ya tienes una solicitud pendiente. Espera respuesta antes de crear otra.'
-      : 'Primero debes aprobar o rechazar la solicitud pendiente antes de crear una nueva.');
+      : 'Primero debes responder la solicitud pendiente antes de crear una nueva.');
     hide('propForm');
     updateProposalButtonState();
     return;
   }
+  var fromParts = fromDate.split('-'), toParts = toDate.split('-');
   await famCol('proposals').add({
-    fromDay: from, toDay: to, reason: reason,
+    fromDate: fromDate, toDate: toDate,
+    fromDay: Number(fromParts[2]), toDay: Number(toParts[2]),
+    reason: reason,
     status: 'pending', date: new Date().toISOString().slice(0, 10),
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     createdBy: USER.uid,
@@ -316,7 +277,7 @@ function renderProposals() {
   pendingReceived.forEach(function(pr) {
     var div = document.createElement('div');
     div.className = 'proposal-alert';
-    div.innerHTML = '<div><strong>Solicitud de cambio de custodia pendiente</strong><br><strong>' + proposalRequesterLabel(pr) + '</strong> solicita a <strong>' + proposalRequestedLabel(pr) + '</strong><br>Cambio solicitado: Día ' + pr.fromDay + ' → Día ' + pr.toDay + '<br>Enviada: ' + fmtDateTime(pr.createdAt || pr.date) + (pr.reason ? '<br>' + pr.reason : '') + '<div class="proposal-flow-note">Debes aprobar o rechazar esta solicitud antes de crear una nueva.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm accept-btn" style="background:var(--success)">Aceptar</button><button class="btn-outline reject-btn">Rechazar</button></div>';
+    div.innerHTML = '<div><strong>Solicitud de cambio de custodia</strong><br><strong>' + proposalRequesterLabel(pr) + '</strong> solicita a <strong>' + proposalRequestedLabel(pr) + '</strong><br>Cambio: ' + fmtProposalDates(pr) + '<br>Enviada: ' + fmtDateTime(pr.createdAt || pr.date) + (pr.reason ? '<br>' + pr.reason : '') + '<div class="proposal-flow-note">Debes aprobar o rechazar esta solicitud antes de crear una nueva.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm accept-btn" style="background:var(--success)">Aceptar</button><button class="btn-outline reject-btn">Rechazar</button></div>';
     div.querySelector('.accept-btn').addEventListener('click', async function() {
       await famCol('proposals').doc(pr.id).update({ status: 'accepted', respondedAt: firebase.firestore.FieldValue.serverTimestamp(), respondedBy: USER.uid });
       setCustody(Number(pr.toDay), 'transition');
@@ -331,7 +292,11 @@ function renderProposals() {
   pendingSent.forEach(function(pr) {
     var div = document.createElement('div');
     div.className = 'proposal-alert';
-    div.innerHTML = '<div><strong>Solicitud de cambio de custodia enviada</strong><br><strong>' + proposalRequesterLabel(pr) + '</strong> solicita a <strong>' + proposalRequestedLabel(pr) + '</strong><br>Cambio solicitado: Día ' + pr.fromDay + ' → Día ' + pr.toDay + '<br>Enviada: ' + fmtDateTime(pr.createdAt || pr.date) + '<br>Esperando respuesta.<div class="proposal-flow-note">Mientras esta solicitud esté pendiente, no se pueden crear nuevas solicitudes.</div></div>';
+    div.innerHTML = '<div><strong>Solicitud de cambio de custodia enviada</strong><br><strong>' + proposalRequesterLabel(pr) + '</strong> solicita a <strong>' + proposalRequestedLabel(pr) + '</strong><br>Cambio: ' + fmtProposalDates(pr) + '<br>Enviada: ' + fmtDateTime(pr.createdAt || pr.date) + '<br>Esperando respuesta.<div class="proposal-flow-note">Mientras esta solicitud esté pendiente, no se pueden crear nuevas solicitudes.</div></div><div style="margin-top:8px"><button class="btn-outline cancel-prop-btn" style="font-size:11px;padding:5px 12px;color:var(--error)">Retirar solicitud</button></div>';
+    div.querySelector('.cancel-prop-btn').addEventListener('click', async function() {
+      if (!confirm('¿Retirar esta solicitud de cambio?')) return;
+      await famCol('proposals').doc(pr.id).delete();
+    });
     el.appendChild(div);
   });
   updateProposalButtonState();

@@ -111,6 +111,8 @@ function updateLabels() {
   if ($('avatarInitial') && USERDATA && USERDATA.name) {
     $('avatarInitial').textContent = USERDATA.name.charAt(0).toUpperCase();
   }
+  // Ocultar botón de invitación si ya hay coparent conectado
+  if ($('inviteBtn')) $('inviteBtn').classList.toggle('hidden', !!(USERDATA && USERDATA.coparentId));
 }
 
 // --- LOAD OR ONBOARD ----------------------------------------
@@ -131,6 +133,7 @@ function loadApp() {
   try {
     hide('authScreen'); hide('connectScreen'); show('app');
     updateLabels();
+    switchTab('today');
     if (!FAMILY_ID) return;
     setupListeners();
     fetchUF();
@@ -139,7 +142,6 @@ function loadApp() {
     renderCalendar();
     checkAndGenerateCalendar();
     renderToday();
-    switchTab('today');
   } catch(e) {
     console.error('[loadApp crash]', e);
   }
@@ -192,6 +194,14 @@ function setupListeners() {
     renderCalendar();
     renderToday();
   });
+  famCol('documents').orderBy('createdAt', 'desc').onSnapshot(function(s) {
+    documents = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
+    renderDocuments();
+  });
+  famCol('settlements').orderBy('createdAt', 'desc').onSnapshot(function(s) {
+    settlements = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
+    renderExpenses();
+  });
   famCol('activity').orderBy('createdAt', 'desc').limit(20).onSnapshot(function(s) {
     activityLog = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
     if (typeof renderTodayActivity === 'function') renderTodayActivity();
@@ -201,6 +211,7 @@ function setupListeners() {
 // --- EVENT LISTENERS ----------------------------------------
 window.addEventListener('DOMContentLoaded', function() {
   lucide.createIcons();
+  if (typeof initTheme === 'function') initTheme();
 
   // Auth
   $('tabLoginBtn').addEventListener('click', switchToLogin);
@@ -239,7 +250,6 @@ window.addEventListener('DOMContentLoaded', function() {
   // Calendar
   $('prevMonthBtn').addEventListener('click', prevMonth);
   $('nextMonthBtn').addEventListener('click', nextMonth);
-  if ($('editDayBtn')) $('editDayBtn').addEventListener('click', openEditDay);
   // Filtros de vista del calendario
   document.querySelectorAll('[data-cal-filter]').forEach(function(btn) {
     btn.addEventListener('click', function() {
@@ -259,21 +269,42 @@ window.addEventListener('DOMContentLoaded', function() {
       alert(msg);
       return;
     }
+    var tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+    var minDate = tomorrow.toISOString().slice(0, 10);
+    if ($('propFrom')) $('propFrom').min = minDate;
+    if ($('propTo'))   $('propTo').min   = minDate;
     $('propForm').classList.toggle('hidden');
   });
   $('savePropBtn').addEventListener('click', saveProp);
   $('cancelPropBtn').addEventListener('click', function() { hide('propForm'); });
 
   // Expenses
-  $('toggleExpBtn').addEventListener('click', function() { $('expForm').classList.toggle('hidden'); });
+  $('toggleExpBtn').addEventListener('click', function() {
+    var willOpen = $('expForm').classList.contains('hidden');
+    if (willOpen) _resetExpForm();
+    $('expForm').classList.toggle('hidden');
+    if (willOpen) $('expForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   $('saveExpBtn').addEventListener('click', saveExp);
-  $('cancelExpBtn').addEventListener('click', function() { hide('expForm'); });
+  $('cancelExpBtn').addEventListener('click', function() { _resetExpForm(); hide('expForm'); });
   $('expCat').addEventListener('change', function(){ updateExpenseSubcats(); updateExpenseTreatmentUI(); });
   if ($('expTreatment')) $('expTreatment').addEventListener('change', updateExpenseTreatmentUI);
+  if ($('expPaidBy')) $('expPaidBy').addEventListener('change', updateExpenseTreatmentUI);
+  if ($('expAttachToggle')) $('expAttachToggle').addEventListener('click', function() {
+    var box = $('expAttachBox');
+    var isOpen = box.style.display === 'grid';
+    box.style.display = isOpen ? 'none' : 'grid';
+    this.textContent = isOpen ? '📎 Adjuntar archivos (opcional)' : '📎 Adjuntar archivos ▲';
+  });
+  [$('expDesc'), $('expAmount')].forEach(function(el) {
+    if (el) el.addEventListener('keydown', function(e) { if (e.key === 'Enter') saveExp(); });
+  });
   updateExpenseSubcats();
   updateExpenseTreatmentUI();
   $('btnCLP').addEventListener('click', function() { setCurrency('CLP'); });
   $('btnUF').addEventListener('click', function() { setCurrency('UF'); });
+  if ($('liquidarBtn')) $('liquidarBtn').addEventListener('click', liquidarBalance);
+  if ($('exportResumenBtn')) $('exportResumenBtn').addEventListener('click', exportarResumen);
 
   // Messages
   $('sendMsgBtn').addEventListener('click', sendMsg);
@@ -286,9 +317,13 @@ window.addEventListener('DOMContentLoaded', function() {
   $('cancelKidBtn').addEventListener('click', function() { hide('kidForm'); });
 
   // Agreements
-  $('toggleAgrBtn').addEventListener('click', function() { $('agrForm').classList.toggle('hidden'); });
+  $('toggleAgrBtn').addEventListener('click', function() {
+    var willOpen = $('agrForm').classList.contains('hidden');
+    if (willOpen) _resetAgrForm();
+    $('agrForm').classList.toggle('hidden');
+  });
   $('saveAgrBtn').addEventListener('click', saveAgr);
-  $('cancelAgrBtn').addEventListener('click', function() { hide('agrForm'); });
+  $('cancelAgrBtn').addEventListener('click', function() { _resetAgrForm(); hide('agrForm'); });
 
   // Reminders
   $('toggleRemBtn').addEventListener('click', function() {
@@ -303,13 +338,23 @@ window.addEventListener('DOMContentLoaded', function() {
   });
   $('saveRemBtn').addEventListener('click', saveRem);
   $('cancelRemBtn').addEventListener('click', cancelRemForm);
+
+  // Documents
+  $('toggleDocBtn').addEventListener('click', function() {
+    var willOpen = $('docForm').classList.contains('hidden');
+    if (willOpen) _resetDocForm();
+    $('docForm').classList.toggle('hidden');
+  });
+  $('saveDocBtn').addEventListener('click', saveDoc);
+  $('cancelDocBtn').addEventListener('click', function() { _resetDocForm(); hide('docForm'); });
+
 });
 
 // --- TABS ---------------------------------------------------
-var INFO_SUBTABS = ['children', 'agreements', 'reminders', 'recursos'];
+var INFO_SUBTABS = ['children', 'agreements', 'reminders', 'recursos', 'documents'];
 
 function switchTab(tab) {
-  ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'reminders', 'recursos', 'info'].forEach(function(t) {
+  ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'reminders', 'recursos', 'documents', 'info'].forEach(function(t) {
     $('tab-' + t).classList.toggle('hidden', t !== tab);
   });
   document.querySelectorAll('#mainNav button').forEach(function(b) {

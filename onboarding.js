@@ -1,9 +1,15 @@
 // --- ONBOARDING -----------------------------------------------
 
+var LEGAL_TOS_VERSION     = '1.0';
+var LEGAL_PRIVACY_VERSION = '1.0';
+
 var onbCustodyConfig = {};
 var onbKidsList = [];
+var _coparentWatcher = null;
 
 var ONB_PANELS = [
+  'onbPanelWelcome',
+  'onbPanelDisclaimer',
   'onbPanelType', 'onbPanelAltWeeks', 'onbPanelFixedDays',
   'onbPanelCustom', 'onbPanelUndefined', 'onbPanelLocation',
   'onbPanelKids', 'onbPanelInvite'
@@ -11,17 +17,91 @@ var ONB_PANELS = [
 
 var ONB_DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
+function parseDateInput(str) {
+  if (!str) return '';
+  var s = str.replace(/\s/g, '');
+  var parts = s.split('/');
+  if (parts.length === 3 && parts[2].length === 4) {
+    var d = parts[0].padStart(2, '0');
+    var m = parts[1].padStart(2, '0');
+    var y = parts[2];
+    if (Number(m) >= 1 && Number(m) <= 12 && Number(d) >= 1 && Number(d) <= 31) {
+      return y + '-' + m + '-' + d;
+    }
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  return '';
+}
+
+function _todayDDMMAAAA() {
+  var t = new Date();
+  return String(t.getDate()).padStart(2, '0') + '/' + String(t.getMonth() + 1).padStart(2, '0') + '/' + t.getFullYear();
+}
+
+function _initOnbHourSelect() {
+  var hSel = $('onbChangeHour');
+  if (!hSel || hSel.options.length > 0) return;
+  for (var h = 0; h < 24; h++) {
+    var opt = document.createElement('option');
+    opt.value = String(h).padStart(2, '0');
+    opt.textContent = String(h).padStart(2, '0');
+    hSel.appendChild(opt);
+  }
+  hSel.value = '08';
+}
+
 function startOnboarding() {
   hide('authScreen'); hide('app'); hide('connectScreen');
   if ($('coparentWelcomeScreen')) hide('coparentWelcomeScreen');
   show('onboardingScreen');
   onbCustodyConfig = {};
   onbKidsList = [];
+  _coparentWatcher = null;
+  _initOnbHourSelect();
   renderOnbFixedDaysTable();
   renderOnbAltDays();
-  showOnbPanel('onbPanelType');
-  updateOnbProgress(1, 4, 'Configuración de cuidado');
+  showOnbPanel('onbPanelWelcome');
+  if ($('onbProgressFill')) $('onbProgressFill').style.width = '0%';
+  if ($('onbStepLabel')) $('onbStepLabel').textContent = '';
+  if ($('onbStepNum')) $('onbStepNum').textContent = '';
   updateOnbLabels();
+}
+
+function goToOnbDisclaimer() {
+  showOnbPanel('onbPanelDisclaimer');
+  updateOnbProgress(1, 5, 'Aspectos legales');
+}
+
+function _onbCheckLegal() {
+  var ok = ($('onbCheckTOS') && $('onbCheckTOS').checked) &&
+           ($('onbCheckPrivacy') && $('onbCheckPrivacy').checked);
+  if ($('onbDisclaimerBtn')) $('onbDisclaimerBtn').disabled = !ok;
+}
+
+async function onbAcceptDisclaimer() {
+  if (!($('onbCheckTOS') && $('onbCheckTOS').checked) ||
+      !($('onbCheckPrivacy') && $('onbCheckPrivacy').checked)) {
+    showOnbMsg('Debes aceptar los Términos y la Política de Privacidad para continuar.');
+    return;
+  }
+  var newsletter = $('onbCheckNewsletter') ? $('onbCheckNewsletter').checked : false;
+  try {
+    if (USER) {
+      await db.collection('users').doc(USER.uid).update({
+        legalAcceptance: {
+          tosVersion:     LEGAL_TOS_VERSION,
+          privacyVersion: LEGAL_PRIVACY_VERSION,
+          tosAccepted:    true,
+          privacyAccepted: true,
+          newsletter:     newsletter,
+          acceptedAt:     firebase.firestore.FieldValue.serverTimestamp()
+        }
+      });
+    }
+  } catch(e) {
+    console.error('[legalAcceptance]', e);
+  }
+  showOnbPanel('onbPanelType');
 }
 
 function showOnbPanel(panelId) {
@@ -51,30 +131,33 @@ function updateOnbLabels() {
 function selectOnbCustodyType(type) {
   onbCustodyConfig = { type: type };
   if (type === 'alternating_weeks') {
-    if ($('onbStartDate')) $('onbStartDate').value = new Date().toISOString().slice(0, 10);
+    if ($('onbStartDate') && !$('onbStartDate').value) {
+      $('onbStartDate').value = _todayDDMMAAAA();
+    }
     showOnbPanel('onbPanelAltWeeks');
-    updateOnbProgress(1, 4, 'Semana por medio');
+    updateOnbProgress(2, 5, 'Semana por medio');
   } else if (type === 'fixed_days') {
     showOnbPanel('onbPanelFixedDays');
-    updateOnbProgress(1, 4, 'Días fijos por semana');
+    updateOnbProgress(2, 5, 'Días fijos por semana');
   } else if (type === 'custom') {
     showOnbPanel('onbPanelCustom');
-    updateOnbProgress(1, 4, 'Calendario personalizado');
+    updateOnbProgress(2, 5, 'Calendario personalizado');
   } else {
     showOnbPanel('onbPanelUndefined');
-    updateOnbProgress(1, 4, 'Sin rutina definida');
+    updateOnbProgress(2, 5, 'Sin rutina definida');
   }
 }
 
 function saveOnbAltWeeks() {
   var changeDay = $('onbChangeDay') ? parseInt($('onbChangeDay').value) : 1;
-  var changeTime = $('onbChangeTime') ? $('onbChangeTime').value : '08:00';
-  var startDate = $('onbStartDate') ? $('onbStartDate').value : '';
+  var hour = $('onbChangeHour') ? $('onbChangeHour').value : '08';
+  var min = $('onbChangeMin') ? $('onbChangeMin').value : '00';
+  var changeTime = hour + ':' + min;
+  var rawStartDate = $('onbStartDate') ? $('onbStartDate').value : '';
+  var startDate = parseDateInput(rawStartDate);
   var firstWeekEl = document.querySelector('input[name="onbFirstWeek"]:checked');
-  if (!startDate) { showOnbMsg('Ingresa la fecha de inicio.'); return; }
+  if (!startDate) { showOnbMsg('Ingresa la fecha de inicio en formato DD/MM/AAAA.'); return; }
   if (!firstWeekEl) { showOnbMsg('Indica quién tiene a los niños la primera semana.'); return; }
-  // Para semana por medio el ancla es startDate + firstWeek. No se usa "hoy" para evitar
-  // dos anclas que puedan contradecirse.
   Object.assign(onbCustodyConfig, {
     changeDay: changeDay,
     changeTime: changeTime,
@@ -82,7 +165,7 @@ function saveOnbAltWeeks() {
     firstWeek: firstWeekEl.value
   });
   showOnbPanel('onbPanelLocation');
-  updateOnbProgress(2, 4, '¿Dónde ocurre el cambio?');
+  updateOnbProgress(3, 5, '¿Dónde ocurre el cambio?');
 }
 
 function renderOnbFixedDaysTable() {
@@ -150,7 +233,7 @@ function saveOnbFixedDays() {
     whoHasTodayDate: new Date().toISOString().slice(0, 10)
   });
   showOnbPanel('onbPanelLocation');
-  updateOnbProgress(2, 4, '¿Dónde ocurre el cambio?');
+  updateOnbProgress(3, 5, '¿Dónde ocurre el cambio?');
 }
 
 function saveOnbCustom() {
@@ -161,12 +244,12 @@ function saveOnbCustom() {
     whoHasTodayDate: new Date().toISOString().slice(0, 10)
   });
   showOnbPanel('onbPanelLocation');
-  updateOnbProgress(2, 4, '¿Dónde ocurre el cambio?');
+  updateOnbProgress(3, 5, '¿Dónde ocurre el cambio?');
 }
 
 function goToOnbKids() {
   showOnbPanel('onbPanelKids');
-  updateOnbProgress(3, 4, 'Hijos');
+  updateOnbProgress(4, 5, 'Hijos');
 }
 
 function toggleOnbLocationOther() {
@@ -185,13 +268,15 @@ function saveOnbLocation() {
 }
 
 function updateOnbKidAge() {
-  var birth = $('onbKidBirth') ? $('onbKidBirth').value : '';
-  if ($('onbKidAgeDisplay')) $('onbKidAgeDisplay').textContent = birth ? calcAge(birth) + ' años' : '';
+  var raw = $('onbKidBirth') ? $('onbKidBirth').value : '';
+  var iso = parseDateInput(raw);
+  if ($('onbKidAgeDisplay')) $('onbKidAgeDisplay').textContent = iso ? calcAge(iso) + ' años' : '';
 }
 
 function addOnbKid() {
   var name = $('onbKidName') ? $('onbKidName').value.trim() : '';
-  var birth = $('onbKidBirth') ? $('onbKidBirth').value : '';
+  var rawBirth = $('onbKidBirth') ? $('onbKidBirth').value : '';
+  var birth = parseDateInput(rawBirth);
   if (!name) { showOnbMsg('El nombre del niño es requerido.'); return; }
   onbKidsList.push({ name: name, birthDate: birth || null, age: birth ? calcAge(birth) + ' años' : '' });
   if ($('onbKidName')) $('onbKidName').value = '';
@@ -253,7 +338,7 @@ async function saveOnboardingData(includeKids) {
       }));
     }
     showOnbPanel('onbPanelInvite');
-    updateOnbProgress(4, 4, 'Invitar al otro padre/madre');
+    updateOnbProgress(5, 5, 'Invitar al otro padre/madre');
     buildOnbInviteLink();
   } catch(e) {
     console.error('[onboarding save]', e);
@@ -272,9 +357,35 @@ function buildOnbInviteLink() {
       window.open('https://wa.me/?text=' + msg, '_blank');
     };
   }
+  _watchForCoparentJoin();
+}
+
+function _watchForCoparentJoin() {
+  if (_coparentWatcher || !USER) return;
+  _coparentWatcher = db.collection('users').doc(USER.uid).onSnapshot(function(snap) {
+    if (!snap.exists) return;
+    var data = snap.data();
+    if (data.coparentId && !USERDATA.coparentId) {
+      if (typeof _coparentWatcher === 'function') { _coparentWatcher(); _coparentWatcher = null; }
+      USERDATA.coparentId = data.coparentId;
+      db.collection('users').doc(data.coparentId).get().then(function(co) {
+        var coName = co.exists && co.data().name ? co.data().name.split(' ')[0] : 'Tu co-padre/madre';
+        if (co.exists) CODATA = co.data();
+        var waitEl = $('onbWaitingForCoparent');
+        if (waitEl) waitEl.style.display = 'none';
+        var connEl = $('onbCoparentConnected');
+        if (connEl) {
+          connEl.classList.remove('hidden');
+          connEl.textContent = '🎉 ¡' + coName + ' se conectó! Entrando…';
+        }
+        setTimeout(function() { finishOnboarding(); }, 1800);
+      }).catch(function() { finishOnboarding(); });
+    }
+  });
 }
 
 async function finishOnboarding() {
+  if (typeof _coparentWatcher === 'function') { _coparentWatcher(); _coparentWatcher = null; }
   try {
     await db.collection('users').doc(USER.uid).update({ onboardingCompleted: true });
     USERDATA.onboardingCompleted = true;
@@ -316,8 +427,12 @@ function getOnbCustodyForDate(date, config) {
   if (!config || config.type === 'undefined' || config.type === 'custom') return null;
 
   if (config.type === 'alternating_weeks') {
-    var start = new Date(config.startDate);
-    start.setHours(0, 0, 0, 0);
+    // Parse startDate as LOCAL midnight to match how date objects are created below.
+    // new Date('YYYY-MM-DD') parses as UTC midnight; in UTC-3/4 that rolls back to the
+    // previous local day, shifting every 7-day block boundary by one day and causing
+    // Sunday to land in the wrong block.
+    var sp = config.startDate.split('-');
+    var start = new Date(Number(sp[0]), Number(sp[1]) - 1, Number(sp[2]));
     var d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     var diff = Math.round((d - start) / 86400000);
     if (diff < 0) return null;

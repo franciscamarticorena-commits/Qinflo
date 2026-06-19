@@ -157,72 +157,46 @@ function renderEventsForDay(day) {
   if (!dayEvs.length) return '';
   return dayEvs.map(function(ev) {
     var cat = EVENT_CATEGORIES[ev.category] || 'Otro';
-    var icon = CAT_ICONS[ev.category] || '📋';
     var time = ev.time || '';
     var reminder = ev.reminder ? REMINDER_LABELS[ev.reminder] : '';
     var participantsLbl = ev.participants === 'mama' ? p1() : ev.participants === 'papa' ? p2() : 'Ambos';
+    var pendingForMe = ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy !== (USER && USER.uid);
+    var pendingByMe  = ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy === (USER && USER.uid);
     var statusBadge = '';
-    if (ev.requiresApproval && ev.approvalStatus === 'pending') {
+    if (pendingForMe || pendingByMe) {
       statusBadge = '<span style="background:#FEF3C7;color:#D97706;font-size:10px;font-weight:700;border-radius:5px;padding:1px 6px;margin-left:4px">Pend. confirmación</span>';
     } else if (ev.status === 'done') {
       statusBadge = '<span style="background:#DCFCE7;color:#166534;font-size:10px;font-weight:700;border-radius:5px;padding:1px 6px;margin-left:4px">Realizado ✓</span>';
     }
-    var canEdit = ev.status !== 'cancelled' && ev.status !== 'done';
-    var actions = canEdit
-      ? '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
+    var actions = '';
+    if (pendingForMe) {
+      actions = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
+        '<button class="btn-sm" style="background:var(--success);font-size:11px;padding:5px 12px" onclick="approveEvent(\'' + ev.id + '\')">Confirmar</button>' +
+        '<button class="btn-outline" style="font-size:11px;padding:5px 12px" onclick="rejectEvent(\'' + ev.id + '\')">Rechazar</button>' +
+        '</div>';
+    } else if (!pendingByMe && ev.status !== 'cancelled' && ev.status !== 'done') {
+      actions = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
         '<button class="btn-outline" style="font-size:11px;padding:4px 9px" onclick="openEventForm(\'' + ev.id + '\')">Editar</button>' +
         '<button class="btn-outline" style="font-size:11px;padding:4px 9px" onclick="updateEventStatus(\'' + ev.id + '\',\'done\')">✓ Realizado</button>' +
         '<button class="btn-outline" style="font-size:11px;padding:4px 9px;color:var(--error)" onclick="updateEventStatus(\'' + ev.id + '\',\'cancelled\')">Cancelar</button>' +
-        '</div>'
-      : '';
-    return '<div class="detail-card" style="border-left:3px solid var(--primary)">' +
+        '</div>';
+    }
+    return '<div class="detail-card" style="border-left:2px solid var(--border)">' +
       '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">' +
-      '<span>' + icon + '</span>' +
-      '<strong style="font-size:14px">' + ev.title + '</strong>' +
+      '<strong style="font-size:13px;color:var(--text)">' + ev.title + '</strong>' +
       statusBadge + '</div>' +
-      '<div style="font-size:12px;color:var(--text-s)">' +
+      '<div style="font-size:11px;color:var(--text-s)">' +
       cat + (time ? ' · ' + time : '') + ' · ' + participantsLbl +
-      (reminder ? ' · ⏰ ' + reminder : '') + '</div>' +
-      (ev.description ? '<div style="font-size:12px;color:var(--text);margin-top:4px;line-height:1.4">' + ev.description + '</div>' : '') +
+      (reminder ? ' · ' + reminder : '') + '</div>' +
+      (ev.description ? '<div style="font-size:12px;color:var(--text-s);margin-top:4px;line-height:1.4">' + ev.description + '</div>' : '') +
       actions + '</div>';
   }).join('');
 }
 
 function renderEventApprovals() {
   var el = $('eventApprovals');
-  if (!el) return;
-  var pendingForMe = events.filter(function(ev) {
-    return ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy !== (USER && USER.uid);
-  });
-  var pendingByMe = events.filter(function(ev) {
-    return ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy === (USER && USER.uid);
-  });
-  if (!pendingForMe.length && !pendingByMe.length) { el.innerHTML = ''; return; }
-  el.innerHTML = '';
-  pendingForMe.forEach(function(ev) {
-    var icon = CAT_ICONS[ev.category] || '📋';
-    var div = document.createElement('div');
-    div.className = 'proposal-alert';
-    div.innerHTML = '<div><strong>' + icon + ' Evento requiere tu confirmación</strong><br>' +
-      '<strong>' + ev.title + '</strong> — ' + (EVENT_CATEGORIES[ev.category] || 'Otro') + '<br>' +
-      ev.date + (ev.time ? ' · ' + ev.time : '') +
-      (ev.description ? '<br><em style="font-size:12px;color:var(--text-s)">' + ev.description + '</em>' : '') +
-      '<div class="proposal-flow-note">Confirma o rechaza para actualizar el calendario.</div>' +
-      '</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
-      '<button class="btn-sm accept-btn" style="background:var(--success)" onclick="approveEvent(\'' + ev.id + '\')">Confirmar</button>' +
-      '<button class="btn-outline reject-btn" onclick="rejectEvent(\'' + ev.id + '\')">Rechazar</button>' +
-      '</div>';
-    el.appendChild(div);
-  });
-  pendingByMe.forEach(function(ev) {
-    var icon = CAT_ICONS[ev.category] || '📋';
-    var div = document.createElement('div');
-    div.className = 'proposal-alert';
-    div.innerHTML = '<div><strong>' + icon + ' Esperando confirmación</strong><br>' +
-      '<strong>' + ev.title + '</strong> — ' + ev.date + (ev.time ? ' · ' + ev.time : '') + '<br>' +
-      '<em style="font-size:12px;color:var(--text-s)">Esperando respuesta del otro padre/madre.</em></div>';
-    el.appendChild(div);
-  });
+  if (el) el.innerHTML = '';
+  // Approval actions are handled inline in the day detail panel (renderEventsForDay).
 }
 
 window.renderEventApprovals = renderEventApprovals;
