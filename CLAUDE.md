@@ -22,15 +22,16 @@ Archivos principales:
 - `auth.js` — login, registro (email + Google), recuperación
 - `connect.js` — `showConnectScreen()`, `autoConnect(inviteCode)` — flujo de invitación
 - `app-shell.js` — listener auth, `loadApp()`, `setupListeners()`, listeners DOM, tabs, fetchUF
-- `calendar.js` — renderCalendar, setCustody, overrides manuales, restoreBaseRule, proposals
-- `events.js` — módulo de eventos: CRUD, aprobaciones, eventos privados, renderEventApprovals
+- `calendar.js` — renderCalendar, setCustody, proposals (sin edición directa de custodia)
+- `events.js` — módulo de eventos: CRUD, aprobaciones, eventos privados
 - `onboarding.js` — onboarding completo + `generateOnbCalendar()` + `getOnbCustodyForDate()`
 - `expenses.js` — gastos, UF, balance, marcar pagado, anular
-- `messages.js` — mensajes en tiempo real, quick replies
+- `messages.js` — mensajes en tiempo real, quick replies editables, divisor de tema
 - `children.js` — perfiles de hijos
 - `agreements.js` — acuerdos
 - `reminders.js` — recordatorios
 - `resources.js` — recursos de apoyo Chile
+- `today.js` — dashboard Hoy: custodia, pendientes, eventos, avisos, balance
 - `observability.js` — Sentry + PostHog desactivados (sin llaves reales)
 - `manifest.json` + `service-worker.js` — PWA base
 
@@ -39,13 +40,20 @@ Archivos principales:
 ### `/users/{uid}`
 ```
 name, email, role (p1|p2), familyId, coparentId, inviteCode, inviteConsumed,
-onboardingCompleted, familyConfig { p1Label, p2Label }, createdAt
+onboardingCompleted, familyConfig { p1Label, p2Label }, createdAt,
+quickReplies [],
+legalAcceptance {
+  tosVersion, privacyVersion,
+  tosAccepted, privacyAccepted,
+  newsletter,
+  acceptedAt (Timestamp)
+}
 ```
 
 ### `/families/{famId}`
 ```
 members[], p1Uid, p2Uid, memberRoles.{uid}, custodyConfig, specialRules,
-createdBy, createdAt
+createdBy, createdAt, calAlgVersion
 ```
 **`custodyConfig`** puede ser:
 - `{ type: 'alternating_weeks', changeDay, changeTime, startDate, firstWeek, changeLocation }`
@@ -71,10 +79,14 @@ cancelledBy, cancelledAt, approvedBy, approvedAt, rejectedBy, rejectedAt
 
 ### `/families/{famId}/proposals/{id}`
 ```
-fromDay, toDay, reason, status (pending|accepted|rejected), date,
+fromDate (ISO), toDate (ISO),
+fromDay, toDay (numérico, compat),
+reason, status (pending|accepted|rejected), date,
 createdAt, createdBy, createdByName, createdByRole, requestedToRole,
 respondedAt, respondedBy
 ```
+**Nota**: Las propuestas solo se crean vía flujo de aprobación (no hay edición directa de custodia).
+Mínimo = mañana. El remitente puede retirar su propia solicitud pendiente.
 
 ### `/families/{famId}/settlements/{id}`
 ```
@@ -96,13 +108,14 @@ Ver código de cada módulo para el schema exacto.
 | 5b | Google auth Safari/iOS fix + migración a Firebase Hosting | `140e76c` |
 | 6 | Firestore Rules desplegadas via CI, Documentos, PWA store assets, T&C onboarding | `3619277..a4b1b1f` |
 | 7 | Acuerdos — edición, firma simple, cambio de estado inline, cards mejoradas | `a5a390a` |
-| 8 | Gastos — liquidar balance, exportar resumen texto, historial de liquidaciones | (actual) |
+| 8 | Gastos — liquidar balance, exportar resumen texto, historial de liquidaciones | — |
+| 9 | Dashboard "Hoy" — custodia, pendientes, eventos, avisos, balance con liquidaciones | `1898133` |
+| 9b | Onboarding legal — panel Bienvenida, 3 checkboxes separados, audit trail Firestore | `d2b6896` |
 
 ## Roadmap pendiente (en orden estricto)
 
 | Fase | Descripción | Prioridad |
 |------|-------------|-----------|
-| 9 | Dashboard "Hoy" — card resumen: quién tiene hoy, próximo cambio, balance pendiente, recordatorios | Media |
 | 10 | Push notifications — FCM para mensajes nuevos, cambios pendientes, recordatorios | Baja |
 
 ## Backlog (sin fecha — requiere análisis previo)
@@ -130,8 +143,10 @@ Ver código de cada módulo para el schema exacto.
 - **p1 = la persona que se registró primero** (invitante), p2 = quien acepta la invitación
 - **Labels dinámicos**: `p1()` y `p2()` devuelven el label según `familyConfig` (ej. "Mamá" / "Papá")
 - **`inviteConsumed`**: guard idempotente para que el link solo funcione una vez
-- **Overrides manuales**: se guardan en `custodyOverrides` para poder restaurar la regla base
+- **Overrides de custodia**: se guardan en `custodyOverrides`. La edición directa de días fue eliminada — solo existe el flujo de propuesta/aprobación entre ambos padres.
 - **Eventos privados**: `participants === 'mama'` solo los ve quien tiene `myRole() === 'p1'`
+- **Aceptación legal activa**: 3 checkboxes separados (TOS obligatorio, Privacy obligatorio, Newsletter opcional). Se guarda `legalAcceptance` en Firestore con `tosVersion`/`privacyVersion` para futuras migraciones de términos. Constantes `LEGAL_TOS_VERSION` y `LEGAL_PRIVACY_VERSION` en `onboarding.js`.
+- **Posición jurídica de Qinflo**: herramienta de organización y registro, no reemplaza mediación ni acuerdos legales. Texto explícito antes de los checkboxes. TOS debe incluir: no es servicio de mediación, no determina quién tiene razón, no valida acuerdos judiciales, registros son referenciales no prueba legal formal, cada usuario es responsable de su información, datos de menores se tratan conforme a legislación vigente.
 
 ## Google Auth en Safari/iOS — solución definitiva
 
