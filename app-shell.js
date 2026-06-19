@@ -282,6 +282,15 @@ window.addEventListener('DOMContentLoaded', function() {
   $('expCat').addEventListener('change', function(){ updateExpenseSubcats(); updateExpenseTreatmentUI(); });
   if ($('expTreatment')) $('expTreatment').addEventListener('change', updateExpenseTreatmentUI);
   if ($('expPaidBy')) $('expPaidBy').addEventListener('change', updateExpenseTreatmentUI);
+  if ($('expAttachToggle')) $('expAttachToggle').addEventListener('click', function() {
+    var box = $('expAttachBox');
+    var isOpen = box.style.display === 'grid';
+    box.style.display = isOpen ? 'none' : 'grid';
+    this.textContent = isOpen ? '📎 Adjuntar archivos (opcional)' : '📎 Adjuntar archivos ▲';
+  });
+  [$('expDesc'), $('expAmount')].forEach(function(el) {
+    if (el) el.addEventListener('keydown', function(e) { if (e.key === 'Enter') saveExp(); });
+  });
   updateExpenseSubcats();
   updateExpenseTreatmentUI();
   $('btnCLP').addEventListener('click', function() { setCurrency('CLP'); });

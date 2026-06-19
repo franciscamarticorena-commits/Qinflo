@@ -461,7 +461,7 @@
 
   <nav id="mainNav">
     <button class="active" data-tab="today">
-      <i data-lucide="home"></i> Inicio
+      <i data-lucide="home"></i> Hoy
     </button>
     <button data-tab="calendar">
       <i data-lucide="calendar-days"></i> Calendario
@@ -473,7 +473,7 @@
       <i data-lucide="message-circle"></i> Mensajes
     </button>
     <button data-tab="info">
-      <i data-lucide="book-open"></i> Información
+      <i data-lucide="more-horizontal"></i> Más
     </button>
   </nav>
 </div>
@@ -488,7 +488,7 @@
 <div id="tab-today" class="hidden">
   <div class="section-header">
     <div class="section-title">
-      <h2>Inicio</h2>
+      <h2>Hoy</h2>
       <p id="todayDateLbl"></p>
     </div>
   </div>
@@ -617,9 +617,10 @@
           <button id="restoreBaseBtn" class="btn-outline hidden" onclick="restoreBaseRule()" style="width:100%;font-size:12px;color:var(--text-s)">↩ Restaurar regla original</button>
         </div>
         <div id="propForm" class="hidden" style="margin-top:12px;display:grid;gap:9px">
+          <div style="font-size:11px;color:var(--text-s)">¿Cuál día quieres cambiar y a cuál? (número del día en este mes)</div>
           <div class="grid-2">
-            <input class="inp" type="number" id="propFrom" placeholder="Día actual"/>
-            <input class="inp" type="number" id="propTo" placeholder="Nuevo día"/>
+            <input class="inp" type="number" id="propFrom" placeholder="Día origen (ej: 15)" min="1" max="31"/>
+            <input class="inp" type="number" id="propTo" placeholder="Día propuesto (ej: 17)" min="1" max="31"/>
           </div>
           <input class="inp" id="propReason" placeholder="Razón del cambio"/>
           <div style="display:flex;gap:8px">
@@ -712,13 +713,16 @@
         </div>
       </div>
       <div id="expDistributionHint" class="exp-subtle" style="font-weight:800;color:var(--primary-d)"></div>
-      <label class="lbl">Respaldo del gasto</label>
-      <input class="inp" type="file" id="expFile" accept="image/*,.pdf" />
-      <div class="exp-subtle">📎 Boleta, ticket o factura del gasto realizado.</div>
-      <div id="reimburseBox">
-        <label class="lbl">Respaldo del pago adeudado por el otro padre/madre</label>
-        <input class="inp" type="file" id="expReimburseFile" accept="image/*,.pdf" />
-        <div class="exp-subtle">📎 Comprobante de transferencia o depósito de la parte correspondiente.</div>
+      <button id="expAttachToggle" style="background:none;border:1.5px dashed var(--border);border-radius:10px;color:var(--primary);font-size:12px;font-weight:600;padding:8px 12px;text-align:left;width:100%;cursor:pointer">📎 Adjuntar archivos (opcional)</button>
+      <div id="expAttachBox" style="display:none;gap:11px">
+        <label class="lbl">Respaldo del gasto</label>
+        <input class="inp" type="file" id="expFile" accept="image/*,.pdf" />
+        <div class="exp-subtle">📎 Boleta, ticket o factura del gasto realizado.</div>
+        <div id="reimburseBox">
+          <label class="lbl">Respaldo del pago adeudado</label>
+          <input class="inp" type="file" id="expReimburseFile" accept="image/*,.pdf" />
+          <div class="exp-subtle">📎 Comprobante de pago del monto adeudado.</div>
+        </div>
       </div>
       <div style="display:flex;gap:8px">
         <button class="btn-sm" id="saveExpBtn">Guardar</button>
@@ -1058,8 +1062,8 @@
 <script src="state.js?v=8"></script>
 <script src="auth.js?v=9"></script>
 <script src="connect.js?v=8"></script>
-<script src="calendar.js?v=8"></script>
-<script src="expenses.js?v=11"></script>
+<script src="calendar.js?v=9"></script>
+<script src="expenses.js?v=12"></script>
 <script src="messages.js?v=8"></script>
 <script src="children.js?v=8"></script>
 <script src="agreements.js?v=8"></script>
@@ -1069,8 +1073,8 @@
 <script src="onboarding.js?v=9"></script>
 <script src="events.js?v=8"></script>
 <script src="documents.js?v=1"></script>
-<script src="today.js?v=9"></script>
-<script src="app-shell.js?v=10"></script>
+<script src="today.js?v=10"></script>
+<script src="app-shell.js?v=11"></script>
 </body>
 </html>
 

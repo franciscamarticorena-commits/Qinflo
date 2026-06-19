@@ -195,7 +195,7 @@ font-family: inherit;
 
 .btn-danger {
 background: #FBF0F0; color: var(--error); border: none;
-border-radius: 9px; width: 32px; height: 32px; display: flex;
+border-radius: 9px; min-width: 40px; min-height: 40px; display: flex;
 align-items: center; justify-content: center; transition: background .18s; flex-shrink: 0;
 }
 .btn-danger:hover { background: #F5D8D8; }
@@ -310,10 +310,10 @@ padding: 16px; border: 1px solid var(--border);
 .rem-row:last-child { border-bottom: none; }
 .rem-title { font-weight: 600; font-size: 13px; color: var(--text); margin-bottom: 3px; }
 .rem-meta { font-size: 11px; color: var(--text-s); }
-.btn-done { background: var(--bg); border: 1.5px solid var(--border); border-radius: 9px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0; color: var(--success); }
+.btn-done { background: var(--bg); border: 1.5px solid var(--border); border-radius: 9px; min-width: 40px; min-height: 40px; display: flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0; color: var(--success); }
 .btn-done:hover { background: #EEF5ED; border-color: var(--success); }
 .btn-done svg { width: 14px; height: 14px; }
-.btn-undo { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: var(--text-s); transition: all .15s; }
+.btn-undo { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; min-width: 38px; min-height: 38px; display: flex; align-items: center; justify-content: center; color: var(--text-s); transition: all .15s; }
 .btn-undo svg { width: 13px; height: 13px; }
 
 /* - RESOURCES --------------- */

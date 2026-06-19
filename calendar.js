@@ -207,6 +207,7 @@ function _detailSectionHdr(label) {
 function renderDayDetail() {
   if (!selDay) { hide('dayDetail'); return; }
   show('dayDetail');
+  setTimeout(function() { $('dayDetail').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 80);
   hide('editDayForm');
   editDaySelectedVal = null;
   $('detailDay').textContent = selDay;

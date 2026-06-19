@@ -186,7 +186,8 @@ function _todayCustody(now) {
   if (btn) btn.classList.toggle('hidden', custody !== 'transition');
 
   if (!custody) {
-    el.innerHTML = '<span style="color:var(--text-s);font-size:14px">Calendario no configurado aún</span>';
+    el.innerHTML = '<span style="color:var(--text-s);font-size:14px">Calendario no configurado aún</span>' +
+      '<div style="margin-top:10px"><button class="btn-sm" style="font-size:12px;padding:8px 16px" onclick="switchTab(\'calendar\')">Ir al Calendario →</button></div>';
     return;
   }
 

@@ -124,6 +124,8 @@ function _resetExpForm() {
   setCurrency('CLP');
   if ($('pctMama') && $('pctMama').options.length) $('pctMama').value = 50;
   if ($('pctPapa') && $('pctPapa').options.length) $('pctPapa').value = 50;
+  if ($('expAttachBox')) $('expAttachBox').style.display = 'none';
+  if ($('expAttachToggle')) $('expAttachToggle').textContent = '📎 Adjuntar archivos (opcional)';
   updateExpenseTreatmentUI();
 }
 
@@ -142,49 +144,61 @@ function openExpEdit(exp) {
   fillPercentSelectors();
   if ($('pctMama') && $('pctMama').options.length) $('pctMama').value = exp.pctMama != null ? exp.pctMama : 50;
   if ($('pctPapa') && $('pctPapa').options.length) $('pctPapa').value = exp.pctPapa != null ? exp.pctPapa : 50;
+  // Show attach section if expense has files
+  if ($('expAttachBox')) {
+    var hasFiles = exp.attachmentName || exp.reimbursementAttachmentName;
+    $('expAttachBox').style.display = hasFiles ? 'grid' : 'none';
+    if ($('expAttachToggle')) $('expAttachToggle').textContent = hasFiles ? '📎 Adjuntar archivos ▲' : '📎 Adjuntar archivos (opcional)';
+  }
   updateExpenseTreatmentUI();
   $('expForm').classList.remove('hidden');
   $('expForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function saveExp() {
+  var btn = $('saveExpBtn');
   var desc = $('expDesc').value.trim(), amt = $('expAmount').value;
   if (!desc || !amt) return;
-  var tval = $('expTreatment') ? $('expTreatment').value : 'shared';
-  var pctM = tval === 'shared' ? Number(($('pctMama') && $('pctMama').value) || 50) : (tval === 'mama_only' ? 100 : 0);
-  var pctP = tval === 'shared' ? Number(($('pctPapa') && $('pctPapa').value) || 50) : (tval === 'papa_only' ? 100 : 0);
-  var f = $('expFile') && $('expFile').files && $('expFile').files[0] ? $('expFile').files[0].name : '';
-  var rf = $('expReimburseFile') && $('expReimburseFile').files && $('expReimburseFile').files[0] ? $('expReimburseFile').files[0].name : '';
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    var tval = $('expTreatment') ? $('expTreatment').value : 'shared';
+    var pctM = tval === 'shared' ? Number(($('pctMama') && $('pctMama').value) || 50) : (tval === 'mama_only' ? 100 : 0);
+    var pctP = tval === 'shared' ? Number(($('pctPapa') && $('pctPapa').value) || 50) : (tval === 'papa_only' ? 100 : 0);
+    var f = $('expFile') && $('expFile').files && $('expFile').files[0] ? $('expFile').files[0].name : '';
+    var rf = $('expReimburseFile') && $('expReimburseFile').files && $('expReimburseFile').files[0] ? $('expReimburseFile').files[0].name : '';
 
-  var data = {
-    description: desc, amount: Number(amt), currency: expCurrency,
-    paidBy: $('expPaidBy').value,
-    category: $('expCat').value,
-    subcategory: $('expSubcat') ? $('expSubcat').value : '',
-    frequency: $('expFrequency') ? $('expFrequency').value : 'unique',
-    treatment: tval,
-    healthRefund: $('expHealthRefund') ? $('expHealthRefund').value : '',
-    pctMama: pctM, pctPapa: pctP
-  };
+    var data = {
+      description: desc, amount: Number(amt), currency: expCurrency,
+      paidBy: $('expPaidBy').value,
+      category: $('expCat').value,
+      subcategory: $('expSubcat') ? $('expSubcat').value : '',
+      frequency: $('expFrequency') ? $('expFrequency').value : 'unique',
+      treatment: tval,
+      healthRefund: $('expHealthRefund') ? $('expHealthRefund').value : '',
+      pctMama: pctM, pctPapa: pctP
+    };
 
-  if (editingExpId) {
-    if (f) data.attachmentName = f;
-    if (rf) data.reimbursementAttachmentName = rf;
-    data.modifiedAt = firebase.firestore.FieldValue.serverTimestamp();
-    data.modifiedBy = USER.uid;
-    await famCol('expenses').doc(editingExpId).update(data);
-  } else {
-    data.attachmentName = f;
-    data.reimbursementAttachmentName = rf;
-    data.date = new Date().toISOString().slice(0, 10);
-    data.paid = false; data.voided = false;
-    data.history = [{ action: 'Gasto registrado', at: new Date().toISOString(), by: USERDATA ? USERDATA.name : '' }];
-    data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-    data.createdBy = USER.uid;
-    await famCol('expenses').add(data);
+    if (editingExpId) {
+      if (f) data.attachmentName = f;
+      if (rf) data.reimbursementAttachmentName = rf;
+      data.modifiedAt = firebase.firestore.FieldValue.serverTimestamp();
+      data.modifiedBy = USER.uid;
+      await famCol('expenses').doc(editingExpId).update(data);
+    } else {
+      data.attachmentName = f;
+      data.reimbursementAttachmentName = rf;
+      data.date = new Date().toISOString().slice(0, 10);
+      data.paid = false; data.voided = false;
+      data.history = [{ action: 'Gasto registrado', at: new Date().toISOString(), by: USERDATA ? USERDATA.name : '' }];
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      data.createdBy = USER.uid;
+      await famCol('expenses').add(data);
+    }
+    _resetExpForm();
+    hide('expForm');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
   }
-  _resetExpForm();
-  hide('expForm');
 }
 
 async function liquidarBalance() {
