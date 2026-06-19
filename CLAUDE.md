@@ -1,5 +1,34 @@
 # Qinflo — Contexto del proyecto para Claude
 
+## Visión de producto (norte estratégico)
+
+> "Qinflo no reemplaza al otro padre o madre. Reemplaza la necesidad de recordar y volver a conversar lo mismo."
+
+**Qinflo es un sistema de verdad compartida**, no un calendario ni un chat ni una app de gastos.
+
+**Principio de producto**: Disminuir carga mental, conversaciones repetidas y dependencia de la memoria. La coordinación debe basarse en hechos, no en mensajes.
+
+**Principio de diseño**: Menos módulos. Más hechos. Menos conversaciones. Más claridad compartida.
+
+### Qué NO hacer
+No incorporar: IA, chat complejo, transferencias de dinero, fotos, álbumes, geolocalización, videollamadas, módulos adicionales innecesarios.
+
+### Priorización de producto (por orden de impacto)
+
+1. **Pantalla Hoy (centro de mando)** — Al abrir, entender qué pasa en < 5 segundos: con quién están los niños, próximo cambio, próximos eventos (7 días), esperando respuesta, recordatorios, balance.
+
+2. **"Esperando respuesta"** (no llamarlo "Pendientes") — Una sola tarjeta que agrupa: cambio de custodia pendiente, evento por confirmar, gasto por confirmar, acuerdo por revisar. Mostrar: quién solicitó, fecha, estado.
+
+3. **Actividad** — Tarjeta dentro de Pantalla Hoy, no módulo independiente. Lista cronológica de hechos: "Mamá confirmó recepción de los niños", "Papá aprobó cambio Día del Padre", "Gasto uniforme registrado". Objetivo: transformar conversaciones en hechos, la coordinación deja de depender de la memoria.
+
+4. **Timeline histórico** — Historial único por fecha que incluye eventos, gastos, cambios de custodia, acuerdos, confirmaciones. Objetivo: eliminar "no me acuerdo", "nunca me dijiste", "¿cuándo fue?"
+
+5. **Confirmaciones** — Solo para días de cambio de casa. Registra: quién confirmó, fecha y hora exacta. Genera realidad compartida verificable.
+
+6. **Google Calendar** — Sincronización bidireccional para no duplicar trabajo (largo plazo).
+
+---
+
 ## Repositorio
 - **GitHub**: franciscamarticorena-commits/Qinflo
 - **Rama principal**: `main` (desarrollo directo en main desde Fase 6)
