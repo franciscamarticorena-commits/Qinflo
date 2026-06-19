@@ -246,7 +246,6 @@ window.addEventListener('DOMContentLoaded', function() {
   // Calendar
   $('prevMonthBtn').addEventListener('click', prevMonth);
   $('nextMonthBtn').addEventListener('click', nextMonth);
-  if ($('editDayBtn')) $('editDayBtn').addEventListener('click', openEditDay);
   // Filtros de vista del calendario
   document.querySelectorAll('[data-cal-filter]').forEach(function(btn) {
     btn.addEventListener('click', function() {
@@ -266,6 +265,10 @@ window.addEventListener('DOMContentLoaded', function() {
       alert(msg);
       return;
     }
+    var tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+    var minDate = tomorrow.toISOString().slice(0, 10);
+    if ($('propFrom')) $('propFrom').min = minDate;
+    if ($('propTo'))   $('propTo').min   = minDate;
     $('propForm').classList.toggle('hidden');
   });
   $('savePropBtn').addEventListener('click', saveProp);
