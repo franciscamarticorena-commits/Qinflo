@@ -271,11 +271,17 @@ window.addEventListener('DOMContentLoaded', function() {
   $('cancelPropBtn').addEventListener('click', function() { hide('propForm'); });
 
   // Expenses
-  $('toggleExpBtn').addEventListener('click', function() { $('expForm').classList.toggle('hidden'); });
+  $('toggleExpBtn').addEventListener('click', function() {
+    var willOpen = $('expForm').classList.contains('hidden');
+    if (willOpen) _resetExpForm();
+    $('expForm').classList.toggle('hidden');
+    if (willOpen) $('expForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   $('saveExpBtn').addEventListener('click', saveExp);
-  $('cancelExpBtn').addEventListener('click', function() { hide('expForm'); });
+  $('cancelExpBtn').addEventListener('click', function() { _resetExpForm(); hide('expForm'); });
   $('expCat').addEventListener('change', function(){ updateExpenseSubcats(); updateExpenseTreatmentUI(); });
   if ($('expTreatment')) $('expTreatment').addEventListener('change', updateExpenseTreatmentUI);
+  if ($('expPaidBy')) $('expPaidBy').addEventListener('change', updateExpenseTreatmentUI);
   updateExpenseSubcats();
   updateExpenseTreatmentUI();
   $('btnCLP').addEventListener('click', function() { setCurrency('CLP'); });

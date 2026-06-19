@@ -1,5 +1,7 @@
 // --- GASTOS -------------------------------------------------
 
+var editingExpId = null;
+
 const EXP_SUBCATS = {
   'Educación': ['Matrícula','Colegiatura mensual','Academias / extra programáticas / refuerzo escolar','Útiles escolares','Uniformes','Transporte escolar','Casino / almuerzo / colación'],
   'Salud': ['Seguro escolar','Isapre / Fonasa','Seguro complementario','Cita a especialistas','Tratamientos','Terapias'],
@@ -53,11 +55,14 @@ function updateExpenseTreatmentUI() {
   fillPercentSelectors();
   var t = $('expTreatment') ? $('expTreatment').value : 'shared';
   var cat = $('expCat') ? $('expCat').value : '';
+  var paidBy = $('expPaidBy') ? $('expPaidBy').value : '';
   var reimburse = $('reimburseBox');
   var distBox = $('expDistributionBox');
   var distHint = $('expDistributionHint');
   var refundBox = $('expHealthRefundBox');
-  if (reimburse) reimburse.classList.toggle('hidden', t !== 'shared');
+  // Hide reimbursement proof from the creditor (the one who paid)
+  var isCreditor = (myRole() === 'p1' && paidBy === 'mama') || (myRole() === 'p2' && paidBy === 'papa');
+  if (reimburse) reimburse.classList.toggle('hidden', t !== 'shared' || isCreditor);
   if (distBox) distBox.classList.toggle('hidden', t !== 'shared');
   if (refundBox) refundBox.classList.toggle('hidden', cat !== 'Salud');
   if (distHint) {
@@ -105,6 +110,43 @@ function _computeSettlAdjust(settlList) {
   }, 0);
 }
 
+function _resetExpForm() {
+  editingExpId = null;
+  if ($('expFormTitle')) $('expFormTitle').textContent = 'Agregar gasto';
+  $('expDesc').value = '';
+  $('expAmount').value = '';
+  if ($('expFile')) $('expFile').value = '';
+  if ($('expReimburseFile')) $('expReimburseFile').value = '';
+  if ($('expFrequency')) $('expFrequency').value = 'unique';
+  if ($('expCat')) { $('expCat').value = 'Educación'; updateExpenseSubcats(); }
+  if ($('expTreatment')) $('expTreatment').value = 'shared';
+  if ($('expPaidBy')) $('expPaidBy').value = myRole() === 'p1' ? 'mama' : 'papa';
+  setCurrency('CLP');
+  if ($('pctMama') && $('pctMama').options.length) $('pctMama').value = 50;
+  if ($('pctPapa') && $('pctPapa').options.length) $('pctPapa').value = 50;
+  updateExpenseTreatmentUI();
+}
+
+function openExpEdit(exp) {
+  editingExpId = exp.id;
+  if ($('expFormTitle')) $('expFormTitle').textContent = 'Editar gasto';
+  $('expDesc').value = exp.description || '';
+  $('expAmount').value = exp.amount || '';
+  if ($('expFrequency')) $('expFrequency').value = exp.frequency || 'unique';
+  if ($('expCat')) { $('expCat').value = exp.category || 'Educación'; updateExpenseSubcats(); }
+  if ($('expSubcat')) $('expSubcat').value = exp.subcategory || '';
+  if ($('expTreatment')) $('expTreatment').value = exp.treatment || 'shared';
+  if ($('expPaidBy')) $('expPaidBy').value = exp.paidBy || 'mama';
+  if ($('expHealthRefund')) $('expHealthRefund').value = exp.healthRefund || 'pending';
+  setCurrency(exp.currency || 'CLP');
+  fillPercentSelectors();
+  if ($('pctMama') && $('pctMama').options.length) $('pctMama').value = exp.pctMama != null ? exp.pctMama : 50;
+  if ($('pctPapa') && $('pctPapa').options.length) $('pctPapa').value = exp.pctPapa != null ? exp.pctPapa : 50;
+  updateExpenseTreatmentUI();
+  $('expForm').classList.remove('hidden');
+  $('expForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 async function saveExp() {
   var desc = $('expDesc').value.trim(), amt = $('expAmount').value;
   if (!desc || !amt) return;
@@ -113,23 +155,35 @@ async function saveExp() {
   var pctP = tval === 'shared' ? Number(($('pctPapa') && $('pctPapa').value) || 50) : (tval === 'papa_only' ? 100 : 0);
   var f = $('expFile') && $('expFile').files && $('expFile').files[0] ? $('expFile').files[0].name : '';
   var rf = $('expReimburseFile') && $('expReimburseFile').files && $('expReimburseFile').files[0] ? $('expReimburseFile').files[0].name : '';
-  await famCol('expenses').add({
+
+  var data = {
     description: desc, amount: Number(amt), currency: expCurrency,
     paidBy: $('expPaidBy').value,
     category: $('expCat').value,
     subcategory: $('expSubcat') ? $('expSubcat').value : '',
     frequency: $('expFrequency') ? $('expFrequency').value : 'unique',
-    treatment: $('expTreatment') ? $('expTreatment').value : 'shared',
-    attachmentName: f,
-    reimbursementAttachmentName: rf,
+    treatment: tval,
     healthRefund: $('expHealthRefund') ? $('expHealthRefund').value : '',
-    pctMama: pctM,
-    pctPapa: pctP,
-    date: new Date().toISOString().slice(0, 10), paid: false, voided: false,
-    history: [{ action: 'Gasto registrado', at: new Date().toISOString(), by: USERDATA ? USERDATA.name : '' }],
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(), createdBy: USER.uid
-  });
-  $('expDesc').value = ''; $('expAmount').value = ''; if ($('expFile')) $('expFile').value = ''; if ($('expReimburseFile')) $('expReimburseFile').value = '';
+    pctMama: pctM, pctPapa: pctP
+  };
+
+  if (editingExpId) {
+    if (f) data.attachmentName = f;
+    if (rf) data.reimbursementAttachmentName = rf;
+    data.modifiedAt = firebase.firestore.FieldValue.serverTimestamp();
+    data.modifiedBy = USER.uid;
+    await famCol('expenses').doc(editingExpId).update(data);
+  } else {
+    data.attachmentName = f;
+    data.reimbursementAttachmentName = rf;
+    data.date = new Date().toISOString().slice(0, 10);
+    data.paid = false; data.voided = false;
+    data.history = [{ action: 'Gasto registrado', at: new Date().toISOString(), by: USERDATA ? USERDATA.name : '' }];
+    data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+    data.createdBy = USER.uid;
+    await famCol('expenses').add(data);
+  }
+  _resetExpForm();
   hide('expForm');
 }
 
@@ -295,9 +349,11 @@ function renderExpenses() {
           (ex.currency === 'UF' ? '<div style="font-size:10px;color:var(--text-s)">' + fmtCLP(ex.amount * UF) + '</div>' : '') +
         '</div>' +
         '<button class="btn-outline toggle-paid-btn" style="padding:7px 10px">' + (ex.paid ? 'Confirmado' : 'Marcar OK') + '</button>' +
+        '<button class="btn-outline edit-btn" title="Editar" style="padding:7px 10px">✏️</button>' +
         '<button class="btn-danger void-btn" title="Anular"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>' +
       '</div>';
     row.querySelector('.toggle-paid-btn').addEventListener('click', function() { famCol('expenses').doc(ex.id).update({ paid: !ex.paid, lastActionAt: firebase.firestore.FieldValue.serverTimestamp(), lastActionBy: USER.uid }); });
+    row.querySelector('.edit-btn').addEventListener('click', function() { openExpEdit(ex); });
     row.querySelector('.void-btn').addEventListener('click', function() { if (confirm('Este gasto no se eliminará. Quedará anulado en el historial.')) famCol('expenses').doc(ex.id).update({ voided: true, voidedAt: firebase.firestore.FieldValue.serverTimestamp(), voidedBy: USER.uid }); });
     el.appendChild(row);
   });
