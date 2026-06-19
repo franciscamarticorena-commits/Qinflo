@@ -105,6 +105,25 @@ Ver código de cada módulo para el schema exacto.
 | 9 | Dashboard "Hoy" — card resumen: quién tiene hoy, próximo cambio, balance pendiente, recordatorios | Media |
 | 10 | Push notifications — FCM para mensajes nuevos, cambios pendientes, recordatorios | Baja |
 
+## Backlog (sin fecha — requiere análisis previo)
+
+### Multi-familia (un usuario con coparents distintos)
+**Contexto**: Un padre/madre puede tener hijos con distintas parejas. Cada relación debe tener su propio espacio independiente.
+
+**Diseño propuesto**:
+- Migrar `users/{uid}.familyId` (string) → `users/{uid}.families[]` (array de `{famId, coparentId, role, label}`)
+- Agregar `activeFamilyId` para saber qué espacio está activo
+- Selector de espacio en header/perfil que actualiza `FAMILY_ID` y reinicia listeners
+- Antes de crear un segundo espacio: validar que el nuevo coparent no exista ya en `families[]` (evitar duplicados)
+- **Migración**: todos los usuarios existentes deben pasar al nuevo schema
+
+**Pendiente de definir (business case)**:
+- ¿Se monetiza por espacio adicional, por usuario total, por familia, o es flat?
+- Evaluar si el modelo de negocio justifica la complejidad de la migración
+- Considerar que el mismo coparent podría estar en el espacio de múltiples usuarios
+
+**Recuperación de contraseña**: ya existe (`doReset()` con `sendPasswordResetEmail`). Hacer más visible el "¿Ya tienes cuenta?" durante el registro para evitar cuentas duplicadas.
+
 ## Decisiones de diseño importantes
 - **Firebase compat SDK v10.12.0** (no modular), todo via `firebase.*` y `auth`/`db` globales
 - **Sin build step** — JS vanilla, sin bundler, desplegable directo con Firebase Hosting
