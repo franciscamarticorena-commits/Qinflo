@@ -282,7 +282,11 @@ function renderProposals() {
   pendingSent.forEach(function(pr) {
     var div = document.createElement('div');
     div.className = 'proposal-alert';
-    div.innerHTML = '<div><strong>Solicitud de cambio de custodia enviada</strong><br><strong>' + proposalRequesterLabel(pr) + '</strong> solicita a <strong>' + proposalRequestedLabel(pr) + '</strong><br>Cambio: ' + fmtProposalDates(pr) + '<br>Enviada: ' + fmtDateTime(pr.createdAt || pr.date) + '<br>Esperando respuesta.<div class="proposal-flow-note">Mientras esta solicitud esté pendiente, no se pueden crear nuevas solicitudes.</div></div>';
+    div.innerHTML = '<div><strong>Solicitud de cambio de custodia enviada</strong><br><strong>' + proposalRequesterLabel(pr) + '</strong> solicita a <strong>' + proposalRequestedLabel(pr) + '</strong><br>Cambio: ' + fmtProposalDates(pr) + '<br>Enviada: ' + fmtDateTime(pr.createdAt || pr.date) + '<br>Esperando respuesta.<div class="proposal-flow-note">Mientras esta solicitud esté pendiente, no se pueden crear nuevas solicitudes.</div></div><div style="margin-top:8px"><button class="btn-outline cancel-prop-btn" style="font-size:11px;padding:5px 12px;color:var(--error)">Retirar solicitud</button></div>';
+    div.querySelector('.cancel-prop-btn').addEventListener('click', async function() {
+      if (!confirm('¿Retirar esta solicitud de cambio?')) return;
+      await famCol('proposals').doc(pr.id).delete();
+    });
     el.appendChild(div);
   });
   updateProposalButtonState();
