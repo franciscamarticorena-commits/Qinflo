@@ -128,11 +128,20 @@ async function sendMsg() {
   $('msgInput').value = '';
 }
 
+async function sendMsgDivider() {
+  await famCol('messages').add({
+    type: 'divider',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    createdBy: USER.uid
+  });
+}
+
 function renderMessages() {
   var el = $('msgList');
   if (!el) return;
   if (!messages.length) { el.innerHTML = '<p style="text-align:center;color:var(--text-s);font-size:13px;margin:auto">Sin mensajes aún</p>'; return; }
   el.innerHTML = messages.map(function(m) {
+    if (m.type === 'divider') return '<div class="msg-divider"></div>';
     var isMe = m.createdBy === (USER && USER.uid);
     var time = m.createdAt && m.createdAt.toDate ? m.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
     return '<div style="display:flex;justify-content:' + (isMe ? 'flex-end' : 'flex-start') + '"><div class="msg-bubble ' + (isMe ? 'me' : 'other') + '"><div class="msg-sender">' + (m.senderName || '') + '</div>' + m.text + '<div class="msg-time">' + time + '</div></div></div>';
