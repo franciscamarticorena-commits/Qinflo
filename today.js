@@ -24,10 +24,9 @@ function renderToday() {
   _todayReminders(now, todayStr);
 }
 
-async function confirmKidsWithMe() {
+async function confirmKidsWithMe(btnEl) {
   if (!FAMILY_ID || !USER) return;
-  var btn = $('kidsWithMeBtn');
-  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '…'; }
   try {
     await db.collection('families').doc(FAMILY_ID).update({
       lastPickup: {
@@ -36,16 +35,13 @@ async function confirmKidsWithMe() {
         at: firebase.firestore.FieldValue.serverTimestamp()
       }
     });
-    if (btn) {
-      btn.textContent = '✓ Confirmado';
-      setTimeout(function() {
-        btn.textContent = 'Los niños ya están conmigo';
-        btn.disabled = false;
-      }, 3000);
+    if (btnEl) {
+      btnEl.textContent = '✓ Confirmado';
+      setTimeout(function() { renderToday(); }, 2000);
     }
   } catch(e) {
     console.error('[confirmKidsWithMe]', e);
-    if (btn) { btn.textContent = 'Los niños ya están conmigo'; btn.disabled = false; }
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Los niños ya están conmigo ✓'; }
   }
 }
 
@@ -111,9 +107,10 @@ function _todayPendingRequests() {
   var html = '';
 
   propsReceived.forEach(function(p) {
+    var label = typeof fmtProposalDates === 'function' ? fmtProposalDates(p) : 'día ' + p.fromDay + ' → ' + p.toDay;
     html += _pendingRow(
       _badge('RESPONDER', 'var(--warn)'),
-      'Cambio de custodia — día ' + p.fromDay + ' → ' + p.toDay,
+      'Cambio de custodia — ' + label,
       p.reason || null,
       '<button class="btn-sm" style="background:var(--success);font-size:12px;padding:6px 14px" onclick="acceptPropInline(\'' + p.id + '\')">Aceptar</button>' +
       '<button class="btn-outline" style="font-size:12px;padding:6px 14px" onclick="rejectPropInline(\'' + p.id + '\')">Rechazar</button>'
@@ -131,9 +128,10 @@ function _todayPendingRequests() {
   });
 
   propsSent.forEach(function(p) {
+    var label = typeof fmtProposalDates === 'function' ? fmtProposalDates(p) : 'día ' + p.fromDay + ' → ' + p.toDay;
     html += _pendingRow(
       _badge('ESPERANDO', 'var(--primary)'),
-      'Cambio de custodia — día ' + p.fromDay + ' → ' + p.toDay,
+      'Cambio de custodia — ' + label,
       'Esperando respuesta',
       null
     );
@@ -182,8 +180,6 @@ function _todayCustody(now) {
   if (!el) return;
 
   var custody = _todayGetCustody(now);
-  var btn = $('kidsWithMeBtn');
-  if (btn) btn.classList.toggle('hidden', custody !== 'transition');
 
   if (!custody) {
     el.innerHTML = '<span style="color:var(--text-s);font-size:14px">Calendario no configurado aún</span>' +
@@ -253,30 +249,36 @@ function _todayCustody(now) {
     }
   }
 
+  var kidsBtn = custody === 'transition'
+    ? '<button class="btn-outline" style="margin-top:14px;font-size:12px;padding:8px 16px" onclick="confirmKidsWithMe(this)">Los niños ya están conmigo ✓</button>'
+    : '';
   el.innerHTML =
     '<div style="font-size:24px;font-weight:700;color:var(--text);letter-spacing:-.4px">' +
-    mainHtml + '</div>' + subHtml + nextHtml;
+    mainHtml + '</div>' + subHtml + nextHtml + kidsBtn;
 }
 
 function _todayBalance() {
   var el = $('todayBalanceBlock');
   if (!el) return;
 
-  var net = expenses.filter(function(e) {
-    return !e.voided && e.treatment === 'shared';
-  }).reduce(function(s, e) {
-    var amount = e.currency === 'UF' ? Math.round((e.amount || 0) * UF) : (e.amount || 0);
-    var pct = (e.pctMama == null) ? 50 : e.pctMama;
-    var mPaid = e.paidBy === 'mama' ? amount : 0;
-    return s + (mPaid - amount * pct / 100);
-  }, 0);
+  var allExp = (expenses || []).filter(function(e) { return !e.voided; });
+  var net = typeof _computeSharedNet === 'function'
+    ? _computeSharedNet(allExp)
+    : allExp.filter(function(e) { return e.treatment === 'shared'; }).reduce(function(s, e) {
+        var amount = e.currency === 'UF' ? Math.round((e.amount || 0) * UF) : (e.amount || 0);
+        var pct = (e.pctMama == null) ? 50 : e.pctMama;
+        return s + ((e.paidBy === 'mama' ? amount : 0) - amount * pct / 100);
+      }, 0);
+  var adjNet = typeof _computeSettlAdjust === 'function'
+    ? net - _computeSettlAdjust(settlements || [])
+    : net;
 
-  if (Math.abs(net) < 1) {
+  if (Math.abs(adjNet) < 1) {
     el.innerHTML = '<span style="color:var(--success)">✓ Sin saldo pendiente</span>';
-  } else if (net > 0) {
-    el.innerHTML = p2() + ' debe <b style="color:var(--warn)">' + fmtCLP(Math.round(net)) + '</b> a ' + p1();
+  } else if (adjNet > 0) {
+    el.innerHTML = p2() + ' debe <b style="color:var(--warn)">' + fmtCLP(Math.round(adjNet)) + '</b> a ' + p1();
   } else {
-    el.innerHTML = p1() + ' debe <b style="color:var(--warn)">' + fmtCLP(Math.round(-net)) + '</b> a ' + p2();
+    el.innerHTML = p1() + ' debe <b style="color:var(--warn)">' + fmtCLP(Math.round(-adjNet)) + '</b> a ' + p2();
   }
 }
 
