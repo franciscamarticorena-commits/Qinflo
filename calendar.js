@@ -1,16 +1,26 @@
 // --- CALENDARIO ---------------------------------------------
 
+// Increment when the custody algorithm changes to force a full calendar regeneration.
+var CAL_ALG_VERSION = 2;
+
 async function checkAndGenerateCalendar() {
   if (!FAMILY_ID) return;
-  // Solo genera si el mes actual no tiene datos de custodia
-  if (custodyMap[calKey()] && Object.keys(custodyMap[calKey()]).length > 0) return;
   try {
     var famSnap = await db.collection('families').doc(FAMILY_ID).get();
     if (!famSnap.exists) return;
-    var config = famSnap.data().custodyConfig;
+    var data = famSnap.data();
+    var config = data.custodyConfig;
     if (!config || config.type === 'undefined' || config.type === 'custom') return;
+    // Regenerate if the stored algorithm version is outdated (fixes wrong-Sunday bug),
+    // or if the current month simply has no data yet.
+    var storedVersion = data.calAlgVersion || 0;
+    var monthHasData = custodyMap[calKey()] && Object.keys(custodyMap[calKey()]).length > 0;
+    if (storedVersion >= CAL_ALG_VERSION && monthHasData) return;
     if (typeof generateOnbCalendar === 'function') {
       await generateOnbCalendar(config, FAMILY_ID);
+      if (storedVersion < CAL_ALG_VERSION) {
+        await db.collection('families').doc(FAMILY_ID).update({ calAlgVersion: CAL_ALG_VERSION });
+      }
     }
   } catch(e) {
     console.error('[checkAndGenerateCalendar]', e);
@@ -18,7 +28,12 @@ async function checkAndGenerateCalendar() {
 }
 
 function calKey() { return calYear + '-' + String(calMonth + 1).padStart(2, '0'); }
-function getCustody(d) { return custodyMap[calKey()] && custodyMap[calKey()][d] ? custodyMap[calKey()][d] : 'none'; }
+function getCustody(d) {
+  var key = calKey();
+  var mo = custodyOverridesMap[key];
+  if (mo && mo[String(d)]) return mo[String(d)].value;
+  return custodyMap[key] && custodyMap[key][d] ? custodyMap[key][d] : 'none';
+}
 function getEvs(d) { return calEventsMap[calKey()] && calEventsMap[calKey()][d] ? calEventsMap[calKey()][d] : []; }
 function remindersForDay(day) {
   return reminders.filter(function(r) {

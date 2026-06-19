@@ -391,8 +391,12 @@ function getOnbCustodyForDate(date, config) {
   if (!config || config.type === 'undefined' || config.type === 'custom') return null;
 
   if (config.type === 'alternating_weeks') {
-    var start = new Date(config.startDate);
-    start.setHours(0, 0, 0, 0);
+    // Parse startDate as LOCAL midnight to match how date objects are created below.
+    // new Date('YYYY-MM-DD') parses as UTC midnight; in UTC-3/4 that rolls back to the
+    // previous local day, shifting every 7-day block boundary by one day and causing
+    // Sunday to land in the wrong block.
+    var sp = config.startDate.split('-');
+    var start = new Date(Number(sp[0]), Number(sp[1]) - 1, Number(sp[2]));
     var d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     var diff = Math.round((d - start) / 86400000);
     if (diff < 0) return null;
