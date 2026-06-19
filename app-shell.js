@@ -111,6 +111,8 @@ function updateLabels() {
   if ($('avatarInitial') && USERDATA && USERDATA.name) {
     $('avatarInitial').textContent = USERDATA.name.charAt(0).toUpperCase();
   }
+  // Ocultar botón de invitación si ya hay coparent conectado
+  if ($('inviteBtn')) $('inviteBtn').classList.toggle('hidden', !!(USERDATA && USERDATA.coparentId));
 }
 
 // --- LOAD OR ONBOARD ----------------------------------------
