@@ -11,24 +11,6 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- búsqueda de texto
 
 -- ============================================================
--- HELPER: verificar membresía a familia
--- Usado en políticas RLS para evitar repetición
--- ============================================================
-CREATE OR REPLACE FUNCTION public.is_family_member(p_family_id UUID)
-RETURNS BOOLEAN
-LANGUAGE sql
-SECURITY DEFINER
-STABLE
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.family_members
-    WHERE family_id = p_family_id
-      AND user_id = auth.uid()
-      AND status = 'active'
-  );
-$$;
-
--- ============================================================
 -- 1. USERS
 -- Extiende auth.users de Supabase (no reemplaza)
 -- ============================================================
@@ -91,6 +73,24 @@ CREATE TABLE public.family_members (
                          CHECK (status IN ('active', 'removed')),
   UNIQUE (family_id, user_id)
 );
+
+-- ============================================================
+-- HELPER: verificar membresía a familia
+-- Definida DESPUÉS de family_members para que la tabla ya exista
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.is_family_member(p_family_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.family_members
+    WHERE family_id = p_family_id
+      AND user_id = auth.uid()
+      AND status = 'active'
+  );
+$$;
 
 -- ============================================================
 -- 5. INVITATIONS
