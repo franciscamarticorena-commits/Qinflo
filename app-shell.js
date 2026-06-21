@@ -136,6 +136,7 @@ function loadApp() {
     switchTab('today');
     if (!FAMILY_ID) return;
     setupListeners();
+    setupNotifications();
     fetchUF();
     renderResources();
     renderQuickReplies();
@@ -144,6 +145,20 @@ function loadApp() {
     renderToday();
   } catch(e) {
     console.error('[loadApp crash]', e);
+  }
+}
+
+async function setupNotifications() {
+  if (!messaging) return;
+  try {
+    var permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+    var token = await messaging.getToken({ vapidKey: VAPID_KEY });
+    if (token && USER) {
+      await db.collection('users').doc(USER.uid).update({ fcmToken: token });
+    }
+  } catch(e) {
+    console.error('[setupNotifications]', e);
   }
 }
 

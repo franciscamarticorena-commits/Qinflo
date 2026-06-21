@@ -17,6 +17,9 @@ jobs:
       - name: Write service account credentials
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_QUINFLO }}' > /tmp/sa.json
 
+      - name: Install Functions dependencies
+        run: npm ci --prefix functions
+
       - name: Deploy Hosting
         run: firebase deploy --only hosting --project quinflo
         env:
@@ -24,6 +27,12 @@ jobs:
 
       - name: Deploy Firestore Rules
         run: firebase deploy --only firestore:rules --project quinflo
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json
+        continue-on-error: true
+
+      - name: Deploy Functions
+        run: firebase deploy --only functions --project quinflo
         env:
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json
         continue-on-error: true

@@ -11,6 +11,16 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+// VAPID key for Web Push (FCM). Generate at:
+// Firebase Console → Project Settings → Cloud Messaging → Web Push certificates → Generate key pair
+const VAPID_KEY = 'PENDING_VAPID_KEY';
+
+// Messaging: only available in secure contexts (HTTPS) with supported browsers.
+const messaging = (typeof firebase.messaging !== 'undefined' &&
+  firebase.messaging.isSupported && firebase.messaging.isSupported())
+  ? firebase.messaging()
+  : null;
+
 // STORAGE: storageBucket está presente en firebaseConfig pero firebase.storage() NO se instancia.
 // Adjuntos en documentos y otros activos binarios siguen pendientes de implementación.
 // Instanciar únicamente cuando se implemente el módulo de adjuntos (sprint pendiente).
