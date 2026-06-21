@@ -14,7 +14,7 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- búsqueda de texto
 -- 1. USERS
 -- Extiende auth.users de Supabase (no reemplaza)
 -- ============================================================
-CREATE TABLE public.users (
+CREATE TABLE IF NOT EXISTS public.users (
   id            UUID        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   name          TEXT        NOT NULL,
   email         TEXT        NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE public.users (
 -- 2. LEGAL ACCEPTANCES
 -- Separada de users para auditoría y versionado de términos
 -- ============================================================
-CREATE TABLE public.legal_acceptances (
+CREATE TABLE IF NOT EXISTS public.legal_acceptances (
   id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id          UUID        NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   tos_version      TEXT        NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE public.legal_acceptances (
 -- ============================================================
 -- 3. FAMILIES
 -- ============================================================
-CREATE TABLE public.families (
+CREATE TABLE IF NOT EXISTS public.families (
   id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   name       TEXT,
   created_by UUID        NOT NULL REFERENCES public.users(id),
@@ -62,7 +62,7 @@ CREATE TABLE public.families (
 -- 4. FAMILY MEMBERS
 -- Relación muchos-a-muchos User ↔ Family con rol
 -- ============================================================
-CREATE TABLE public.family_members (
+CREATE TABLE IF NOT EXISTS public.family_members (
   id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   family_id  UUID        NOT NULL REFERENCES public.families(id) ON DELETE CASCADE,
   user_id    UUID        NOT NULL REFERENCES public.users(id)   ON DELETE CASCADE,
@@ -96,7 +96,7 @@ $$;
 -- 5. INVITATIONS
 -- Token único por invitación, expira en 7 días
 -- ============================================================
-CREATE TABLE public.invitations (
+CREATE TABLE IF NOT EXISTS public.invitations (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   family_id       UUID        NOT NULL REFERENCES public.families(id) ON DELETE CASCADE,
   invited_by      UUID        NOT NULL REFERENCES public.users(id),
@@ -115,7 +115,7 @@ CREATE TABLE public.invitations (
 -- ============================================================
 -- 6. CHILDREN
 -- ============================================================
-CREATE TABLE public.children (
+CREATE TABLE IF NOT EXISTS public.children (
   id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   family_id  UUID        NOT NULL REFERENCES public.families(id) ON DELETE CASCADE,
   name       TEXT        NOT NULL,
@@ -136,7 +136,7 @@ CREATE TABLE public.children (
 -- Define la regla base de custodia de la familia
 -- type: alternating_weeks | fixed_days | custom
 -- ============================================================
-CREATE TABLE public.custody_patterns (
+CREATE TABLE IF NOT EXISTS public.custody_patterns (
   id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   family_id        UUID        NOT NULL REFERENCES public.families(id) ON DELETE CASCADE,
   type             TEXT        NOT NULL
@@ -156,7 +156,7 @@ CREATE TABLE public.custody_patterns (
 -- 8. CUSTODY CHANGES (propuestas de intercambio)
 -- Inmutables una vez creadas; estado cambia pero no se borran
 -- ============================================================
-CREATE TABLE public.custody_changes (
+CREATE TABLE IF NOT EXISTS public.custody_changes (
   id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   family_id         UUID        NOT NULL REFERENCES public.families(id) ON DELETE CASCADE,
   from_date         DATE        NOT NULL,
@@ -176,7 +176,7 @@ CREATE TABLE public.custody_changes (
 -- 9. CUSTODY CONFIRMATIONS ("Los niños ya están conmigo")
 -- Registro verificable de recepción de los hijos
 -- ============================================================
-CREATE TABLE public.custody_confirmations (
+CREATE TABLE IF NOT EXISTS public.custody_confirmations (
   id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   family_id         UUID        NOT NULL REFERENCES public.families(id) ON DELETE CASCADE,
   confirmed_by      UUID        NOT NULL REFERENCES public.users(id),
@@ -184,13 +184,13 @@ CREATE TABLE public.custody_confirmations (
   child_ids         UUID[]      NOT NULL DEFAULT '{}',
   confirmation_text TEXT,
   confirmed_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  related_event_id  UUID        REFERENCES public.events(id) DEFAULT NULL
+  related_event_id  UUID        DEFAULT NULL -- FK omitida: events se define después
 );
 
 -- ============================================================
 -- 10. EVENTS
 -- ============================================================
-CREATE TABLE public.events (
+CREATE TABLE IF NOT EXISTS public.events (
   id                    UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   family_id             UUID        NOT NULL REFERENCES public.families(id) ON DELETE CASCADE,
   child_ids             UUID[]      NOT NULL DEFAULT '{}',
@@ -220,7 +220,7 @@ CREATE TABLE public.events (
 -- 11. EVENT CONFIRMATIONS
 -- Respuesta de cada miembro a un evento compartido
 -- ============================================================
-CREATE TABLE public.event_confirmations (
+CREATE TABLE IF NOT EXISTS public.event_confirmations (
   id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id     UUID        NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
   user_id      UUID        NOT NULL REFERENCES public.users(id),
@@ -234,7 +234,7 @@ CREATE TABLE public.event_confirmations (
 -- 12. CURRENCY RATES (UF, USD, etc.)
 -- Valor diario para calcular gastos en UF
 -- ============================================================
-CREATE TABLE public.currency_rates (
+CREATE TABLE IF NOT EXISTS public.currency_rates (
   id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   currency     TEXT         NOT NULL CHECK (currency IN ('UF', 'USD', 'EUR')),
   date         DATE         NOT NULL,
@@ -248,7 +248,7 @@ CREATE TABLE public.currency_rates (
 -- 13. EXPENSES
 -- amount_clp siempre en pesos para el cálculo de balance
 -- ============================================================
-CREATE TABLE public.expenses (
+CREATE TABLE IF NOT EXISTS public.expenses (
   id                  UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   family_id           UUID         NOT NULL REFERENCES public.families(id) ON DELETE CASCADE,
   child_id            UUID         REFERENCES public.children(id) DEFAULT NULL,
@@ -299,7 +299,7 @@ GROUP BY family_id;
 -- 15. AGREEMENTS
 -- Requieren doble aprobación (p1 + p2) para activarse
 -- ============================================================
-CREATE TABLE public.agreements (
+CREATE TABLE IF NOT EXISTS public.agreements (
   id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   family_id           UUID        NOT NULL REFERENCES public.families(id) ON DELETE CASCADE,
   category            TEXT        NOT NULL DEFAULT 'otro'
@@ -322,7 +322,7 @@ CREATE TABLE public.agreements (
 -- ============================================================
 -- 16. REMINDERS
 -- ============================================================
-CREATE TABLE public.reminders (
+CREATE TABLE IF NOT EXISTS public.reminders (
   id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   family_id           UUID        NOT NULL REFERENCES public.families(id) ON DELETE CASCADE,
   child_id            UUID        REFERENCES public.children(id) DEFAULT NULL,
@@ -346,7 +346,7 @@ CREATE TABLE public.reminders (
 -- Sin deleted_at: los mensajes NO se pueden eliminar por diseño
 -- RLS lo enforcea a nivel de base de datos
 -- ============================================================
-CREATE TABLE public.messages (
+CREATE TABLE IF NOT EXISTS public.messages (
   id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   family_id   UUID        NOT NULL REFERENCES public.families(id) ON DELETE CASCADE,
   author_id   UUID        NOT NULL REFERENCES public.users(id),
@@ -364,7 +364,7 @@ CREATE TABLE public.messages (
 -- 18. MESSAGE EDIT HISTORY
 -- Registro inmutable de cada edición
 -- ============================================================
-CREATE TABLE public.message_edit_history (
+CREATE TABLE IF NOT EXISTS public.message_edit_history (
   id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   message_id       UUID        NOT NULL REFERENCES public.messages(id) ON DELETE CASCADE,
   previous_content TEXT        NOT NULL,
@@ -377,7 +377,7 @@ CREATE TABLE public.message_edit_history (
 -- 19. MESSAGE TEMPLATES (respuestas rápidas)
 -- user_id = NULL → plantilla global del sistema
 -- ============================================================
-CREATE TABLE public.message_templates (
+CREATE TABLE IF NOT EXISTS public.message_templates (
   id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id    UUID        REFERENCES public.users(id) DEFAULT NULL,
   family_id  UUID        REFERENCES public.families(id) DEFAULT NULL,
@@ -392,7 +392,7 @@ CREATE TABLE public.message_templates (
 -- 20. DOCUMENTS
 -- upload_allowed = false para documentos legales sensibles
 -- ============================================================
-CREATE TABLE public.documents (
+CREATE TABLE IF NOT EXISTS public.documents (
   id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   family_id         UUID        NOT NULL REFERENCES public.families(id) ON DELETE CASCADE,
   child_id          UUID        REFERENCES public.children(id) DEFAULT NULL,
@@ -416,7 +416,7 @@ CREATE TABLE public.documents (
 -- 21. RESOURCES (guías de apoyo — Chile)
 -- Administrables desde la DB, no hardcodeadas en el código
 -- ============================================================
-CREATE TABLE public.resources (
+CREATE TABLE IF NOT EXISTS public.resources (
   id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   title       TEXT        NOT NULL,
   description TEXT,
@@ -431,7 +431,7 @@ CREATE TABLE public.resources (
 -- 22. PENDING ACTIONS
 -- Centraliza todo "Esperando respuesta" del Dashboard Hoy
 -- ============================================================
-CREATE TABLE public.pending_actions (
+CREATE TABLE IF NOT EXISTS public.pending_actions (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   family_id       UUID        NOT NULL REFERENCES public.families(id) ON DELETE CASCADE,
   target_user_id  UUID        NOT NULL REFERENCES public.users(id),
@@ -451,7 +451,7 @@ CREATE TABLE public.pending_actions (
 -- 23. ACTIVITY LOG
 -- Inmutable. Alimenta Dashboard Hoy y Timeline histórico.
 -- ============================================================
-CREATE TABLE public.activity_logs (
+CREATE TABLE IF NOT EXISTS public.activity_logs (
   id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   family_id     UUID        NOT NULL REFERENCES public.families(id) ON DELETE CASCADE,
   actor_user_id UUID        NOT NULL REFERENCES public.users(id),
@@ -468,7 +468,7 @@ CREATE TABLE public.activity_logs (
 -- 24. NOTIFICATIONS
 -- Historial de notificaciones enviadas a cada usuario
 -- ============================================================
-CREATE TABLE public.notifications (
+CREATE TABLE IF NOT EXISTS public.notifications (
   id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id    UUID        NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   family_id  UUID        REFERENCES public.families(id) DEFAULT NULL,
@@ -486,7 +486,7 @@ CREATE TABLE public.notifications (
 -- 25. NOTIFICATION TOKENS
 -- Multi-device: un usuario puede tener varios dispositivos
 -- ============================================================
-CREATE TABLE public.notification_tokens (
+CREATE TABLE IF NOT EXISTS public.notification_tokens (
   id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id    UUID        NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   device_id  TEXT        NOT NULL,
@@ -501,7 +501,7 @@ CREATE TABLE public.notification_tokens (
 -- ============================================================
 -- 26. PLANS
 -- ============================================================
-CREATE TABLE public.plans (
+CREATE TABLE IF NOT EXISTS public.plans (
   id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   name       TEXT        NOT NULL,
   slug       TEXT        NOT NULL UNIQUE,
@@ -519,7 +519,7 @@ INSERT INTO public.plans (name, slug, price_clp, features) VALUES
 -- ============================================================
 -- 27. SUBSCRIPTIONS
 -- ============================================================
-CREATE TABLE public.subscriptions (
+CREATE TABLE IF NOT EXISTS public.subscriptions (
   id                       UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   family_id                UUID        NOT NULL REFERENCES public.families(id) ON DELETE CASCADE,
   plan_id                  UUID        NOT NULL REFERENCES public.plans(id),
@@ -538,7 +538,7 @@ CREATE TABLE public.subscriptions (
 -- 28. AUDIT LOG (seguridad y compliance)
 -- Inmutable. Registra cambios críticos con before/after.
 -- ============================================================
-CREATE TABLE public.audit_logs (
+CREATE TABLE IF NOT EXISTS public.audit_logs (
   id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   actor_user_id UUID        REFERENCES public.users(id) DEFAULT NULL,
   family_id     UUID        REFERENCES public.families(id) DEFAULT NULL,
@@ -556,18 +556,18 @@ CREATE TABLE public.audit_logs (
 -- ============================================================
 -- ÍNDICES
 -- ============================================================
-CREATE INDEX idx_family_members_user    ON public.family_members(user_id);
-CREATE INDEX idx_family_members_family  ON public.family_members(family_id);
-CREATE INDEX idx_expenses_family        ON public.expenses(family_id);
-CREATE INDEX idx_expenses_status        ON public.expenses(status);
-CREATE INDEX idx_events_family          ON public.events(family_id);
-CREATE INDEX idx_events_start_at        ON public.events(start_at);
-CREATE INDEX idx_messages_family        ON public.messages(family_id, created_at DESC);
-CREATE INDEX idx_pending_actions_target ON public.pending_actions(target_user_id, status);
-CREATE INDEX idx_activity_logs_family   ON public.activity_logs(family_id, created_at DESC);
-CREATE INDEX idx_notifications_user     ON public.notifications(user_id, read_at);
-CREATE INDEX idx_custody_changes_family ON public.custody_changes(family_id, status);
-CREATE INDEX idx_invitations_token      ON public.invitations(token);
+CREATE INDEX IF NOT EXISTS idx_family_members_user    ON public.family_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_family_members_family  ON public.family_members(family_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_family        ON public.expenses(family_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_status        ON public.expenses(status);
+CREATE INDEX IF NOT EXISTS idx_events_family          ON public.events(family_id);
+CREATE INDEX IF NOT EXISTS idx_events_start_at        ON public.events(start_at);
+CREATE INDEX IF NOT EXISTS idx_messages_family        ON public.messages(family_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_pending_actions_target ON public.pending_actions(target_user_id, status);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_family   ON public.activity_logs(family_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_user     ON public.notifications(user_id, read_at);
+CREATE INDEX IF NOT EXISTS idx_custody_changes_family ON public.custody_changes(family_id, status);
+CREATE INDEX IF NOT EXISTS idx_invitations_token      ON public.invitations(token);
 
 -- ============================================================
 -- ROW LEVEL SECURITY
@@ -605,14 +605,17 @@ ALTER TABLE public.audit_logs          ENABLE ROW LEVEL SECURITY;
 -- USERS: solo tu propio perfil
 -- El lookup de invitación se hace vía Edge Function (no expone datos de otros)
 -- ------------------------------------------------------------
+DROP POLICY IF EXISTS "users_select_own" ON public.users;
 CREATE POLICY "users_select_own"
   ON public.users FOR SELECT
   USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "users_insert_own" ON public.users;
 CREATE POLICY "users_insert_own"
   ON public.users FOR INSERT
   WITH CHECK (auth.uid() = id);
 
+DROP POLICY IF EXISTS "users_update_own" ON public.users;
 CREATE POLICY "users_update_own"
   ON public.users FOR UPDATE
   USING (auth.uid() = id);
@@ -620,10 +623,12 @@ CREATE POLICY "users_update_own"
 -- ------------------------------------------------------------
 -- LEGAL ACCEPTANCES: solo las propias
 -- ------------------------------------------------------------
+DROP POLICY IF EXISTS "legal_select_own" ON public.legal_acceptances;
 CREATE POLICY "legal_select_own"
   ON public.legal_acceptances FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "legal_insert_own" ON public.legal_acceptances;
 CREATE POLICY "legal_insert_own"
   ON public.legal_acceptances FOR INSERT
   WITH CHECK (auth.uid() = user_id);
@@ -631,14 +636,17 @@ CREATE POLICY "legal_insert_own"
 -- ------------------------------------------------------------
 -- FAMILIES: solo miembros
 -- ------------------------------------------------------------
+DROP POLICY IF EXISTS "families_select_member" ON public.families;
 CREATE POLICY "families_select_member"
   ON public.families FOR SELECT
   USING (public.is_family_member(id));
 
+DROP POLICY IF EXISTS "families_insert_own" ON public.families;
 CREATE POLICY "families_insert_own"
   ON public.families FOR INSERT
   WITH CHECK (auth.uid() = created_by);
 
+DROP POLICY IF EXISTS "families_update_member" ON public.families;
 CREATE POLICY "families_update_member"
   ON public.families FOR UPDATE
   USING (public.is_family_member(id));
@@ -646,10 +654,12 @@ CREATE POLICY "families_update_member"
 -- ------------------------------------------------------------
 -- FAMILY MEMBERS: ver los de tu familia; crear el tuyo propio
 -- ------------------------------------------------------------
+DROP POLICY IF EXISTS "family_members_select" ON public.family_members;
 CREATE POLICY "family_members_select"
   ON public.family_members FOR SELECT
   USING (public.is_family_member(family_id));
 
+DROP POLICY IF EXISTS "family_members_insert_own" ON public.family_members;
 CREATE POLICY "family_members_insert_own"
   ON public.family_members FOR INSERT
   WITH CHECK (auth.uid() = user_id);
@@ -657,6 +667,7 @@ CREATE POLICY "family_members_insert_own"
 -- ------------------------------------------------------------
 -- INVITATIONS: ver las de tu familia o las que apuntan a tu email
 -- ------------------------------------------------------------
+DROP POLICY IF EXISTS "invitations_select" ON public.invitations;
 CREATE POLICY "invitations_select"
   ON public.invitations FOR SELECT
   USING (
@@ -664,10 +675,12 @@ CREATE POLICY "invitations_select"
     OR token = current_setting('app.invite_token', true)
   );
 
+DROP POLICY IF EXISTS "invitations_insert_member" ON public.invitations;
 CREATE POLICY "invitations_insert_member"
   ON public.invitations FOR INSERT
   WITH CHECK (public.is_family_member(family_id));
 
+DROP POLICY IF EXISTS "invitations_update_member" ON public.invitations;
 CREATE POLICY "invitations_update_member"
   ON public.invitations FOR UPDATE
   USING (public.is_family_member(family_id) OR auth.uid() = accepted_by);
@@ -678,36 +691,42 @@ CREATE POLICY "invitations_update_member"
 -- ------------------------------------------------------------
 
 -- Children
+DROP POLICY IF EXISTS "children_family_member" ON public.children;
 CREATE POLICY "children_family_member"
   ON public.children FOR ALL
   USING (public.is_family_member(family_id))
   WITH CHECK (public.is_family_member(family_id));
 
 -- Custody patterns
+DROP POLICY IF EXISTS "custody_patterns_family_member" ON public.custody_patterns;
 CREATE POLICY "custody_patterns_family_member"
   ON public.custody_patterns FOR ALL
   USING (public.is_family_member(family_id))
   WITH CHECK (public.is_family_member(family_id));
 
 -- Custody changes
+DROP POLICY IF EXISTS "custody_changes_family_member" ON public.custody_changes;
 CREATE POLICY "custody_changes_family_member"
   ON public.custody_changes FOR ALL
   USING (public.is_family_member(family_id))
   WITH CHECK (public.is_family_member(family_id));
 
 -- Custody confirmations
+DROP POLICY IF EXISTS "custody_confirmations_family_member" ON public.custody_confirmations;
 CREATE POLICY "custody_confirmations_family_member"
   ON public.custody_confirmations FOR ALL
   USING (public.is_family_member(family_id))
   WITH CHECK (public.is_family_member(family_id));
 
 -- Events
+DROP POLICY IF EXISTS "events_family_member" ON public.events;
 CREATE POLICY "events_family_member"
   ON public.events FOR ALL
   USING (public.is_family_member(family_id))
   WITH CHECK (public.is_family_member(family_id));
 
 -- Event confirmations (via event's family_id)
+DROP POLICY IF EXISTS "event_confirmations_family_member" ON public.event_confirmations;
 CREATE POLICY "event_confirmations_family_member"
   ON public.event_confirmations FOR ALL
   USING (
@@ -720,32 +739,38 @@ CREATE POLICY "event_confirmations_family_member"
   WITH CHECK (auth.uid() = user_id);
 
 -- Expenses
+DROP POLICY IF EXISTS "expenses_family_member" ON public.expenses;
 CREATE POLICY "expenses_family_member"
   ON public.expenses FOR ALL
   USING (public.is_family_member(family_id))
   WITH CHECK (public.is_family_member(family_id));
 
 -- Agreements
+DROP POLICY IF EXISTS "agreements_family_member" ON public.agreements;
 CREATE POLICY "agreements_family_member"
   ON public.agreements FOR ALL
   USING (public.is_family_member(family_id))
   WITH CHECK (public.is_family_member(family_id));
 
 -- Reminders
+DROP POLICY IF EXISTS "reminders_family_member" ON public.reminders;
 CREATE POLICY "reminders_family_member"
   ON public.reminders FOR ALL
   USING (public.is_family_member(family_id))
   WITH CHECK (public.is_family_member(family_id));
 
 -- Messages: leer y crear, NUNCA eliminar
+DROP POLICY IF EXISTS "messages_select" ON public.messages;
 CREATE POLICY "messages_select"
   ON public.messages FOR SELECT
   USING (public.is_family_member(family_id));
 
+DROP POLICY IF EXISTS "messages_insert" ON public.messages;
 CREATE POLICY "messages_insert"
   ON public.messages FOR INSERT
   WITH CHECK (public.is_family_member(family_id) AND auth.uid() = author_id);
 
+DROP POLICY IF EXISTS "messages_update_own" ON public.messages;
 CREATE POLICY "messages_update_own"
   ON public.messages FOR UPDATE
   USING (auth.uid() = author_id);
@@ -753,6 +778,7 @@ CREATE POLICY "messages_update_own"
 -- DELETE intencionalmente sin política → nadie puede borrar mensajes
 
 -- Message edit history: leer los de tu familia, insertar los propios
+DROP POLICY IF EXISTS "msg_history_select" ON public.message_edit_history;
 CREATE POLICY "msg_history_select"
   ON public.message_edit_history FOR SELECT
   USING (
@@ -763,74 +789,88 @@ CREATE POLICY "msg_history_select"
     )
   );
 
+DROP POLICY IF EXISTS "msg_history_insert_own" ON public.message_edit_history;
 CREATE POLICY "msg_history_insert_own"
   ON public.message_edit_history FOR INSERT
   WITH CHECK (auth.uid() = edited_by);
 
 -- Message templates: propias o globales (user_id IS NULL)
+DROP POLICY IF EXISTS "msg_templates_select" ON public.message_templates;
 CREATE POLICY "msg_templates_select"
   ON public.message_templates FOR SELECT
   USING (user_id IS NULL OR auth.uid() = user_id OR public.is_family_member(family_id));
 
+DROP POLICY IF EXISTS "msg_templates_insert_own" ON public.message_templates;
 CREATE POLICY "msg_templates_insert_own"
   ON public.message_templates FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
 -- Documents
+DROP POLICY IF EXISTS "documents_family_member" ON public.documents;
 CREATE POLICY "documents_family_member"
   ON public.documents FOR ALL
   USING (public.is_family_member(family_id))
   WITH CHECK (public.is_family_member(family_id));
 
 -- Resources: lectura pública (guías de apoyo Chile)
+DROP POLICY IF EXISTS "resources_public_read" ON public.resources;
 CREATE POLICY "resources_public_read"
   ON public.resources FOR SELECT
   USING (active = TRUE);
 
 -- Pending actions
+DROP POLICY IF EXISTS "pending_actions_family_member" ON public.pending_actions;
 CREATE POLICY "pending_actions_family_member"
   ON public.pending_actions FOR ALL
   USING (public.is_family_member(family_id))
   WITH CHECK (public.is_family_member(family_id));
 
 -- Activity logs: solo lectura para miembros, sin delete
+DROP POLICY IF EXISTS "activity_logs_select" ON public.activity_logs;
 CREATE POLICY "activity_logs_select"
   ON public.activity_logs FOR SELECT
   USING (public.is_family_member(family_id));
 
+DROP POLICY IF EXISTS "activity_logs_insert" ON public.activity_logs;
 CREATE POLICY "activity_logs_insert"
   ON public.activity_logs FOR INSERT
   WITH CHECK (public.is_family_member(family_id) AND auth.uid() = actor_user_id);
 
 -- Notifications: solo las propias
+DROP POLICY IF EXISTS "notifications_own" ON public.notifications;
 CREATE POLICY "notifications_own"
   ON public.notifications FOR ALL
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
 -- Notification tokens: solo los propios
+DROP POLICY IF EXISTS "notification_tokens_own" ON public.notification_tokens;
 CREATE POLICY "notification_tokens_own"
   ON public.notification_tokens FOR ALL
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
 -- Currency rates: lectura pública (son datos públicos del Banco Central)
+DROP POLICY IF EXISTS "currency_rates_public_read" ON public.currency_rates;
 CREATE POLICY "currency_rates_public_read"
   ON public.currency_rates FOR SELECT
   USING (TRUE);
 
 -- Plans: lectura pública
+DROP POLICY IF EXISTS "plans_public_read" ON public.plans;
 CREATE POLICY "plans_public_read"
   ON public.plans FOR SELECT
   USING (active = TRUE);
 
 -- Subscriptions: solo miembros de la familia
+DROP POLICY IF EXISTS "subscriptions_family_member" ON public.subscriptions;
 CREATE POLICY "subscriptions_family_member"
   ON public.subscriptions FOR ALL
   USING (public.is_family_member(family_id))
   WITH CHECK (public.is_family_member(family_id));
 
 -- Audit logs: solo lectura para miembros de la familia
+DROP POLICY IF EXISTS "audit_logs_select" ON public.audit_logs;
 CREATE POLICY "audit_logs_select"
   ON public.audit_logs FOR SELECT
   USING (
