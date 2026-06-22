@@ -25,15 +25,18 @@ async function saveDoc() {
     childId:  $('docChild').value || null,
     url:      $('docUrl').value.trim() || null,
     notes:    $('docNotes').value.trim() || null,
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    updated_at: nowISO()
   };
   if (editingDocId) {
-    await famCol('documents').doc(editingDocId).update(data);
+    await supa.from('documents').update(data).eq('id', editingDocId);
     editingDocId = null;
   } else {
-    data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-    data.createdBy = USER.uid;
-    await famCol('documents').add(data);
+    await supa.from('documents').insert({
+      ...data,
+      family_id:  FAMILY_ID,
+      child_id:   data.childId || null,
+      created_by: USER.id
+    });
   }
   _resetDocForm();
   hide('docForm');
@@ -110,7 +113,7 @@ function renderDocuments() {
       '</div>';
     row.querySelector('.doc-edit').addEventListener('click', function() { openDocEdit(doc); });
     row.querySelector('.doc-del').addEventListener('click', function() {
-      if (confirm('¿Eliminar "' + doc.title + '"?')) famCol('documents').doc(doc.id).delete();
+      if (confirm('¿Eliminar "' + doc.title + '"?')) supa.from('documents').update({ deleted_at: nowISO() }).eq('id', doc.id);
     });
     card.appendChild(row);
   });

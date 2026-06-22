@@ -3,14 +3,13 @@
 async function logActivity(type, description, meta) {
   if (!FAMILY_ID || !USER) return;
   try {
-    await famCol('activity').add({
-      type: type,
-      actorUid: USER.uid,
-      actorName: USERDATA ? USERDATA.name : '',
-      actorRole: myRole(),
-      description: description,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      meta: meta || {}
+    await supa.from('activity_logs').insert({
+      family_id:     FAMILY_ID,
+      actor_user_id: USER.id,
+      actor_role:    myRole(),
+      type:          type,
+      summary:       description,
+      metadata:      meta || {}
     });
   } catch(e) { console.error('[logActivity]', e); }
 }

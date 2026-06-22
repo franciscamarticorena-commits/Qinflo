@@ -2,65 +2,106 @@ function dbg(msg) { console.log(msg); }
 
 dbg('[boot] app-shell loaded');
 
-// --- GOOGLE REDIRECT RESULT (iOS/Safari flow) ----------------
-// Must be called on every page load; returns null if no redirect pending.
-// onAuthStateChanged fires automatically after a redirect — this is only
-// for logging and catching redirect-level errors.
-dbg('[google] checking redirect result');
-auth.getRedirectResult().then(function(result) {
-  if (result && result.user) {
-    dbg('[google] redirect result user ' + result.user.uid + ' ' + result.user.email);
-  } else {
-    dbg('[google] redirect result null (no pending redirect)');
-  }
-}).catch(function(e) {
-  dbg('[google] redirect result ERROR ' + e.code + ' ' + e.message);
-  if ($('authMsg')) showMsg('authMsg', errMsg(e.code), true);
-});
+// --- CARGAR DATOS DE USUARIO ---------------------------------
+async function loadUserData(userId) {
+  // Perfil básico
+  var { data: user, error: uErr } = await supa.from('users').select('*').eq('id', userId).single();
+  if (uErr || !user) return null;
+
+  // Membresía activa con datos de familia
+  var { data: mb, error: mbErr } = await supa
+    .from('family_members')
+    .select('role, family_id, families(id, name, config, custody_config, special_rules, cal_alg_version, p1_uid, p2_uid)')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .maybeSingle();
+  if (mbErr || !mb) return null;
+
+  // Coparent (otro miembro activo de la misma familia)
+  var { data: coMb } = await supa
+    .from('family_members')
+    .select('user_id, role, users(id, name, email)')
+    .eq('family_id', mb.family_id)
+    .neq('user_id', userId)
+    .eq('status', 'active')
+    .maybeSingle();
+
+  // Token de invitación vigente creado por este usuario
+  var { data: invite } = await supa
+    .from('invitations')
+    .select('token')
+    .eq('family_id', mb.family_id)
+    .eq('invited_by', userId)
+    .eq('status', 'pending')
+    .maybeSingle();
+
+  var fam = mb.families;
+  var fc  = (fam && fam.config) ? fam.config : { p1Label: 'Mamá', p2Label: 'Papá', type: 'mama_papa' };
+
+  // Estructura compatible con el código existente (camelCase)
+  return {
+    name:               user.name,
+    email:              user.email,
+    role:               mb.role,
+    familyConfig:       fc,
+    familyId:           mb.family_id,
+    coparentId:         coMb ? coMb.user_id : null,
+    inviteCode:         invite ? invite.token : null,
+    onboardingCompleted: user.onboarding_completed,
+    quickReplies:       user.quick_replies || [],
+    _family:            fam   // datos crudos de familia para calendar, etc.
+  };
+}
 
 // --- AUTH LISTENER -------------------------------------------
-auth.onAuthStateChanged(function(u) {
-  dbg('[auth] state changed ' + (u ? (u.uid + ' ' + u.email) : 'null'));
+supa.auth.onAuthStateChange(async function(event, session) {
+  dbg('[auth] event=' + event + ' user=' + (session ? session.user.id : 'null'));
+
+  var u = session ? session.user : null;
   USER = u;
+
   if (!u) {
     show('authScreen');
     document.getElementById('authScreen').style.display = 'flex';
     hide('connectScreen'); hide('app');
     return;
   }
+
   if (IS_REGISTERING) return;
-  var providerIds = u.providerData ? u.providerData.map(function(p) { return p.providerId; }).join(',') : 'unknown';
-  dbg('[google] auth state user ' + u.uid + ' ' + u.email + ' providers:' + providerIds);
+
+  // Ocultar pantalla de auth cuanto antes
   hide('authScreen');
   document.getElementById('app').style.display = 'block';
 
-  db.collection('users').doc(u.uid).get().then(async function(snap) {
-    if (!snap.exists) {
-      var isGoogle = u.providerData && u.providerData.some(function(p) { return p.providerId === 'google.com'; });
+  try {
+    var userData = await loadUserData(u.id);
+
+    if (!userData) {
+      // Usuario nuevo: no tiene familia todavía
+      var isGoogle = u.app_metadata && u.app_metadata.provider === 'google';
       if (isGoogle) {
-        try {
-          await createGoogleUserProfile(u);
-        } catch(e) {
-          dbg('[createGoogleUserProfile] ERROR ' + e.message);
-          auth.signOut();
-          show('authScreen'); hide('app');
-          showMsg('authMsg', 'Error al crear tu cuenta. Intenta de nuevo.', true);
-        }
-        return;
+        await createGoogleUserProfile(u);
+      } else {
+        await supa.auth.signOut();
+        show('authScreen'); hide('app');
+        showMsg('authMsg', 'No encontramos tu cuenta. Regístrate primero.', true);
       }
-      auth.signOut();
-      show('authScreen');
-      hide('app');
-      showMsg('authMsg', 'No encontramos tu cuenta. Regístrate primero.', true);
       return;
     }
 
-    USERDATA = snap.data();
-    FAMILY_ID = USERDATA.familyId;
+    USERDATA   = userData;
+    FAMILY_ID  = userData.familyId;
+
     if (typeof identifyObservabilityUser === 'function') identifyObservabilityUser(USER, USERDATA);
 
-    // Conectar inviteCode desde URL o localStorage si el usuario aún no tiene coparentId
-    var urlParams = new URLSearchParams(window.location.search);
+    // Cargar datos del coparent
+    if (USERDATA.coparentId) {
+      var { data: coUser } = await supa.from('users').select('name, email').eq('id', USERDATA.coparentId).single();
+      CODATA = coUser || null;
+    }
+
+    // Manejar invite code en URL o localStorage
+    var urlParams  = new URLSearchParams(window.location.search);
     var inviteCode = urlParams.get('invite') || (!USERDATA.coparentId ? localStorage.getItem('pendingInvite') : null);
     if (inviteCode && !USERDATA.coparentId) {
       localStorage.removeItem('pendingInvite');
@@ -68,27 +109,17 @@ auth.onAuthStateChanged(function(u) {
       return;
     }
 
-    if (USERDATA.coparentId) {
-      db.collection('users').doc(USERDATA.coparentId).get().then(function(co) {
-        if (co.exists) CODATA = co.data();
-        updateLabels();
-        loadOrOnboard();
-      }).catch(function(e) {
-        console.error('[coparent fetch]', e);
-        updateLabels();
-        loadOrOnboard();
-      });
-    } else {
-      updateLabels();
-      loadOrOnboard();
-    }
-}).catch(function(e) {
-  dbg('[app-shell] ERROR ' + e.message);
-});
+    updateLabels();
+    loadOrOnboard();
+
+  } catch(e) {
+    dbg('[app-shell] ERROR ' + e.message);
+    console.error(e);
+  }
 });
 
 function displayNameWithRole(data, role) {
-  var nm = data && data.name ? data.name.split(' ')[0] : '';
+  var nm    = data && data.name ? data.name.split(' ')[0] : '';
   var label = role === 'p1' ? p1() : p2();
   return (nm || label) + ' (' + label + ')';
 }
@@ -111,7 +142,6 @@ function updateLabels() {
   if ($('avatarInitial') && USERDATA && USERDATA.name) {
     $('avatarInitial').textContent = USERDATA.name.charAt(0).toUpperCase();
   }
-  // Ocultar botón de invitación si ya hay coparent conectado
   if ($('inviteBtn')) $('inviteBtn').classList.toggle('hidden', !!(USERDATA && USERDATA.coparentId));
 }
 
@@ -148,79 +178,169 @@ function loadApp() {
   }
 }
 
-async function setupNotifications() {
-  if (!messaging) return;
-  try {
-    var permission = await Notification.requestPermission();
-    if (permission !== 'granted') return;
-    var token = await messaging.getToken({ vapidKey: VAPID_KEY });
-    if (token && USER) {
-      await db.collection('users').doc(USER.uid).update({ fcmToken: token });
-    }
-  } catch(e) {
-    console.error('[setupNotifications]', e);
-  }
+// --- REALTIME + CARGA INICIAL --------------------------------
+var _realtimeChannel = null;
+
+async function setupListeners() {
+  if (!FAMILY_ID) return;
+
+  // Carga inicial de todos los datos
+  await Promise.all([
+    loadExpenses(),
+    loadMessages(),
+    loadChildren(),
+    loadAgreements(),
+    loadReminders(),
+    loadProposals(),
+    loadEvents(),
+    loadCalendar(),
+    loadDocuments(),
+    loadSettlements(),
+    loadActivity()
+  ]);
+
+  // Suscripción realtime: un canal por tabla
+  if (_realtimeChannel) _realtimeChannel.unsubscribe();
+
+  _realtimeChannel = supa.channel('family-' + FAMILY_ID)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses',        filter: 'family_id=eq.' + FAMILY_ID }, loadExpenses)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'messages',        filter: 'family_id=eq.' + FAMILY_ID }, loadMessages)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'children',        filter: 'family_id=eq.' + FAMILY_ID }, loadChildren)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'agreements',      filter: 'family_id=eq.' + FAMILY_ID }, loadAgreements)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'reminders',       filter: 'family_id=eq.' + FAMILY_ID }, loadReminders)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'custody_changes', filter: 'family_id=eq.' + FAMILY_ID }, loadProposals)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'events',          filter: 'family_id=eq.' + FAMILY_ID }, loadEvents)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'custody_months',  filter: 'family_id=eq.' + FAMILY_ID }, loadCalendar)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'documents',       filter: 'family_id=eq.' + FAMILY_ID }, loadDocuments)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'settlements',     filter: 'family_id=eq.' + FAMILY_ID }, loadSettlements)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs',   filter: 'family_id=eq.' + FAMILY_ID }, loadActivity)
+    .subscribe();
 }
 
-function setupListeners() {
-  famCol('expenses').orderBy('date', 'desc').onSnapshot(function(s) {
-    expenses = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
-    renderExpenses();
-    renderToday();
+// --- LOADERS POR TABLA --------------------------------------
+
+async function loadExpenses() {
+  var { data } = await supa.from('expenses').select('*').eq('family_id', FAMILY_ID).is('deleted_at', null).order('date', { ascending: false });
+  expenses = (data || []).map(function(r) {
+    var c = toCamel(r);
+    c.paidBy = r.paid_by_role === 'p1' ? 'mama' : 'papa';
+    c.paid   = r.status === 'paid';
+    return c;
   });
-  famCol('messages').orderBy('createdAt', 'asc').onSnapshot(function(s) {
-    messages = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
-    renderMessages();
+  renderExpenses(); renderToday();
+}
+
+async function loadMessages() {
+  var { data } = await supa.from('messages').select('*').eq('family_id', FAMILY_ID).order('created_at', { ascending: true });
+  messages = (data || []).map(function(r) {
+    var c = toCamel(r);
+    c.text      = r.content;       // renderMessages usa m.text
+    c.createdBy = r.author_id;     // renderMessages compara con USER.id
+    c.senderRole = r.author_role;
+    c.senderName = r.sender_name;
+    return c;
   });
-  famCol('children').onSnapshot(function(s) {
-    children = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
-    renderChildren();
-    renderToday();
+  renderMessages();
+}
+
+async function loadChildren() {
+  var { data } = await supa.from('children').select('*').eq('family_id', FAMILY_ID).is('deleted_at', null);
+  children = rowsToCamel(data);
+  renderChildren(); renderToday();
+}
+
+async function loadAgreements() {
+  var { data } = await supa.from('agreements').select('*').eq('family_id', FAMILY_ID).is('deleted_at', null).order('created_at', { ascending: false });
+  agreements = rowsToCamel(data);
+  renderAgreements();
+}
+
+async function loadReminders() {
+  var { data } = await supa.from('reminders').select('*').eq('family_id', FAMILY_ID).is('deleted_at', null).order('date', { ascending: true });
+  reminders = (data || []).map(function(r) {
+    var c = toCamel(r);
+    c.for  = r.assigned_to;   // campo 'for' usado en los renders
+    c.done = r.status === 'completed';
+    return c;
   });
-  famCol('agreements').orderBy('date', 'desc').onSnapshot(function(s) {
-    agreements = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
-    renderAgreements();
+  renderReminders(); renderToday();
+}
+
+async function loadProposals() {
+  var { data } = await supa.from('custody_changes').select('*').eq('family_id', FAMILY_ID).order('created_at', { ascending: false });
+  proposals = (data || []).map(function(r) {
+    var c = toCamel(r);
+    // Compatibilidad con campos fromDate/toDate que usa calendar.js
+    c.fromDate = r.from_date;
+    c.toDate   = r.to_date;
+    c.date     = r.from_date;
+    c.createdByRole  = r.proposed_by_role;
+    c.createdBy      = r.proposed_by;
+    c.createdByName  = c.createdByName || '';
+    c.requestedToRole = r.requested_to_role;
+    return c;
   });
-  famCol('reminders').orderBy('date', 'asc').onSnapshot(function(s) {
-    reminders = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
-    renderReminders();
-    renderToday();
+  renderProposals(); renderToday();
+}
+
+async function loadEvents() {
+  var { data } = await supa.from('events').select('*').eq('family_id', FAMILY_ID).is('deleted_at', null).order('start_at', { ascending: true });
+  events = (data || []).map(function(r) {
+    var c = toCamel(r);
+    // date / time para compatibilidad con renderizado existente
+    c.date           = r.start_at ? r.start_at.slice(0, 10) : null;
+    c.time           = r.start_at ? r.start_at.slice(11, 16) : null;
+    c.requiresApproval = r.requires_confirmation;
+    c.approvalStatus = r.status === 'pending' ? 'pending' : (r.status === 'confirmed' ? 'approved' : r.status);
+    c.createdByRole  = r.created_by_role;
+    c.createdBy      = r.created_by;
+    return c;
   });
-  famCol('proposals').orderBy('date', 'desc').onSnapshot(function(s) {
-    proposals = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
-    renderProposals();
-    renderToday();
+  if (typeof renderEventApprovals === 'function') renderEventApprovals();
+  if (selDay && typeof renderDayDetail === 'function') renderDayDetail();
+  renderCalendar(); renderToday();
+}
+
+async function loadCalendar() {
+  var { data } = await supa.from('custody_months').select('*').eq('family_id', FAMILY_ID);
+  custodyMap = {}; calEventsMap = {}; custodyOverridesMap = {};
+  (data || []).forEach(function(r) {
+    if (r.custody)   custodyMap[r.month_key]         = r.custody;
+    if (r.overrides) custodyOverridesMap[r.month_key] = r.overrides;
   });
-  famCol('events').orderBy('date', 'asc').onSnapshot(function(s) {
-    events = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
-    if (typeof renderEventApprovals === 'function') renderEventApprovals();
-    if (selDay && typeof renderDayDetail === 'function') renderDayDetail();
-    renderCalendar();
-    renderToday();
+  renderCalendar(); renderToday();
+}
+
+async function loadDocuments() {
+  var { data } = await supa.from('documents').select('*').eq('family_id', FAMILY_ID).is('deleted_at', null).order('created_at', { ascending: false });
+  documents = rowsToCamel(data);
+  renderDocuments();
+}
+
+async function loadSettlements() {
+  var { data } = await supa.from('settlements').select('*').eq('family_id', FAMILY_ID).order('created_at', { ascending: false });
+  settlements = (data || []).map(function(r) {
+    var c = toCamel(r);
+    c.fromRole = r.from_role === 'p1' ? 'mama' : 'papa';
+    c.toRole   = r.to_role   === 'p1' ? 'mama' : 'papa';
+    return c;
   });
-  famCol('calendar').onSnapshot(function(s) {
-    custodyMap = {}; calEventsMap = {}; custodyOverridesMap = {};
-    s.docs.forEach(function(d) {
-      var data = d.data();
-      if (data.custody) custodyMap[d.id] = data.custody;
-      if (data.events) calEventsMap[d.id] = data.events;
-      if (data.custodyOverrides) custodyOverridesMap[d.id] = data.custodyOverrides;
-    });
-    renderCalendar();
-    renderToday();
+  renderExpenses();
+}
+
+async function loadActivity() {
+  var { data } = await supa.from('activity_logs').select('*').eq('family_id', FAMILY_ID).order('created_at', { ascending: false }).limit(20);
+  activityLog = (data || []).map(function(r) {
+    var c = toCamel(r);
+    c.createdBy = r.actor_user_id;
+    return c;
   });
-  famCol('documents').orderBy('createdAt', 'desc').onSnapshot(function(s) {
-    documents = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
-    renderDocuments();
-  });
-  famCol('settlements').orderBy('createdAt', 'desc').onSnapshot(function(s) {
-    settlements = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
-    renderExpenses();
-  });
-  famCol('activity').orderBy('createdAt', 'desc').limit(20).onSnapshot(function(s) {
-    activityLog = s.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
-    if (typeof renderTodayActivity === 'function') renderTodayActivity();
-  });
+  if (typeof renderTodayActivity === 'function') renderTodayActivity();
+}
+
+// --- NOTIFICACIONES -----------------------------------------
+async function setupNotifications() {
+  // FCM no disponible con Supabase — reservado para implementación futura con Web Push
 }
 
 // --- EVENT LISTENERS ----------------------------------------
@@ -245,7 +365,7 @@ window.addEventListener('DOMContentLoaded', function() {
   // App header
   $('inviteBtn').addEventListener('click', showConnectScreen);
   $('avatarBtn').addEventListener('click', openProfilePanel);
-  $('logoutBtn').addEventListener('click', function() { auth.signOut(); });
+  $('logoutBtn').addEventListener('click', function() { supa.auth.signOut(); });
 
   // Nav tabs
   document.querySelectorAll('#mainNav button').forEach(function(btn) {
@@ -265,7 +385,6 @@ window.addEventListener('DOMContentLoaded', function() {
   // Calendar
   $('prevMonthBtn').addEventListener('click', prevMonth);
   $('nextMonthBtn').addEventListener('click', nextMonth);
-  // Filtros de vista del calendario
   document.querySelectorAll('[data-cal-filter]').forEach(function(btn) {
     btn.addEventListener('click', function() {
       calFilter = btn.dataset.calFilter;
@@ -278,7 +397,7 @@ window.addEventListener('DOMContentLoaded', function() {
   $('togglePropBtn').addEventListener('click', function() {
     var active = activePendingProposal();
     if (active) {
-      var msg = active.createdBy === (USER && USER.uid)
+      var msg = active.createdBy === (USER && USER.id)
         ? 'Ya tienes una solicitud de cambio pendiente. Debes esperar respuesta antes de crear otra.'
         : 'Tienes una solicitud de cambio pendiente por responder. Debes aprobarla o rechazarla antes de crear una nueva.';
       alert(msg);
@@ -304,7 +423,7 @@ window.addEventListener('DOMContentLoaded', function() {
   $('cancelExpBtn').addEventListener('click', function() { _resetExpForm(); hide('expForm'); });
   $('expCat').addEventListener('change', function(){ updateExpenseSubcats(); updateExpenseTreatmentUI(); });
   if ($('expTreatment')) $('expTreatment').addEventListener('change', updateExpenseTreatmentUI);
-  if ($('expPaidBy')) $('expPaidBy').addEventListener('change', updateExpenseTreatmentUI);
+  if ($('expPaidBy'))    $('expPaidBy').addEventListener('change', updateExpenseTreatmentUI);
   if ($('expAttachToggle')) $('expAttachToggle').addEventListener('click', function() {
     var box = $('expAttachBox');
     var isOpen = box.style.display === 'grid';
@@ -318,7 +437,7 @@ window.addEventListener('DOMContentLoaded', function() {
   updateExpenseTreatmentUI();
   $('btnCLP').addEventListener('click', function() { setCurrency('CLP'); });
   $('btnUF').addEventListener('click', function() { setCurrency('UF'); });
-  if ($('liquidarBtn')) $('liquidarBtn').addEventListener('click', liquidarBalance);
+  if ($('liquidarBtn'))     $('liquidarBtn').addEventListener('click', liquidarBalance);
   if ($('exportResumenBtn')) $('exportResumenBtn').addEventListener('click', exportarResumen);
 
   // Messages
@@ -362,7 +481,6 @@ window.addEventListener('DOMContentLoaded', function() {
   });
   $('saveDocBtn').addEventListener('click', saveDoc);
   $('cancelDocBtn').addEventListener('click', function() { _resetDocForm(); hide('docForm'); });
-
 });
 
 // --- TABS ---------------------------------------------------
@@ -383,8 +501,8 @@ function switchTab(tab) {
 
 // --- PROFILE PANEL ------------------------------------------
 function openProfilePanel() {
-  if ($('profileName') && USERDATA) $('profileName').textContent = USERDATA.name || '—';
-  if ($('profileEmail') && USER) $('profileEmail').textContent = USER.email || '—';
+  if ($('profileName') && USERDATA)  $('profileName').textContent  = USERDATA.name || '—';
+  if ($('profileEmail') && USER)     $('profileEmail').textContent = USER.email || '—';
   if ($('avatarInitial') && USERDATA && USERDATA.name) {
     $('avatarInitial').textContent = USERDATA.name.charAt(0).toUpperCase();
   }

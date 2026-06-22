@@ -185,21 +185,53 @@ async function saveExp() {
       pctMama: pctM, pctPapa: pctP
     };
 
+    var paidByRole = data.paidBy === 'mama' ? 'p1' : 'p2';
+    var amountClp  = data.currency === 'UF' ? data.amount * UF : data.amount;
+
     if (editingExpId) {
-      if (f) data.attachmentName = f;
+      if (f)  data.attachmentName = f;
       if (rf) data.reimbursementAttachmentName = rf;
-      data.modifiedAt = firebase.firestore.FieldValue.serverTimestamp();
-      data.modifiedBy = USER.uid;
-      await famCol('expenses').doc(editingExpId).update(data);
+      var { error: upErr } = await supa.from('expenses').update({
+        description:                    data.description,
+        amount:                         data.amount,
+        currency:                       data.currency,
+        amount_clp:                     amountClp,
+        paid_by:                        USER.id,
+        paid_by_role:                   paidByRole,
+        split_percentage_p1:            data.pctMama,
+        split_percentage_p2:            data.pctPapa,
+        category:                       data.category,
+        subcat:                         data.subcategory,
+        frequency:                      data.frequency,
+        treatment:                      data.treatment,
+        attachment_name:                f || undefined,
+        reimbursement_attachment_name:  rf || undefined,
+        updated_at:                     nowISO()
+      }).eq('id', editingExpId);
+      if (upErr) throw upErr;
     } else {
-      data.attachmentName = f;
-      data.reimbursementAttachmentName = rf;
-      data.date = new Date().toISOString().slice(0, 10);
-      data.paid = false; data.voided = false;
-      data.history = [{ action: 'Gasto registrado', at: new Date().toISOString(), by: USERDATA ? USERDATA.name : '' }];
-      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      data.createdBy = USER.uid;
-      await famCol('expenses').add(data);
+      var { error: insErr } = await supa.from('expenses').insert({
+        family_id:                      FAMILY_ID,
+        description:                    data.description,
+        amount:                         data.amount,
+        currency:                       data.currency,
+        amount_clp:                     amountClp,
+        paid_by:                        USER.id,
+        paid_by_role:                   paidByRole,
+        split_percentage_p1:            data.pctMama,
+        split_percentage_p2:            data.pctPapa,
+        category:                       data.category,
+        subcat:                         data.subcategory,
+        frequency:                      data.frequency,
+        treatment:                      data.treatment,
+        date:                           new Date().toISOString().slice(0, 10),
+        attachment_name:                data.attachmentName || null,
+        reimbursement_attachment_name:  data.reimbursementAttachmentName || null,
+        status:                         'pending_review',
+        voided:                         false,
+        created_by:                     USER.id
+      });
+      if (insErr) throw insErr;
     }
     _resetExpForm();
     hide('expForm');
@@ -222,14 +254,15 @@ async function liquidarBalance() {
 
   if (!confirm('Confirmar liquidación\n\n' + debtor + ' pagó ' + fmtCLP(amount) + ' a ' + creditor + '.\n\n¿Registrar este pago?')) return;
 
-  await famCol('settlements').add({
-    amount: amount,
-    fromRole: debtorRole,
-    toRole: creditorRole,
-    date: new Date().toISOString().slice(0, 10),
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    createdBy: USER.uid
+  var { error: sErr } = await supa.from('settlements').insert({
+    family_id:  FAMILY_ID,
+    amount:     amount,
+    from_role:  debtorRole === 'mama' ? 'p1' : 'p2',
+    to_role:    creditorRole === 'mama' ? 'p1' : 'p2',
+    date:       new Date().toISOString().slice(0, 10),
+    created_by: USER.id
   });
+  if (sErr) throw sErr;
 }
 
 function exportarResumen() {
@@ -385,9 +418,15 @@ function renderExpenses() {
       '</div>' +
       (ex.attachmentName ? '<div class="file-pill" style="margin-top:5px">📎 ' + ex.attachmentName + '</div>' : '') +
       (ex.reimbursementAttachmentName ? '<div class="file-pill" style="margin-top:3px">📎 Reembolso: ' + ex.reimbursementAttachmentName + '</div>' : '');
-    row.querySelector('.toggle-paid-btn').addEventListener('click', function() { famCol('expenses').doc(ex.id).update({ paid: !ex.paid, lastActionAt: firebase.firestore.FieldValue.serverTimestamp(), lastActionBy: USER.uid }); });
+    row.querySelector('.toggle-paid-btn').addEventListener('click', function() {
+      var newStatus = ex.paid ? 'pending_review' : 'paid';
+      supa.from('expenses').update({ status: newStatus, updated_at: nowISO() }).eq('id', ex.id);
+    });
     row.querySelector('.edit-btn').addEventListener('click', function() { openExpEdit(ex); });
-    row.querySelector('.void-btn').addEventListener('click', function() { if (confirm('Este gasto no se eliminará. Quedará anulado en el historial.')) famCol('expenses').doc(ex.id).update({ voided: true, voidedAt: firebase.firestore.FieldValue.serverTimestamp(), voidedBy: USER.uid }); });
+    row.querySelector('.void-btn').addEventListener('click', function() {
+      if (confirm('Este gasto no se eliminará. Quedará anulado en el historial.'))
+        supa.from('expenses').update({ voided: true, voided_at: nowISO(), voided_by: USER.id, updated_at: nowISO() }).eq('id', ex.id);
+    });
     el.appendChild(row);
   });
 }

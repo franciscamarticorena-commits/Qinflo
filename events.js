@@ -78,20 +78,28 @@ async function saveEvent() {
   };
   try {
     if (editingEventId) {
-      data.modifiedBy = USER ? USER.uid : null;
-      data.modifiedAt = firebase.firestore.FieldValue.serverTimestamp();
-      await famCol('events').doc(editingEventId).update(data);
+      await supa.from('events').update({
+        title:                  data.title,
+        start_at:               data.date + (data.time ? 'T' + data.time + ':00' : 'T00:00:00'),
+        category:               data.category,
+        participants:           data.participants,
+        description:            data.description,
+        requires_confirmation:  data.requiresApproval,
+        updated_at:             nowISO()
+      }).eq('id', editingEventId);
     } else {
-      data.status = requiresApproval ? 'pending' : 'confirmed';
-      data.approvalStatus = requiresApproval ? 'pending' : null;
-      data.createdBy = USER ? USER.uid : null;
-      data.createdByRole = myRole();
-      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      data.modifiedBy = null; data.modifiedAt = null;
-      data.cancelledBy = null; data.cancelledAt = null;
-      data.approvedBy = null; data.approvedAt = null;
-      data.rejectedBy = null; data.rejectedAt = null;
-      await famCol('events').add(data);
+      await supa.from('events').insert({
+        family_id:              FAMILY_ID,
+        title:                  data.title,
+        start_at:               data.date + (data.time ? 'T' + data.time + ':00' : 'T00:00:00'),
+        category:               data.category,
+        participants:           data.participants,
+        description:            data.description,
+        requires_confirmation:  data.requiresApproval,
+        status:                 requiresApproval ? 'pending' : 'confirmed',
+        created_by:             USER ? USER.id : null,
+        created_by_role:        myRole()
+      });
       if (typeof logActivity === 'function') {
         logActivity('event_created', myLabel() + ' creó el evento: ' + title + ' (' + date + ')', { title: title, date: date });
       }
@@ -104,17 +112,10 @@ async function saveEvent() {
 }
 
 async function updateEventStatus(eventId, status) {
-  var update = {
-    status: status,
-    modifiedBy: USER ? USER.uid : null,
-    modifiedAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
-  if (status === 'cancelled') {
-    update.cancelledBy = USER ? USER.uid : null;
-    update.cancelledAt = firebase.firestore.FieldValue.serverTimestamp();
-  }
   try {
-    await famCol('events').doc(eventId).update(update);
+    var upd = { status: status, updated_at: nowISO() };
+    if (status === 'cancelled') upd.cancelled_at = nowISO();
+    await supa.from('events').update(upd).eq('id', eventId);
   } catch(e) { console.error('[updateEventStatus]', e); }
 }
 
@@ -122,13 +123,10 @@ async function approveEvent(eventId) {
   var ev = events.find(function(e) { return e.id === eventId; });
   if (!ev || ev.approvalStatus !== 'pending') return;
   try {
-    await famCol('events').doc(eventId).update({
-      status: 'confirmed', approvalStatus: 'approved',
-      approvedBy: USER ? USER.uid : null,
-      approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      modifiedBy: USER ? USER.uid : null,
-      modifiedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    await supa.from('events').update({
+      status:     'confirmed',
+      updated_at: nowISO()
+    }).eq('id', eventId);
     if (typeof logActivity === 'function') {
       logActivity('event_approved', myLabel() + ' confirmó el evento: ' + (ev.title || '') + ' (' + (ev.date || '') + ')', { eventId: eventId });
     }
@@ -139,13 +137,11 @@ async function rejectEvent(eventId) {
   var ev = events.find(function(e) { return e.id === eventId; });
   if (!ev || ev.approvalStatus !== 'pending') return;
   try {
-    await famCol('events').doc(eventId).update({
-      status: 'cancelled', approvalStatus: 'rejected',
-      rejectedBy: USER ? USER.uid : null,
-      rejectedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      modifiedBy: USER ? USER.uid : null,
-      modifiedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    await supa.from('events').update({
+      status:      'cancelled',
+      cancelled_at: nowISO(),
+      updated_at:  nowISO()
+    }).eq('id', eventId);
     if (typeof logActivity === 'function') {
       logActivity('event_rejected', myLabel() + ' rechazó el evento: ' + (ev.title || '') + ' (' + (ev.date || '') + ')', { eventId: eventId });
     }
@@ -160,8 +156,8 @@ function renderEventsForDay(day) {
     var time = ev.time || '';
     var reminder = ev.reminder ? REMINDER_LABELS[ev.reminder] : '';
     var participantsLbl = ev.participants === 'mama' ? p1() : ev.participants === 'papa' ? p2() : 'Ambos';
-    var pendingForMe = ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy !== (USER && USER.uid);
-    var pendingByMe  = ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy === (USER && USER.uid);
+    var pendingForMe = ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy !== (USER && USER.id);
+    var pendingByMe  = ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy === (USER && USER.id);
     var statusBadge = '';
     if (pendingForMe || pendingByMe) {
       statusBadge = '<span style="background:#FEF3C7;color:#D97706;font-size:10px;font-weight:700;border-radius:5px;padding:1px 6px;margin-left:4px">Pend. confirmación</span>';
