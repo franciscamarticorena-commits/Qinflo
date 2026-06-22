@@ -57,6 +57,12 @@ async function loadUserData(userId) {
 supa.auth.onAuthStateChange(async function(event, session) {
   dbg('[auth] event=' + event + ' user=' + (session ? session.user.id : 'null'));
 
+  if (event === 'PASSWORD_RECOVERY') {
+    hide('authScreen'); hide('app');
+    show('resetPasswordScreen');
+    return;
+  }
+
   var u = session ? session.user : null;
   USER = u;
 
