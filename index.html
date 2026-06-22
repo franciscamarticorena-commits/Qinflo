@@ -138,6 +138,35 @@
 </div>
 
 <!-- ===========================================================
+     RESET PASSWORD (redireccionamiento desde email)
+============================================================ -->
+<div id="resetPasswordScreen" class="hidden">
+  <div class="authBox">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="7" r="3"/><circle cx="16" cy="7" r="3"/>
+          <path d="M3 20c0-3.31 2.69-6 6-6s6 2.69 6 6"/>
+          <path d="M19 18c0-2.21-1.34-4-3-4"/>
+        </svg>
+      </div>
+      <h1>Qinflo</h1>
+      <p>Nueva contraseña</p>
+    </div>
+    <div id="resetPassMsg" class="hidden"></div>
+    <div class="form-group">
+      <label>Nueva contraseña</label>
+      <input type="password" id="newPassInput" placeholder="Mínimo 6 caracteres" autocomplete="new-password"/>
+    </div>
+    <div class="form-group">
+      <label>Repetir contraseña</label>
+      <input type="password" id="newPassInput2" placeholder="Repite la contraseña" autocomplete="new-password"/>
+    </div>
+    <button class="btn" onclick="doUpdatePassword()">Guardar contraseña</button>
+  </div>
+</div>
+
+<!-- ===========================================================
      ONBOARDING
 ============================================================ -->
 <div id="onboardingScreen" class="hidden">

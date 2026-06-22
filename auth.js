@@ -173,6 +173,23 @@ async function doGoogleLogin() {
   }
 }
 
+async function doUpdatePassword() {
+  var pass  = $('newPassInput')  ? $('newPassInput').value  : '';
+  var pass2 = $('newPassInput2') ? $('newPassInput2').value : '';
+  if (!pass || pass.length < 6) { showMsg('resetPassMsg', 'Mínimo 6 caracteres', true); return; }
+  if (pass !== pass2)           { showMsg('resetPassMsg', 'Las contraseñas no coinciden', true); return; }
+  try {
+    var { error } = await supa.auth.updateUser({ password: pass });
+    if (error) throw error;
+    hide('resetPasswordScreen');
+    show('authScreen');
+    switchToLogin();
+    showMsg('authMsg', 'Contraseña actualizada. Inicia sesión.');
+  } catch(e) {
+    showMsg('resetPassMsg', supaAuthErr(e), true);
+  }
+}
+
 async function createGoogleUserProfile(user) {
   dbg('[google] creating profile ' + user.id + ' ' + user.email);
   var ft   = 'mama_papa';
