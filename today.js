@@ -29,13 +29,9 @@ async function confirmKidsWithMe(btnEl) {
   if (!FAMILY_ID || !USER) return;
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '…'; }
   try {
-    await db.collection('families').doc(FAMILY_ID).update({
-      lastPickup: {
-        uid: USER.uid,
-        role: myRole(),
-        at: firebase.firestore.FieldValue.serverTimestamp()
-      }
-    });
+    await supa.from('families').update({
+      last_pickup: { uid: USER.id, role: myRole(), at: nowISO() }
+    }).eq('id', FAMILY_ID);
     if (typeof logActivity === 'function') {
       logActivity('custody_confirmed', myLabel() + ' confirmó que los niños ya están en casa');
     }
@@ -69,7 +65,7 @@ function _pendingRow(badge, title, sub, actions) {
 function acceptPropInline(propId) {
   var p = (proposals || []).find(function(x) { return x.id === propId; });
   if (!p) return;
-  famCol('proposals').doc(propId).update({ status: 'accepted', respondedAt: firebase.firestore.FieldValue.serverTimestamp(), respondedBy: USER.uid });
+  supa.from('custody_changes').update({ status: 'accepted', responded_at: nowISO(), responded_by: USER.id }).eq('id', propId);
   if (typeof setCustody === 'function') setCustody(Number(p.toDay), 'transition');
   if (typeof logActivity === 'function') {
     logActivity('proposal_accepted', myLabel() + ' aprobó cambio de custodia: Día ' + p.fromDay + ' → Día ' + p.toDay, { proposalId: propId });
@@ -78,7 +74,7 @@ function acceptPropInline(propId) {
 
 function rejectPropInline(propId) {
   var p = (proposals || []).find(function(x) { return x.id === propId; });
-  famCol('proposals').doc(propId).update({ status: 'rejected', respondedAt: firebase.firestore.FieldValue.serverTimestamp(), respondedBy: USER.uid });
+  supa.from('custody_changes').update({ status: 'rejected', responded_at: nowISO(), responded_by: USER.id }).eq('id', propId);
   if (typeof logActivity === 'function' && p) {
     logActivity('proposal_rejected', myLabel() + ' rechazó cambio de custodia: Día ' + p.fromDay + ' → Día ' + p.toDay, { proposalId: propId });
   }
@@ -94,10 +90,10 @@ function _todayPendingRequests() {
   var todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
   var role = myRole();
 
-  var propsReceived = (proposals || []).filter(function(p) { return p.status === 'pending' && p.createdBy !== (USER && USER.uid); });
-  var propsSent     = (proposals || []).filter(function(p) { return p.status === 'pending' && p.createdBy === (USER && USER.uid); });
-  var evtsToApprove = (events || []).filter(function(ev) { return ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy !== (USER && USER.uid); });
-  var evtsSent      = (events || []).filter(function(ev) { return ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy === (USER && USER.uid); });
+  var propsReceived = (proposals || []).filter(function(p) { return p.status === 'pending' && p.createdBy !== (USER && USER.id); });
+  var propsSent     = (proposals || []).filter(function(p) { return p.status === 'pending' && p.createdBy === (USER && USER.id); });
+  var evtsToApprove = (events || []).filter(function(ev) { return ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy !== (USER && USER.id); });
+  var evtsSent      = (events || []).filter(function(ev) { return ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy === (USER && USER.id); });
   var remsToday     = (reminders || []).filter(function(r) {
     if (!r.date || r.done) return false;
     var d = (r.date + '').split('T')[0];

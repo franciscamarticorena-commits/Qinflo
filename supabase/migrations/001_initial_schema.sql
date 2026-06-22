@@ -514,7 +514,8 @@ CREATE TABLE IF NOT EXISTS public.plans (
 INSERT INTO public.plans (name, slug, price_clp, features) VALUES
   ('Esencial',     'esencial',     0,     '["calendario","custodia","mensajes"]'),
   ('Coordinación', 'coordinacion', 4990,  '["calendario","custodia","mensajes","gastos","eventos","acuerdos"]'),
-  ('Organización', 'organizacion', 9990,  '["calendario","custodia","mensajes","gastos","eventos","acuerdos","documentos","recordatorios","google_calendar"]');
+  ('Organización', 'organizacion', 9990,  '["calendario","custodia","mensajes","gastos","eventos","acuerdos","documentos","recordatorios","google_calendar"]')
+ON CONFLICT (slug) DO NOTHING;
 
 -- ============================================================
 -- 27. SUBSCRIPTIONS
@@ -889,34 +890,42 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS set_updated_at_users ON public.users;
 CREATE TRIGGER set_updated_at_users
   BEFORE UPDATE ON public.users
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at_families ON public.families;
 CREATE TRIGGER set_updated_at_families
   BEFORE UPDATE ON public.families
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at_children ON public.children;
 CREATE TRIGGER set_updated_at_children
   BEFORE UPDATE ON public.children
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at_events ON public.events;
 CREATE TRIGGER set_updated_at_events
   BEFORE UPDATE ON public.events
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at_expenses ON public.expenses;
 CREATE TRIGGER set_updated_at_expenses
   BEFORE UPDATE ON public.expenses
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at_agreements ON public.agreements;
 CREATE TRIGGER set_updated_at_agreements
   BEFORE UPDATE ON public.agreements
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at_custody_patterns ON public.custody_patterns;
 CREATE TRIGGER set_updated_at_custody_patterns
   BEFORE UPDATE ON public.custody_patterns
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at_notification_tokens ON public.notification_tokens;
 CREATE TRIGGER set_updated_at_notification_tokens
   BEFORE UPDATE ON public.notification_tokens
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
@@ -939,6 +948,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();

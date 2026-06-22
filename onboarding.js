@@ -87,16 +87,16 @@ async function onbAcceptDisclaimer() {
   var newsletter = $('onbCheckNewsletter') ? $('onbCheckNewsletter').checked : false;
   try {
     if (USER) {
-      await db.collection('users').doc(USER.uid).update({
-        legalAcceptance: {
+      await supa.from('users').update({
+        legal_acceptance: {
           tosVersion:     LEGAL_TOS_VERSION,
           privacyVersion: LEGAL_PRIVACY_VERSION,
           tosAccepted:    true,
           privacyAccepted: true,
           newsletter:     newsletter,
-          acceptedAt:     firebase.firestore.FieldValue.serverTimestamp()
+          acceptedAt:     nowISO()
         }
-      });
+      }).eq('id', USER.id);
     }
   } catch(e) {
     console.error('[legalAcceptance]', e);
@@ -314,7 +314,7 @@ async function skipOnbKids() {
 async function saveOnboardingData(includeKids) {
   try {
     var config = Object.assign({}, onbCustodyConfig, {
-      configuredAt: firebase.firestore.FieldValue.serverTimestamp()
+      configuredAt: nowISO()
     });
     // specialRules: estructura reservada para lógica futura de fechas especiales.
     // La lógica de prioridad (ej. Navidad con papá si esta semana era de mamá) no está
@@ -326,14 +326,14 @@ async function saveOnboardingData(includeKids) {
       newYear:     { enabled: false, override: null },
       vacations:   []
     };
-    await db.collection('families').doc(FAMILY_ID).update({ custodyConfig: config, specialRules: specialRules });
+    await supa.from('families').update({ custody_config: config, special_rules: specialRules }).eq('id', FAMILY_ID);
     if (config.type === 'alternating_weeks' || config.type === 'fixed_days') {
       await generateOnbCalendar(config, FAMILY_ID);
     }
     if (includeKids && onbKidsList.length > 0) {
       await Promise.all(onbKidsList.map(function(kid) {
-        return db.collection('families').doc(FAMILY_ID).collection('children').add(
-          Object.assign({}, kid, { createdAt: firebase.firestore.FieldValue.serverTimestamp(), createdBy: USER ? USER.uid : null })
+        return supa.from('children').insert(
+          Object.assign({}, kid, { family_id: FAMILY_ID, created_at: nowISO(), created_by: USER ? USER.id : null })
         );
       }));
     }
@@ -361,16 +361,23 @@ function buildOnbInviteLink() {
 }
 
 function _watchForCoparentJoin() {
-  if (_coparentWatcher || !USER) return;
-  _coparentWatcher = db.collection('users').doc(USER.uid).onSnapshot(function(snap) {
-    if (!snap.exists) return;
-    var data = snap.data();
-    if (data.coparentId && !USERDATA.coparentId) {
-      if (typeof _coparentWatcher === 'function') { _coparentWatcher(); _coparentWatcher = null; }
-      USERDATA.coparentId = data.coparentId;
-      db.collection('users').doc(data.coparentId).get().then(function(co) {
-        var coName = co.exists && co.data().name ? co.data().name.split(' ')[0] : 'Tu co-padre/madre';
-        if (co.exists) CODATA = co.data();
+  if (_coparentWatcher || !USER || !FAMILY_ID) return;
+  _coparentWatcher = supa.channel('coparent-join-' + FAMILY_ID)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'family_members',
+      filter: 'family_id=eq.' + FAMILY_ID
+    }, async function(payload) {
+      var newMember = payload.new;
+      if (!newMember || newMember.user_id === USER.id) return;
+      supa.removeChannel(_coparentWatcher);
+      _coparentWatcher = null;
+      USERDATA.coparentId = newMember.user_id;
+      try {
+        var { data: co } = await supa.from('users').select('*').eq('id', newMember.user_id).single();
+        var coName = co && co.name ? co.name.split(' ')[0] : 'Tu co-padre/madre';
+        if (co) CODATA = toCamel(co);
         var waitEl = $('onbWaitingForCoparent');
         if (waitEl) waitEl.style.display = 'none';
         var connEl = $('onbCoparentConnected');
@@ -379,15 +386,15 @@ function _watchForCoparentJoin() {
           connEl.textContent = '🎉 ¡' + coName + ' se conectó! Entrando…';
         }
         setTimeout(function() { finishOnboarding(); }, 1800);
-      }).catch(function() { finishOnboarding(); });
-    }
-  });
+      } catch(e) { finishOnboarding(); }
+    })
+    .subscribe();
 }
 
 async function finishOnboarding() {
-  if (typeof _coparentWatcher === 'function') { _coparentWatcher(); _coparentWatcher = null; }
+  if (_coparentWatcher) { supa.removeChannel(_coparentWatcher); _coparentWatcher = null; }
   try {
-    await db.collection('users').doc(USER.uid).update({ onboardingCompleted: true });
+    await supa.from('users').update({ onboarding_completed: true }).eq('id', USER.id);
     USERDATA.onboardingCompleted = true;
   } catch(e) {
     console.error('[onboarding finish]', e);
@@ -416,8 +423,10 @@ async function generateOnbCalendar(config, familyId) {
     }
     var key = year + '-' + String(month + 1).padStart(2, '0');
     writes.push(
-      db.collection('families').doc(familyId).collection('calendar').doc(key)
-        .set({ custody: custody }, { merge: true })
+      supa.from('custody_months').upsert(
+        { family_id: familyId, month_key: key, custody: custody },
+        { onConflict: 'family_id,month_key' }
+      )
     );
   }
   await Promise.all(writes);
@@ -471,9 +480,9 @@ async function showCoparentWelcome() {
     $('copInviterName').textContent = CODATA.name.split(' ')[0];
   }
   try {
-    var famSnap = await db.collection('families').doc(FAMILY_ID).get();
-    if (famSnap.exists) {
-      var cfg = famSnap.data().custodyConfig;
+    var { data: fam } = await supa.from('families').select('custody_config').eq('id', FAMILY_ID).single();
+    if (fam) {
+      var cfg = fam.custody_config;
       var labels = { alternating_weeks: 'Semana por medio', fixed_days: 'Días fijos', custom: 'Calendario personalizado', undefined: 'Sin rutina definida' };
       if ($('copCustodyType')) $('copCustodyType').textContent = cfg ? (labels[cfg.type] || 'Por configurar') : 'Por configurar';
       if ($('copChangeDay') && cfg && cfg.changeDay != null) {
@@ -491,7 +500,7 @@ async function showCoparentWelcome() {
 
 async function acceptCoparentInvite() {
   try {
-    await db.collection('users').doc(USER.uid).update({ onboardingCompleted: true });
+    await supa.from('users').update({ onboarding_completed: true }).eq('id', USER.id);
     USERDATA.onboardingCompleted = true;
   } catch(e) { console.error('[cop accept]', e); }
   hide('coparentWelcomeScreen');

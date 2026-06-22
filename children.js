@@ -32,8 +32,11 @@ async function saveKid() {
     bloodType: $('kidBlood').value, notes: $('kidNotes').value
   };
   var id = $('editKidId').value;
-  if (id) await famCol('children').doc(id).update(data);
-  else await famCol('children').add(Object.assign(data, { createdAt: firebase.firestore.FieldValue.serverTimestamp(), createdBy: USER.uid }));
+  if (id) {
+    await supa.from('children').update({ ...data, updated_at: nowISO() }).eq('id', id);
+  } else {
+    await supa.from('children').insert({ ...data, family_id: FAMILY_ID, created_by: USER.id });
+  }
   hide('kidForm');
 }
 
@@ -73,7 +76,7 @@ function renderChildren() {
         (kid.notes ? '<div class="notes-box"><div style="font-size:10px;color:var(--primary);font-weight:700;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px">Notas</div><div style="font-size:12px;color:var(--text);line-height:1.55">' + kid.notes + '</div></div>' : '') +
       '</div>';
     card.querySelector('.edit-btn').addEventListener('click', function() { openKidForm(kid); });
-    card.querySelector('.del-btn').addEventListener('click', function() { famCol('children').doc(kid.id).delete(); });
+    card.querySelector('.del-btn').addEventListener('click', function() { supa.from('children').update({ deleted_at: nowISO() }).eq('id', kid.id); });
     el.appendChild(card);
   });
 }
