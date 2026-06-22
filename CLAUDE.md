@@ -31,29 +31,40 @@ No incorporar: IA, chat complejo, transferencias de dinero, fotos, álbumes, geo
 
 ## Repositorio
 - **GitHub**: franciscamarticorena-commits/Qinflo
-- **Rama principal**: `main` (desarrollo directo en main desde Fase 6)
-- **Rama anterior con Fases 3–5**: `origin/claude/agreements-list-ui-pGDd9` (ya mergeada)
+- **Rama principal**: `main` (desarrollo directo en main)
 
 ## Regla crítica al comenzar cada sesión
 1. Leer este archivo primero.
 2. Verificar `git log --oneline -10` para confirmar el estado real.
-3. NO reinventar el roadmap ni proponer "Fases" ya completadas.
-4. Verificar si hay ramas remotas más avanzadas con `git fetch origin && git log --oneline --all | head -20`.
+3. NO reinventar el roadmap ni proponer fases ya completadas.
+4. Verificar ramas remotas con `git fetch origin && git log --oneline --all | head -20`.
+
+## Stack actual (POST-MIGRACIÓN)
+
+**Firebase fue reemplazado completamente por Supabase.** No hay ninguna referencia a Firebase en el código activo.
+
+- **Auth**: Supabase Auth (`supa.auth`) — email+password y Google OAuth
+- **DB**: Supabase PostgreSQL con RLS
+- **Realtime**: `supa.channel()` con `postgres_changes`
+- **Cliente**: `@supabase/supabase-js@2` (UMD via CDN)
+- **Global**: `supa` (createClient en `supabase.js`)
+- **Hosting**: Firebase Hosting (proyecto `quinflo`) — solo el hosting, no Auth ni Firestore
+- **Deploy**: GitHub Actions en cada push a `main` → `qinflo.cl`
 
 ## Estructura del proyecto
-Todos los archivos están en la **raíz del repo** (estructura plana, sin subcarpetas `js/` ni `css/`).
+Todos los archivos están en la **raíz del repo** (estructura plana).
 
 Archivos principales:
 - `index.html` — HTML completo, carga todos los scripts al final del body
 - `styles.css` — estilos únicos
-- `firebase.js` — config Firebase (proyecto `quinflo`, authDomain `qinflo.cl`)
-- `state.js` — variables globales: USER, USERDATA, CODATA, FAMILY_ID, custodyMap, etc.
-- `auth.js` — login, registro (email + Google), recuperación
+- `supabase.js` — config Supabase (URL + anon key, instancia global `supa`)
+- `state.js` — variables globales: USER, USERDATA, CODATA, FAMILY_ID, custodyMap, etc. + helpers `toCamel()`, `famQ()`, `nowISO()`
+- `auth.js` — login, registro (email + Google), recuperación, `doUpdatePassword()`
 - `connect.js` — `showConnectScreen()`, `autoConnect(inviteCode)` — flujo de invitación
-- `app-shell.js` — listener auth, `loadApp()`, `setupListeners()`, listeners DOM, tabs, fetchUF
-- `calendar.js` — renderCalendar, setCustody, proposals (sin edición directa de custodia)
+- `app-shell.js` — listener auth `onAuthStateChange`, `loadApp()`, `setupListeners()`, loaders de datos, realtime
+- `calendar.js` — renderCalendar, setCustody via RPC, proposals
 - `events.js` — módulo de eventos: CRUD, aprobaciones, eventos privados
-- `onboarding.js` — onboarding completo + `generateOnbCalendar()` + `getOnbCustodyForDate()`
+- `onboarding.js` — onboarding completo + `generateOnbCalendar()` + watcher coparent via realtime
 - `expenses.js` — gastos, UF, balance, marcar pagado, anular
 - `messages.js` — mensajes en tiempo real, quick replies editables, divisor de tema
 - `children.js` — perfiles de hijos
@@ -63,67 +74,52 @@ Archivos principales:
 - `today.js` — dashboard Hoy: custodia, pendientes, eventos, avisos, balance
 - `observability.js` — Sentry + PostHog desactivados (sin llaves reales)
 - `manifest.json` + `service-worker.js` — PWA base
+- `supabase/migrations/001_initial_schema.sql` — schema completo PostgreSQL (idempotente)
+- `supabase/migrations/002_migration_compatibility.sql` — columnas adicionales de compatibilidad
 
-## Modelo de datos Firestore
+## Modelo de datos Supabase (PostgreSQL)
 
-### `/users/{uid}`
-```
-name, email, role (p1|p2), familyId, coparentId, inviteCode, inviteConsumed,
-onboardingCompleted, familyConfig { p1Label, p2Label }, createdAt,
-quickReplies [],
-legalAcceptance {
-  tosVersion, privacyVersion,
-  tosAccepted, privacyAccepted,
-  newsletter,
-  acceptedAt (Timestamp)
-}
-```
+### Tablas principales
+- `users` — extiende `auth.users`. Campos: `name, email, auth_provider, onboarding_completed, quick_replies, fcm_token, legal_acceptance (JSONB)`
+- `families` — `name, created_by, config (JSONB), custody_config (JSONB), special_rules (JSONB), cal_alg_version, p1_uid, p2_uid, last_pickup (JSONB)`
+- `family_members` — `family_id, user_id, role (p1|p2), status`
+- `invitations` — `family_id, invited_by, token, role, status, expires_at`
+- `children` — `family_id, name, birth_date, deleted_at`
+- `custody_months` — PK `(family_id, month_key)`, JSONB `custody`, `overrides` — equivalente a `/calendar/{YYYY-MM}`
+- `custody_changes` — propuestas de cambio: `from_date, to_date, proposed_by_role, requested_to_role, status`
+- `events` — `family_id, title, start_at (TIMESTAMPTZ), category, participants, requires_confirmation, status`
+- `expenses` — `family_id, paid_by, paid_by_role, amount_clp, split_percentage_p1/p2, status, voided, date`
+- `settlements` — liquidaciones de balance: `from_role, to_role, amount`
+- `messages` — `family_id, author_id, author_role, content, type`
+- `agreements` — `family_id, title, content, status, signatures (JSONB), created_by_role`
+- `reminders` — `family_id, title, date, assigned_to, status`
+- `documents` — `family_id, child_id, title, type, url, notes, deleted_at`
+- `activity_logs` — `family_id, actor_user_id, actor_role, type, summary, metadata`
 
-### `/families/{famId}`
-```
-members[], p1Uid, p2Uid, memberRoles.{uid}, custodyConfig, specialRules,
-createdBy, createdAt, calAlgVersion
-```
-**`custodyConfig`** puede ser:
-- `{ type: 'alternating_weeks', changeDay, changeTime, startDate, firstWeek, changeLocation }`
-- `{ type: 'fixed_days', weeklySchedule: { "0":{parent,alternating}, ... }, hasAlternatingDays, alternatingAnchorDate, alternatingCurrentWeekParent, whoHasThemToday, whoHasTodayDate }`
-- `{ type: 'custom' | 'undefined' }`
+### RPCs (funciones PostgreSQL)
+- `set_custody_day(p_family_id, p_month_key, p_day, p_parent)` — upsert atómico de un día de custodia
+- `accept_invitation(p_token, p_user_id)` — acepta invitación atómicamente, crea membership, retorna JSONB con `{familyId, role, familyConfig, inviterId}`
+- `is_family_member(p_family_id)` — helper RLS
 
-### `/families/{famId}/calendar/{YYYY-MM}`
-```
-custody: { "1": "mama"|"papa"|"transition", ... }
-custodyOverrides: { "1": { value, reason, overriddenBy, overriddenAt }, ... }
-events: { "1": ["texto"], ... }  ← legacy, nuevo módulo usa /events
-```
+### Compatibilidad camelCase
+Los loaders en `app-shell.js` aplican `toCamel()` y agregan alias para compatibilidad con funciones de render:
+- `expenses`: `paidBy` (de `paid_by_role`), `paid` (de `status === 'paid'`)
+- `messages`: `text` (de `content`), `createdBy` (de `author_id`), `senderRole` (de `author_role`)
+- `reminders`: `for` (de `assigned_to`), `done` (de `status === 'completed'`)
+- `proposals` (custody_changes): `fromDate`, `toDate`, `createdByRole`, `createdBy`, `requestedToRole`
+- `events`: `date` (de `start_at`), `time`, `requiresApproval`, `approvalStatus`
+- `settlements`: `fromRole`, `toRole` mapeados a `'mama'`/`'papa'`
 
-### `/families/{famId}/events/{eventId}`
-```
-title, date, time, category (salud|colegio|actividad|cumpleanos|vacaciones|otro),
-participants (both|mama|papa), description, reminder (2h|1d|1w),
-requiresApproval, status (pending|confirmed|done|cancelled),
-approvalStatus (pending|approved|rejected|null),
-createdBy, createdByRole, createdAt, modifiedBy, modifiedAt,
-cancelledBy, cancelledAt, approvedBy, approvedAt, rejectedBy, rejectedAt
-```
+## Configuración Supabase (producción)
 
-### `/families/{famId}/proposals/{id}`
-```
-fromDate (ISO), toDate (ISO),
-fromDay, toDay (numérico, compat),
-reason, status (pending|accepted|rejected), date,
-createdAt, createdBy, createdByName, createdByRole, requestedToRole,
-respondedAt, respondedBy
-```
-**Nota**: Las propuestas solo se crean vía flujo de aprobación (no hay edición directa de custodia).
-Mínimo = mañana. El remitente puede retirar su propia solicitud pendiente.
-
-### `/families/{famId}/settlements/{id}`
-```
-amount (CLP), fromRole (mama|papa), toRole (mama|papa), date, createdAt, createdBy
-```
-
-### `/families/{famId}/expenses/{id}`, `/messages/{id}`, `/children/{id}`, `/agreements/{id}`, `/reminders/{id}`
-Ver código de cada módulo para el schema exacto.
+- **Proyecto ID**: `xvfdncjrwrcbxgogzvym`
+- **URL**: `https://xvfdncjrwrcbxgogzvym.supabase.co`
+- **Anon key**: en `supabase.js` (ya configurada)
+- **Google OAuth**: configurado en Supabase Auth → Providers → Google
+  - Client ID: `662940889446-ufs1tcl1ou164uoesv7pbvm1lnt4cc5s.apps.googleusercontent.com`
+  - Redirect URI registrado: `https://xvfdncjrwrcbxgogzvym.supabase.co/auth/v1/callback`
+  - Origen JS autorizado: `https://qinflo.cl`
+- **Redirect URL**: `https://qinflo.cl` en Supabase Auth → URL Configuration
 
 ## Fases completadas
 
@@ -131,7 +127,7 @@ Ver código de cada módulo para el schema exacto.
 |------|-------------|---------------|
 | 1 | Modularización desde monolito | `ac760db` |
 | 2 | Onboarding completo (custodia, hijos, invitación) | `98b8c8c` |
-| 3 | Calendario automático, filtros, cambiar custodia, editar día, restaurar regla | `f2d1024`, `6b8084f`, `2c624e8` |
+| 3 | Calendario automático, filtros, cambiar custodia, editar día, restaurar regla | `f2d1024` |
 | 4 | Módulo de Eventos completo (events.js, aprobaciones, privados) | `9f7810e` |
 | 5 | Flujo de invitación robusto: batch atómico, p1/p2, inviteConsumed, familyConfig heredado | `ec4be59` |
 | 5b | Google auth Safari/iOS fix + migración a Firebase Hosting | `140e76c` |
@@ -139,69 +135,59 @@ Ver código de cada módulo para el schema exacto.
 | 7 | Acuerdos — edición, firma simple, cambio de estado inline, cards mejoradas | `a5a390a` |
 | 8 | Gastos — liquidar balance, exportar resumen texto, historial de liquidaciones | — |
 | 9 | Dashboard "Hoy" — custodia, pendientes, eventos, avisos, balance con liquidaciones | `1898133` |
-| 9b | Onboarding legal — panel Bienvenida, 3 checkboxes separados, audit trail Firestore | `d2b6896` |
+| 9b | Onboarding legal — panel Bienvenida, 3 checkboxes separados, audit trail | `d2b6896` |
+| 10 | **Migración completa Firebase → Supabase** — Auth, DB, Realtime, RLS, RPCs | `d5db018` |
+| 10b | Fix flujo recuperación contraseña — pantalla nueva clave post-reset | `e139535` |
 
-## Roadmap pendiente (en orden estricto)
+## Roadmap pendiente (próxima sesión primero)
 
-| Fase | Descripción | Prioridad |
-|------|-------------|-----------|
-| 10 | Push notifications — FCM para mensajes nuevos, cambios pendientes, recordatorios | Baja |
-
-## Backlog (sin fecha — requiere análisis previo)
-
-### Multi-familia (un usuario con coparents distintos)
-**Contexto**: Un padre/madre puede tener hijos con distintas parejas. Cada relación debe tener su propio espacio independiente.
-
-**Diseño propuesto**:
-- Migrar `users/{uid}.familyId` (string) → `users/{uid}.families[]` (array de `{famId, coparentId, role, label}`)
-- Agregar `activeFamilyId` para saber qué espacio está activo
-- Selector de espacio en header/perfil que actualiza `FAMILY_ID` y reinicia listeners
-- Antes de crear un segundo espacio: validar que el nuevo coparent no exista ya en `families[]` (evitar duplicados)
-- **Migración**: todos los usuarios existentes deben pasar al nuevo schema
-
-**Pendiente de definir (business case)**:
-- ¿Se monetiza por espacio adicional, por usuario total, por familia, o es flat?
-- Evaluar si el modelo de negocio justifica la complejidad de la migración
-- Considerar que el mismo coparent podría estar en el espacio de múltiples usuarios
-
-**Recuperación de contraseña**: ya existe (`doReset()` con `sendPasswordResetEmail`). Hacer más visible el "¿Ya tienes cuenta?" durante el registro para evitar cuentas duplicadas.
+| Tarea | Descripción | Prioridad |
+|-------|-------------|-----------|
+| SMTP personalizado | Configurar Resend para emails desde `@qinflo.cl` (no spam) | **Alta** |
+| Emails en español | Personalizar plantilla de recuperación de contraseña en Supabase | Alta |
+| Confirmación de email | Revisar si está activada en Supabase Auth y si conviene desactivarla | Alta |
+| Google OAuth test | Verificar que el login con Google funciona end-to-end | Alta |
+| Push notifications | FCM para mensajes nuevos, cambios pendientes, recordatorios | Baja |
 
 ## Decisiones de diseño importantes
-- **Firebase compat SDK v10.12.0** (no modular), todo via `firebase.*` y `auth`/`db` globales
+- **Supabase JS v2** (no modular), instancia global `supa`, NO `supabase` (nombre reservado por el UMD)
 - **Sin build step** — JS vanilla, sin bundler, desplegable directo con Firebase Hosting
 - **p1 = la persona que se registró primero** (invitante), p2 = quien acepta la invitación
 - **Labels dinámicos**: `p1()` y `p2()` devuelven el label según `familyConfig` (ej. "Mamá" / "Papá")
-- **`inviteConsumed`**: guard idempotente para que el link solo funcione una vez
-- **Overrides de custodia**: se guardan en `custodyOverrides`. La edición directa de días fue eliminada — solo existe el flujo de propuesta/aprobación entre ambos padres.
-- **Eventos privados**: `participants === 'mama'` solo los ve quien tiene `myRole() === 'p1'`
-- **Aceptación legal activa**: 3 checkboxes separados (TOS obligatorio, Privacy obligatorio, Newsletter opcional). Se guarda `legalAcceptance` en Firestore con `tosVersion`/`privacyVersion` para futuras migraciones de términos. Constantes `LEGAL_TOS_VERSION` y `LEGAL_PRIVACY_VERSION` en `onboarding.js`.
-- **Posición jurídica de Qinflo**: herramienta de organización y registro, no reemplaza mediación ni acuerdos legales. Texto explícito antes de los checkboxes. TOS debe incluir: no es servicio de mediación, no determina quién tiene razón, no valida acuerdos judiciales, registros son referenciales no prueba legal formal, cada usuario es responsable de su información, datos de menores se tratan conforme a legislación vigente.
+- **`accept_invitation` RPC**: atómica, reemplaza el batch de Firestore. Idempotente.
+- **Overrides de custodia**: en `custody_months.overrides` JSONB. Sin edición directa — solo flujo propuesta/aprobación.
+- **Eventos privados**: `participants === 'p1'`/`'p2'` — solo visible para el rol correspondiente
+- **Soft deletes**: `deleted_at = nowISO()` en lugar de DELETE para expenses, children, documents, agreements, reminders
+- **Mensajes inmutables**: sin política DELETE en RLS — nadie puede borrar mensajes por diseño
+- **`USER.id`** (Supabase) — nunca `USER.uid` (era Firebase). Si aparece `.uid` en código es un bug.
+- **`toCamel()`**: convierte snake_case → camelCase en todos los loaders para compatibilidad con render functions
+- **Aceptación legal**: JSONB en `users.legal_acceptance` con `tosVersion`/`privacyVersion`. Constantes en `onboarding.js`.
 
-## Google Auth en Safari/iOS — solución definitiva
+## Google OAuth — configuración actual (Supabase)
 
-**Problema raíz**: Safari anula `window.opener` para tabs cross-origin. El popup de Google abre `/__/auth/handler` en el dominio de `authDomain`. Si `authDomain` es `quinflo.firebaseapp.com` pero la app está en `qinflo.cl`, son orígenes distintos → `window.opener` es null → Firebase no puede recibir el resultado.
+**Flujo**: `supa.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })`  
+→ Redirect a `https://xvfdncjrwrcbxgogzvym.supabase.co/auth/v1/callback`  
+→ Redirect de vuelta a `https://qinflo.cl`  
+→ `onAuthStateChange` recibe sesión → `loadUserData()` → app o onboarding
 
-**Solución implementada**:
-1. Migrar hosting de GitHub Pages a **Firebase Hosting** → la app se sirve desde `qinflo.cl`
-2. `authDomain: "qinflo.cl"` en `firebase.js` → el handler corre en el mismo origen
-3. `signInWithPopup` para todas las plataformas (sin detección de Safari)
-4. Service worker excluye URLs `/__/auth/` para no interceptar el handler
+**Si Google OAuth falla**, verificar en este orden:
+1. Supabase Dashboard → Authentication → Providers → Google → ¿está habilitado?
+2. Google Cloud Console → OAuth Client → Authorized redirect URIs → ¿incluye `https://xvfdncjrwrcbxgogzvym.supabase.co/auth/v1/callback`?
+3. Google Cloud Console → OAuth Client → Authorized JavaScript origins → ¿incluye `https://qinflo.cl`?
+4. Supabase Dashboard → Authentication → URL Configuration → ¿`https://qinflo.cl` está en Redirect URLs?
 
-**Pasos de configuración que deben existir** (ya realizados, no tocar):
-- DNS: `qinflo.cl` A record → `199.36.158.100`, `www.qinflo.cl` CNAME → `quinflo.web.app`
-- Cloudflare: DNS only (sin proxy) para ambos registros
-- Firebase Hosting: dominio `qinflo.cl` conectado al proyecto `quinflo`
-- Google Cloud Console → OAuth Client → Authorized redirect URIs incluye `https://qinflo.cl/__/auth/handler`
-- Firebase Auth → Authorized domains incluye `qinflo.cl`
+## Flujo de recuperación de contraseña
 
-**Si en el futuro Google auth deja de funcionar**, verificar en este orden:
-1. ¿`authDomain` en `firebase.js` sigue siendo `qinflo.cl`?
-2. ¿Firebase Hosting sigue sirviendo `qinflo.cl`? (Firebase Console → Hosting → estado "Conectado")
-3. ¿El redirect URI `https://qinflo.cl/__/auth/handler` sigue en Google Cloud Console?
+1. Usuario pide reset → `doReset()` → `supa.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin })`
+2. Email llega con link → redirige a `qinflo.cl` con token en hash
+3. `onAuthStateChange` recibe evento `PASSWORD_RECOVERY` → muestra `#resetPasswordScreen`
+4. Usuario ingresa nueva clave → `doUpdatePassword()` → `supa.auth.updateUser({ password })`
+5. Éxito → vuelve a pantalla de login
+
+**Pendiente**: emails van al spam porque usan el SMTP genérico de Supabase. Solución: configurar Resend (próxima sesión).
 
 ## Notas de deployment
-- **Hosting**: Firebase Hosting (proyecto `quinflo`)
-- **Dominio**: `qinflo.cl` → Firebase Hosting, `www.qinflo.cl` → `quinflo.web.app`
-- **Deploy automático**: GitHub Actions (`.github/workflows/firebase-hosting-deploy.yml`) en cada push a `main`
+- **Hosting**: Firebase Hosting (proyecto `quinflo`) — solo hosting estático
+- **Dominio**: `qinflo.cl` → Firebase Hosting
+- **Deploy automático**: GitHub Actions en cada push a `main`
 - **Secret requerido**: `FIREBASE_SERVICE_ACCOUNT_QUINFLO` en GitHub repo secrets
-- **Firebase proyecto**: `quinflo` (ID y nombre con u — el dominio `qinflo.cl` no tiene u, son cosas distintas)
