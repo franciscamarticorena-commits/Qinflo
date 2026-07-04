@@ -15,13 +15,31 @@ const hide = id => $(id).classList.add('hidden');
 const fmtCLP = n => '$' + Math.round(n).toLocaleString('es-CL');
 const fmtUF = n => 'UF ' + parseFloat(n).toFixed(2).replace('.', ',');
 // FLUJO DE INVITACIONES: genCode() genera el código alfanumérico de 6 chars para el link de invitación.
-// Se llama en showConnectScreen() cuando USERDATA.inviteCode no existe. No eliminar.
 const genCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 const p1 = () => USERDATA && USERDATA.familyConfig ? USERDATA.familyConfig.p1Label : 'Mamá';
 const p2 = () => USERDATA && USERDATA.familyConfig ? USERDATA.familyConfig.p2Label : 'Papá';
 const myRole = () => USERDATA ? USERDATA.role : 'p1';
 const myLabel = () => myRole() === 'p1' ? p1() : p2();
-const famCol = name => db.collection('families').doc(FAMILY_ID).collection(name);
+
+// Convierte snake_case a camelCase (respuestas PostgreSQL → JS)
+function toCamel(obj) {
+  if (obj === null || obj === undefined || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(toCamel);
+  var out = {};
+  Object.keys(obj).forEach(function(k) {
+    var ck = k.replace(/_([a-z])/g, function(_, c) { return c.toUpperCase(); });
+    out[ck] = toCamel(obj[k]);
+  });
+  return out;
+}
+function mapRows(rows) { return (rows || []).map(toCamel); }
+
+// Normaliza timestamps: acepta ISO string (Supabase) o Firestore Timestamp
+function toDate(val) {
+  if (!val) return null;
+  if (val && typeof val.toDate === 'function') return val.toDate();
+  return new Date(val);
+}
 
 function showMsg(id, text, isError) {
   var el = $(id);
@@ -32,14 +50,20 @@ function showMsg(id, text, isError) {
 function hideMsg(id) { $(id).classList.add('hidden'); }
 
 const AUTH_ERRORS = {
-  'auth/user-not-found': 'No existe cuenta con ese correo',
-  'auth/wrong-password': 'Contraseña incorrecta',
-  'auth/email-already-in-use': 'El correo ya está registrado',
-  'auth/weak-password': 'Mínimo 6 caracteres',
-  'auth/invalid-email': 'Correo inválido',
-  'auth/too-many-requests': 'Demasiados intentos. Espera unos minutos.',
-  'auth/invalid-credential': 'Correo o contraseña incorrectos',
-  'auth/account-exists-with-different-credential': 'Ya tienes una cuenta con ese correo. Ingresa con tu contraseña.',
-  'auth/popup-blocked': 'El popup fue bloqueado. Permite popups para este sitio e intenta de nuevo.'
+  'invalid_credentials': 'Correo o contraseña incorrectos',
+  'user_not_found': 'No existe cuenta con ese correo',
+  'email_address_invalid': 'Correo inválido',
+  'email_already_exists': 'El correo ya está registrado',
+  'weak_password': 'Mínimo 6 caracteres',
+  'over_request_rate_limit': 'Demasiados intentos. Espera unos minutos.',
+  'user_banned': 'Cuenta suspendida.',
+  // Supabase devuelve mensajes en texto, no códigos. Se usa como fallback.
+  'Invalid login credentials': 'Correo o contraseña incorrectos',
+  'Email not confirmed': 'Confirma tu correo antes de ingresar.',
+  'User already registered': 'El correo ya está registrado',
+  'Password should be at least 6 characters': 'Mínimo 6 caracteres'
 };
-const errMsg = code => AUTH_ERRORS[code] || 'Error inesperado. Intenta de nuevo.';
+function errMsg(codeOrMsg) {
+  if (!codeOrMsg) return 'Error inesperado. Intenta de nuevo.';
+  return AUTH_ERRORS[codeOrMsg] || AUTH_ERRORS[String(codeOrMsg).split(':')[0].trim()] || 'Error inesperado. Intenta de nuevo.';
+}

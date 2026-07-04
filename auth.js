@@ -28,194 +28,120 @@ async function doLogin() {
   var email = $('loginEmail').value.trim();
   var pass = $('loginPass').value;
   if (!email || !pass) { showMsg('authMsg', 'Completa todos los campos', true); return; }
-  try {
-    await auth.signInWithEmailAndPassword(email, pass);
-  } catch(e) {
-    showMsg('authMsg', errMsg(e.code), true);
-  }
+  var { error } = await _supabase.auth.signInWithPassword({ email: email, password: pass });
+  if (error) showMsg('authMsg', errMsg(error.message || error.code), true);
 }
 
 async function doRegister() {
   hideMsg('authMsg');
-
-  var name = $('regName').value.trim();
+  var name  = $('regName').value.trim();
   var email = $('regEmail').value.trim();
-  var pass = $('regPass').value;
+  var pass  = $('regPass').value;
   var pass2 = $('regPass2').value;
 
-  if (!name || !email || !pass || !pass2) {
-    showMsg('authMsg', 'Completa todos los campos', true);
-    return;
-  }
+  if (!name || !email || !pass || !pass2) { showMsg('authMsg', 'Completa todos los campos', true); return; }
+  if (pass !== pass2) { showMsg('authMsg', 'Las contraseñas no coinciden', true); return; }
+  if (pass.length < 6) { showMsg('authMsg', 'Mínimo 6 caracteres', true); return; }
 
-  if (pass !== pass2) {
-    showMsg('authMsg', 'Las contraseñas no coinciden', true);
-    return;
-  }
-
-  if (pass.length < 6) {
-    showMsg('authMsg', 'Mínimo 6 caracteres', true);
-    return;
-  }
-
-  // Persist invite code across registration flow
   var urlParams = new URLSearchParams(window.location.search);
   var pendingInviteParam = urlParams.get('invite');
   if (pendingInviteParam) localStorage.setItem('pendingInvite', pendingInviteParam);
 
+  IS_REGISTERING = true;
   try {
-    IS_REGISTERING = true;
-    var cred = await auth.createUserWithEmailAndPassword(email, pass);
-
-    await cred.user.updateProfile({
-      displayName: name
+    var { data: signUpData, error: signUpErr } = await _supabase.auth.signUp({
+      email: email, password: pass,
+      options: { data: { name: name } }
     });
+    if (signUpErr) { showMsg('authMsg', errMsg(signUpErr.message || signUpErr.code), true); return; }
 
-    var uid = cred.user.uid;
-    var ft = $('regFamType').value;
+    var uid = signUpData.user.id;
+    var ft  = $('regFamType').value;
     var role = $('regRole').value;
+    var labels = { mama_papa: ['Mamá', 'Papá'], papa_papa: ['Papá 1', 'Papá 2'], mama_mama: ['Mamá 1', 'Mamá 2'] };
+    var fc = { type: ft, p1Label: labels[ft][0], p2Label: labels[ft][1] };
 
-    var labels = {
-      mama_papa: ['Mamá', 'Papá'],
-      papa_papa: ['Papá 1', 'Papá 2'],
-      mama_mama: ['Mamá 1', 'Mamá 2']
-    };
-
-    var fc = {
-      type: ft,
-      p1Label: labels[ft][0],
-      p2Label: labels[ft][1]
-    };
-
-    var famRef = await db.collection('families').add({
-      adminUid: uid,
-      members: [uid],
-      memberRoles: {
-        [uid]: role
-      },
-      hasActivePendingInvitation: false,
-      config: fc,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    var famId = await _createFamilyForUser(uid, role, fc);
+    if (!famId) { showMsg('authMsg', 'Error al crear la familia. Intenta de nuevo.', true); return; }
 
     var inviteCode = genCode();
-
-    await db.collection('users').doc(uid).set({
-      name: name,
-      email: email,
-      role: role,
-      familyConfig: fc,
-      familyId: famRef.id,
-      coparentId: null,
-      inviteCode: inviteCode,
-      onboardingCompleted: false,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    await _supabase.from('invitations').insert({
+      family_id: famId, invited_by: uid, token: inviteCode, role: 'p2'
     });
 
     IS_REGISTERING = false;
-    USERDATA = { name: name, email: email, role: role, familyConfig: fc, familyId: famRef.id, coparentId: null, inviteCode: inviteCode, onboardingCompleted: false };
-    FAMILY_ID = famRef.id;
+    USERDATA = { name: name, email: email, role: role, familyConfig: fc, familyId: famId,
+      coparentId: null, inviteCode: inviteCode, onboardingCompleted: false, quickReplies: [] };
+    FAMILY_ID = famId;
+    USER = signUpData.user;
+    USER.uid = USER.id;
     updateLabels();
 
     var storedInvite = localStorage.getItem('pendingInvite');
-    if (storedInvite) {
-      localStorage.removeItem('pendingInvite');
-      autoConnect(storedInvite);
-    } else {
-      startOnboarding();
-    }
+    if (storedInvite) { localStorage.removeItem('pendingInvite'); autoConnect(storedInvite); }
+    else startOnboarding();
 
   } catch(e) {
     IS_REGISTERING = false;
-    console.error('REGISTER ERROR', e);
-    console.error('CODE', e.code);
-    console.error('MESSAGE', e.message);
-    showMsg('authMsg', errMsg(e.code), true);
+    console.error('[doRegister]', e);
+    showMsg('authMsg', 'Error inesperado. Intenta de nuevo.', true);
   }
 }
+
+async function _createFamilyForUser(uid, role, fc) {
+  var { data: fam, error: famErr } = await _supabase.from('families')
+    .insert({ created_by: uid, config: fc }).select('id').single();
+  if (famErr || !fam) return null;
+  var famId = fam.id;
+  await _supabase.from('family_members').insert({ family_id: famId, user_id: uid, role: role });
+  return famId;
+}
+
 async function doReset() {
   hideMsg('authMsg');
-
   var email = $('resetEmail').value.trim();
-
-  if (!email) {
-    showMsg('authMsg', 'Ingresa tu correo', true);
-    return;
-  }
-
-  try {
-    await auth.sendPasswordResetEmail(email);
-    showMsg('authMsg', 'Te enviamos un enlace para restablecer tu contraseña.');
-  } catch(e) {
-    showMsg('authMsg', errMsg(e.code), true);
-  }
+  if (!email) { showMsg('authMsg', 'Ingresa tu correo', true); return; }
+  var { error } = await _supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname
+  });
+  if (error) showMsg('authMsg', errMsg(error.message || error.code), true);
+  else showMsg('authMsg', 'Te enviamos un enlace para restablecer tu contraseña.');
 }
+
 async function doGoogleLogin() {
   hideMsg('authMsg');
   var urlParams = new URLSearchParams(window.location.search);
   var pendingInvite = urlParams.get('invite');
   if (pendingInvite) localStorage.setItem('pendingInvite', pendingInvite);
-  try {
-    var provider = new firebase.auth.GoogleAuthProvider();
-    if (/Android/i.test(navigator.userAgent)) {
-      dbg('[google] starting redirect (Android)');
-      await auth.signInWithRedirect(provider);
-    } else {
-      dbg('[google] starting popup');
-      await auth.signInWithPopup(provider);
-      dbg('[google] popup resolved — waiting onAuthStateChanged');
-    }
-  } catch(e) {
-    dbg('[google] error ' + e.code + ' ' + e.message);
-    if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
-      showMsg('authMsg', errMsg(e.code), true);
-    }
-  }
+  var { error } = await _supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + window.location.pathname }
+  });
+  if (error) showMsg('authMsg', errMsg(error.message || error.code), true);
 }
 
 async function createGoogleUserProfile(u) {
-  dbg('[google] creating profile ' + u.uid + ' ' + u.email);
   var ft = 'mama_papa';
   var role = 'p1';
   var fc = { type: ft, p1Label: 'Mamá', p2Label: 'Papá' };
+  var name = (u.user_metadata && u.user_metadata.full_name)
+    || (u.user_metadata && u.user_metadata.name)
+    || (u.email ? u.email.split('@')[0] : 'Usuario');
+
+  var famId = await _createFamilyForUser(u.id, role, fc);
+  if (!famId) { await _supabase.auth.signOut(); show('authScreen'); hide('app'); showMsg('authMsg', 'Error al crear tu cuenta. Intenta de nuevo.', true); return; }
+
   var inviteCode = genCode();
-  var name = u.displayName || (u.email ? u.email.split('@')[0] : 'Usuario');
-
-  var famRef = await db.collection('families').add({
-    adminUid: u.uid,
-    members: [u.uid],
-    memberRoles: { [u.uid]: role },
-    hasActivePendingInvitation: false,
-    config: fc,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-
-  await db.collection('users').doc(u.uid).set({
-    name: name,
-    email: u.email || '',
-    role: role,
-    familyConfig: fc,
-    familyId: famRef.id,
-    coparentId: null,
-    inviteCode: inviteCode,
-    onboardingCompleted: false,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
+  await _supabase.from('invitations').insert({ family_id: famId, invited_by: u.id, token: inviteCode, role: 'p2' });
 
   USERDATA = { name: name, email: u.email || '', role: role, familyConfig: fc,
-    familyId: famRef.id, coparentId: null, inviteCode: inviteCode, onboardingCompleted: false };
-  FAMILY_ID = famRef.id;
+    familyId: famId, coparentId: null, inviteCode: inviteCode, onboardingCompleted: false, quickReplies: [] };
+  FAMILY_ID = famId;
+  USER = u;
+  USER.uid = USER.id;
   updateLabels();
 
-  // autoConnect() will reassign role to p2 if there's a pending invite
   var pending = localStorage.getItem('pendingInvite');
-  if (pending) {
-    localStorage.removeItem('pendingInvite');
-    autoConnect(pending);
-  } else {
-    startOnboarding();
-  }
+  if (pending) { localStorage.removeItem('pendingInvite'); autoConnect(pending); }
+  else startOnboarding();
 }
-
-// Listeners de auth registrados exclusivamente en app-shell.js DOMContentLoaded.
-// forgotBtn, backBtn, resetBtn y googleLoginBtn NO se registran aquí para evitar duplicados.

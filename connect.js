@@ -15,78 +15,79 @@ function showConnectScreen() {
   if (USERDATA && USERDATA.inviteCode) {
     buildInviteLink(USERDATA.inviteCode);
   } else {
-    // Fallback defensivo: usuarios anteriores al Sprint 2 sin inviteCode en Firestore.
-    // inviteCode se genera aquí únicamente como recuperación — el flujo normal lo crea en doRegister().
     var newCode = genCode();
-    db.collection('users').doc(USER.uid).update({ inviteCode: newCode })
-      .then(function() {
+    _supabase.from('invitations').insert({
+      family_id: FAMILY_ID, invited_by: USER.id, token: newCode, role: 'p2'
+    }).then(function(r) {
+      if (!r.error) {
         USERDATA.inviteCode = newCode;
         buildInviteLink(newCode);
-      })
-      .catch(function(e) {
+      } else {
         $('inviteLinkDisplay').textContent = 'No se pudo generar el link. Intenta de nuevo.';
-        console.error('Error generando inviteCode (fallback):', e);
-      });
+      }
+    });
   }
 }
 
-async function autoConnect(code) {
+async function autoConnect(token) {
   try {
-    var snap = await db.collection('users').where('inviteCode', '==', code).get();
-    if (snap.empty) { loadApp(); return; }
-    var otherDoc = snap.docs[0];
-    var otherId = otherDoc.id;
-    if (otherId === USER.uid) { loadApp(); return; }
-    var otherData = otherDoc.data();
+    // Look up invitation by token
+    var { data: inv, error: invErr } = await _supabase
+      .from('invitations')
+      .select('id, family_id, invited_by, role, status, families(config)')
+      .eq('token', token)
+      .single();
 
-    if (otherData.inviteConsumed) {
-      alert('Este enlace de invitación ya fue utilizado.');
+    if (invErr || !inv) { loadApp(); return; }
+    if (inv.status !== 'pending') {
+      alert('Este enlace de invitación ya fue utilizado o expiró.');
       loadApp(); return;
     }
+    if (inv.invited_by === USER.id) { loadApp(); return; }
 
-    // Always join the inviting user's family
-    var famId = otherData.familyId;
-    if (!famId) { loadApp(); return; }
+    var famId = inv.family_id;
+    var joiningRole = inv.role || 'p2';
+    var inviterRole = joiningRole === 'p1' ? 'p2' : 'p1';
 
-    // Joining user gets the opposite role of the inviting user
-    var joiningRole = otherData.role === 'p1' ? 'p2' : 'p1';
-    var p1Uid = otherData.role === 'p1' ? otherId : USER.uid;
-    var p2Uid = otherData.role === 'p1' ? USER.uid : otherId;
+    // Get the inviter's data
+    var { data: inviter } = await _supabase
+      .from('users').select('name, email').eq('id', inv.invited_by).single();
 
-    var batch = db.batch();
-    batch.update(db.collection('users').doc(USER.uid), {
-      coparentId: otherId,
-      familyId: famId,
-      role: joiningRole,
-      familyConfig: otherData.familyConfig
-    });
-    batch.update(db.collection('users').doc(otherId), {
-      coparentId: USER.uid,
-      inviteConsumed: true
-    });
-    var famUpdate = {
-      members: firebase.firestore.FieldValue.arrayUnion(USER.uid, otherId),
-      p1Uid: p1Uid,
-      p2Uid: p2Uid
-    };
-    famUpdate['memberRoles.' + USER.uid] = joiningRole;
-    batch.update(db.collection('families').doc(famId), famUpdate);
+    // Check if already a member
+    var { data: existing } = await _supabase
+      .from('family_members')
+      .select('id')
+      .eq('family_id', famId)
+      .eq('user_id', USER.id)
+      .maybeSingle();
 
-    await batch.commit();
+    if (!existing) {
+      await _supabase.from('family_members').insert({
+        family_id: famId, user_id: USER.id, role: joiningRole
+      });
+    }
+
+    // Mark invitation as accepted
+    await _supabase.from('invitations').update({
+      status: 'accepted', accepted_by: USER.id, accepted_at: new Date().toISOString()
+    }).eq('id', inv.id);
+
     window.history.replaceState({}, '', './');
 
-    USERDATA.coparentId = otherId;
-    USERDATA.familyId = famId;
-    USERDATA.role = joiningRole;
-    USERDATA.familyConfig = otherData.familyConfig;
-    FAMILY_ID = famId;
-    CODATA = otherData;
+    var fc = inv.families && inv.families.config
+      ? inv.families.config
+      : { type: 'mama_papa', p1Label: 'Mamá', p2Label: 'Papá' };
 
-    if (typeof showCoparentWelcome === 'function') {
-      showCoparentWelcome();
-    } else {
-      loadApp();
-    }
+    USERDATA.coparentId = inv.invited_by;
+    USERDATA.familyId   = famId;
+    USERDATA.role       = joiningRole;
+    USERDATA.familyConfig = fc;
+    FAMILY_ID = famId;
+    CODATA = inviter || null;
+
+    if (typeof showCoparentWelcome === 'function') showCoparentWelcome();
+    else loadApp();
+
   } catch(e) {
     console.error('[autoConnect]', e);
     loadApp();

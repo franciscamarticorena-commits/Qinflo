@@ -67,7 +67,6 @@ function updateExpenseTreatmentUI() {
   var distBox = $('expDistributionBox');
   var distHint = $('expDistributionHint');
   var refundBox = $('expHealthRefundBox');
-  // Hide reimbursement proof from the creditor (the one who paid)
   var isCreditor = (myRole() === 'p1' && paidBy === 'mama') || (myRole() === 'p2' && paidBy === 'papa');
   if (reimburse) reimburse.classList.toggle('hidden', t !== 'shared' || isCreditor);
   if (distBox) distBox.classList.toggle('hidden', t !== 'shared');
@@ -151,7 +150,6 @@ function openExpEdit(exp) {
   fillPercentSelectors();
   if ($('pctMama') && $('pctMama').options.length) $('pctMama').value = exp.pctMama != null ? exp.pctMama : 50;
   if ($('pctPapa') && $('pctPapa').options.length) $('pctPapa').value = exp.pctPapa != null ? exp.pctPapa : 50;
-  // Show attach section if expense has files
   if ($('expAttachBox')) {
     var hasFiles = exp.attachmentName || exp.reimbursementAttachmentName;
     $('expAttachBox').style.display = hasFiles ? 'grid' : 'none';
@@ -175,31 +173,34 @@ async function saveExp() {
     var rf = $('expReimburseFile') && $('expReimburseFile').files && $('expReimburseFile').files[0] ? $('expReimburseFile').files[0].name : '';
 
     var data = {
-      description: desc, amount: Number(amt), currency: expCurrency,
-      paidBy: $('expPaidBy').value,
+      description: desc,
+      amount: Number(amt),
+      currency: expCurrency,
+      paid_by: $('expPaidBy').value,
       category: $('expCat').value,
       subcategory: $('expSubcat') ? $('expSubcat').value : '',
       frequency: $('expFrequency') ? $('expFrequency').value : 'unique',
       treatment: tval,
-      healthRefund: $('expHealthRefund') ? $('expHealthRefund').value : '',
-      pctMama: pctM, pctPapa: pctP
+      health_refund: $('expHealthRefund') ? $('expHealthRefund').value : '',
+      pct_mama: pctM,
+      pct_papa: pctP
     };
 
     if (editingExpId) {
-      if (f) data.attachmentName = f;
-      if (rf) data.reimbursementAttachmentName = rf;
-      data.modifiedAt = firebase.firestore.FieldValue.serverTimestamp();
-      data.modifiedBy = USER.uid;
-      await famCol('expenses').doc(editingExpId).update(data);
+      if (f) data.attachment_name = f;
+      if (rf) data.reimbursement_attachment_name = rf;
+      data.modified_at = new Date().toISOString();
+      data.modified_by = USER.id;
+      await _supabase.from('expenses').update(data).eq('id', editingExpId);
     } else {
-      data.attachmentName = f;
-      data.reimbursementAttachmentName = rf;
+      data.attachment_name = f;
+      data.reimbursement_attachment_name = rf;
       data.date = new Date().toISOString().slice(0, 10);
-      data.paid = false; data.voided = false;
-      data.history = [{ action: 'Gasto registrado', at: new Date().toISOString(), by: USERDATA ? USERDATA.name : '' }];
-      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      data.createdBy = USER.uid;
-      await famCol('expenses').add(data);
+      data.paid = false;
+      data.voided = false;
+      data.family_id = FAMILY_ID;
+      data.created_by = USER.id;
+      await _supabase.from('expenses').insert(data);
     }
     _resetExpForm();
     hide('expForm');
@@ -222,13 +223,13 @@ async function liquidarBalance() {
 
   if (!confirm('Confirmar liquidación\n\n' + debtor + ' pagó ' + fmtCLP(amount) + ' a ' + creditor + '.\n\n¿Registrar este pago?')) return;
 
-  await famCol('settlements').add({
+  await _supabase.from('settlements').insert({
+    family_id: FAMILY_ID,
     amount: amount,
-    fromRole: debtorRole,
-    toRole: creditorRole,
+    from_role: debtorRole,
+    to_role: creditorRole,
     date: new Date().toISOString().slice(0, 10),
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    createdBy: USER.uid
+    created_by: USER.id
   });
 }
 
@@ -323,7 +324,6 @@ function renderExpenses() {
 
   if ($('liquidarBtn')) $('liquidarBtn').classList.toggle('hidden', Math.abs(adjNet) < 1);
 
-  // settlements history
   var sh = $('settlementsHistory');
   if (sh) {
     if (filteredSettl.length) {
@@ -385,9 +385,15 @@ function renderExpenses() {
       '</div>' +
       (ex.attachmentName ? '<div class="file-pill" style="margin-top:5px">📎 ' + ex.attachmentName + '</div>' : '') +
       (ex.reimbursementAttachmentName ? '<div class="file-pill" style="margin-top:3px">📎 Reembolso: ' + ex.reimbursementAttachmentName + '</div>' : '');
-    row.querySelector('.toggle-paid-btn').addEventListener('click', function() { famCol('expenses').doc(ex.id).update({ paid: !ex.paid, lastActionAt: firebase.firestore.FieldValue.serverTimestamp(), lastActionBy: USER.uid }); });
+    row.querySelector('.toggle-paid-btn').addEventListener('click', function() {
+      _supabase.from('expenses').update({ paid: !ex.paid, last_action_at: new Date().toISOString(), last_action_by: USER.id }).eq('id', ex.id);
+    });
     row.querySelector('.edit-btn').addEventListener('click', function() { openExpEdit(ex); });
-    row.querySelector('.void-btn').addEventListener('click', function() { if (confirm('Este gasto no se eliminará. Quedará anulado en el historial.')) famCol('expenses').doc(ex.id).update({ voided: true, voidedAt: firebase.firestore.FieldValue.serverTimestamp(), voidedBy: USER.uid }); });
+    row.querySelector('.void-btn').addEventListener('click', function() {
+      if (confirm('Este gasto no se eliminará. Quedará anulado en el historial.')) {
+        _supabase.from('expenses').update({ voided: true, voided_at: new Date().toISOString(), voided_by: USER.id }).eq('id', ex.id);
+      }
+    });
     el.appendChild(row);
   });
 }

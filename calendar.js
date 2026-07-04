@@ -1,25 +1,22 @@
 // --- CALENDARIO ---------------------------------------------
 
-// Increment when the custody algorithm changes to force a full calendar regeneration.
 var CAL_ALG_VERSION = 2;
 
 async function checkAndGenerateCalendar() {
   if (!FAMILY_ID) return;
   try {
-    var famSnap = await db.collection('families').doc(FAMILY_ID).get();
-    if (!famSnap.exists) return;
-    var data = famSnap.data();
-    var config = data.custodyConfig;
+    var res = await _supabase.from('families').select('custody_config, cal_alg_version').eq('id', FAMILY_ID).single();
+    if (res.error || !res.data) return;
+    var data = res.data;
+    var config = data.custody_config;
     if (!config || config.type === 'undefined' || config.type === 'custom') return;
-    // Regenerate if the stored algorithm version is outdated (fixes wrong-Sunday bug),
-    // or if the current month simply has no data yet.
-    var storedVersion = data.calAlgVersion || 0;
+    var storedVersion = data.cal_alg_version || 0;
     var monthHasData = custodyMap[calKey()] && Object.keys(custodyMap[calKey()]).length > 0;
     if (storedVersion >= CAL_ALG_VERSION && monthHasData) return;
     if (typeof generateOnbCalendar === 'function') {
       await generateOnbCalendar(config, FAMILY_ID);
       if (storedVersion < CAL_ALG_VERSION) {
-        await db.collection('families').doc(FAMILY_ID).update({ calAlgVersion: CAL_ALG_VERSION });
+        await _supabase.from('families').update({ cal_alg_version: CAL_ALG_VERSION }).eq('id', FAMILY_ID);
       }
     }
   } catch(e) {
@@ -43,12 +40,22 @@ function remindersForDay(day) {
   });
 }
 
+function _custodyToDb(val) {
+  if (val === 'mama') return 'p1';
+  if (val === 'papa') return 'p2';
+  return val;
+}
+
 function setCustody(d, val) {
   if (!FAMILY_ID) return;
   var key = calKey();
-  var update = { custody: {} };
-  update.custody[d] = val;
-  db.collection('families').doc(FAMILY_ID).collection('calendar').doc(key).set(update, { merge: true });
+  var dateStr = key + '-' + String(d).padStart(2, '0');
+  _supabase.from('custody_calendar').upsert({
+    family_id: FAMILY_ID,
+    date: dateStr,
+    custodian: _custodyToDb(val),
+    is_override: true
+  }, { onConflict: 'family_id,date' });
 }
 
 function prevMonth() {
@@ -90,7 +97,7 @@ function proposalsForDay(day) { return proposals.filter(function(pr) { return pr
 function roleLabel(role) { return role === 'p1' ? p1() : p2(); }
 function oppositeRole(role) { return role === 'p1' ? 'p2' : 'p1'; }
 function proposalRequesterLabel(pr) {
-  if (pr.createdBy === (USER && USER.uid)) return displayNameWithRole(USERDATA, myRole());
+  if (pr.createdBy === (USER && USER.id)) return displayNameWithRole(USERDATA, myRole());
   if (CODATA && pr.createdBy === (USERDATA && USERDATA.coparentId)) return displayNameWithRole(CODATA, oppositeRole(myRole()));
   return (pr.createdByName || roleLabel(pr.createdByRole || 'p1')) + ' (' + roleLabel(pr.createdByRole || 'p1') + ')';
 }
@@ -111,7 +118,6 @@ function renderCalendar() {
   var months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   if (!$('calMonthTitle')) return;
   $('calMonthTitle').textContent = months[calMonth] + ' ' + calYear;
-  // Actualizar labels dinámicos de los botones de filtro
   if ($('calFilterMama')) $('calFilterMama').textContent = p1();
   if ($('calFilterPapa')) $('calFilterPapa').textContent = p2();
   renderProposals();
@@ -164,7 +170,6 @@ function renderDayDetail() {
   var rems = remindersForDay(selDay);
   var html = '';
 
-  // Custody section
   var custodyVal = getCustody(selDay);
   var custodyLabel, custodyColor;
   if (custodyVal === 'mama') { custodyLabel = p1(); custodyColor = 'var(--accent)'; }
@@ -173,24 +178,21 @@ function renderDayDetail() {
   html += _detailSectionHdr('Custodia');
   html += '<div class="detail-card" style="font-weight:700;font-size:15px;color:' + custodyColor + '">' + custodyLabel + '</div>';
 
-  // Events section
   if (typeof renderEventsForDay === 'function') {
     var evHtml = renderEventsForDay(selDay);
     if (evHtml) html += _detailSectionHdr('Eventos') + evHtml;
   }
 
-  // Reminders section
   if (rems.length) {
     html += _detailSectionHdr('Avisos');
     html += rems.map(function(r) {
       return '<div class="detail-card">' +
         '<div style="font-weight:600;font-size:13px">' + r.title + '</div>' +
-        '<div style="font-size:12px;color:var(--text-s);margin-top:3px">' + fmtDateTime(r.date) + ' · ' + fLbl(r.for) + '</div>' +
+        '<div style="font-size:12px;color:var(--text-s);margin-top:3px">' + fmtDateTime(r.date) + ' · ' + fLbl(r.for || r.assigned || 'both') + '</div>' +
         '</div>';
     }).join('');
   }
 
-  // Proposals section
   var dayProps = proposalsForDay(selDay);
   if (dayProps.length) {
     html += _detailSectionHdr('Solicitudes de cambio');
@@ -223,7 +225,7 @@ function updateProposalButtonState() {
   }
   btn.disabled = true;
   btn.classList.add('btn-disabled-proposal');
-  var label = active.createdBy === (USER && USER.uid) ? 'Esperando respuesta' : 'Responder solicitud pendiente';
+  var label = active.createdBy === (USER && USER.id) ? 'Esperando respuesta' : 'Responder solicitud pendiente';
   btn.innerHTML = '<i data-lucide="lock"></i> ' + label;
   hide('propForm');
 }
@@ -241,7 +243,7 @@ async function saveProp() {
   }
   var active = activePendingProposal();
   if (active) {
-    alert(active.createdBy === (USER && USER.uid)
+    alert(active.createdBy === (USER && USER.id)
       ? 'Ya tienes una solicitud pendiente. Espera respuesta antes de crear otra.'
       : 'Primero debes responder la solicitud pendiente antes de crear una nueva.');
     hide('propForm');
@@ -249,19 +251,22 @@ async function saveProp() {
     return;
   }
   var fromParts = fromDate.split('-'), toParts = toDate.split('-');
-  await famCol('proposals').add({
-    fromDate: fromDate, toDate: toDate,
-    fromDay: Number(fromParts[2]), toDay: Number(toParts[2]),
+  await _supabase.from('custody_changes').insert({
+    family_id: FAMILY_ID,
+    from_date: fromDate,
+    to_date: toDate,
+    from_day: Number(fromParts[2]),
+    to_day: Number(toParts[2]),
     reason: reason,
-    status: 'pending', date: new Date().toISOString().slice(0, 10),
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    createdBy: USER.uid,
-    createdByName: USERDATA ? USERDATA.name : '',
-    createdByRole: myRole(),
-    requestedToRole: oppositeRole(myRole())
+    status: 'pending',
+    date: new Date().toISOString().slice(0, 10),
+    proposed_by: USER.id,
+    proposed_by_role: myRole(),
+    created_by_name: USERDATA ? USERDATA.name : '',
+    requested_to_role: oppositeRole(myRole())
   });
   if (typeof logActivity === 'function') {
-    logActivity('proposal_created', myLabel() + ' solicitó cambio de custodia: Día ' + from + ' → Día ' + to, { fromDay: from, toDay: to });
+    logActivity('proposal_created', myLabel() + ' solicitó cambio de custodia: ' + fmtShortDate(fromDate) + ' → ' + fmtShortDate(toDate), { fromDate: fromDate, toDate: toDate });
   }
   $('propFrom').value = ''; $('propTo').value = ''; $('propReason').value = '';
   hide('propForm');
@@ -270,8 +275,8 @@ async function saveProp() {
 function renderProposals() {
   var el = $('pendingProposals');
   if (!el) return;
-  var pendingReceived = proposals.filter(function(p) { return p.status === 'pending' && p.createdBy !== (USER && USER.uid); });
-  var pendingSent = proposals.filter(function(p) { return p.status === 'pending' && p.createdBy === (USER && USER.uid); });
+  var pendingReceived = proposals.filter(function(p) { return p.status === 'pending' && p.createdBy !== (USER && USER.id); });
+  var pendingSent = proposals.filter(function(p) { return p.status === 'pending' && p.createdBy === (USER && USER.id); });
   if (!pendingReceived.length && !pendingSent.length) { el.innerHTML = ''; updateProposalButtonState(); return; }
   el.innerHTML = '';
   pendingReceived.forEach(function(pr) {
@@ -279,13 +284,21 @@ function renderProposals() {
     div.className = 'proposal-alert';
     div.innerHTML = '<div><strong>Solicitud de cambio de custodia</strong><br><strong>' + proposalRequesterLabel(pr) + '</strong> solicita a <strong>' + proposalRequestedLabel(pr) + '</strong><br>Cambio: ' + fmtProposalDates(pr) + '<br>Enviada: ' + fmtDateTime(pr.createdAt || pr.date) + (pr.reason ? '<br>' + pr.reason : '') + '<div class="proposal-flow-note">Debes aprobar o rechazar esta solicitud antes de crear una nueva.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm accept-btn" style="background:var(--success)">Aceptar</button><button class="btn-outline reject-btn">Rechazar</button></div>';
     div.querySelector('.accept-btn').addEventListener('click', async function() {
-      await famCol('proposals').doc(pr.id).update({ status: 'accepted', respondedAt: firebase.firestore.FieldValue.serverTimestamp(), respondedBy: USER.uid });
+      await _supabase.from('custody_changes').update({
+        status: 'accepted',
+        responded_at: new Date().toISOString(),
+        responded_by: USER.id
+      }).eq('id', pr.id);
       setCustody(Number(pr.toDay), 'transition');
-      if (typeof logActivity === 'function') logActivity('proposal_accepted', myLabel() + ' aprobó cambio de custodia: Día ' + pr.fromDay + ' → Día ' + pr.toDay, { proposalId: pr.id });
+      if (typeof logActivity === 'function') logActivity('proposal_accepted', myLabel() + ' aprobó cambio de custodia: ' + fmtProposalDates(pr), { proposalId: pr.id });
     });
     div.querySelector('.reject-btn').addEventListener('click', function() {
-      famCol('proposals').doc(pr.id).update({ status: 'rejected', respondedAt: firebase.firestore.FieldValue.serverTimestamp(), respondedBy: USER.uid });
-      if (typeof logActivity === 'function') logActivity('proposal_rejected', myLabel() + ' rechazó cambio de custodia: Día ' + pr.fromDay + ' → Día ' + pr.toDay, { proposalId: pr.id });
+      _supabase.from('custody_changes').update({
+        status: 'rejected',
+        responded_at: new Date().toISOString(),
+        responded_by: USER.id
+      }).eq('id', pr.id);
+      if (typeof logActivity === 'function') logActivity('proposal_rejected', myLabel() + ' rechazó cambio de custodia: ' + fmtProposalDates(pr), { proposalId: pr.id });
     });
     el.appendChild(div);
   });
@@ -295,7 +308,7 @@ function renderProposals() {
     div.innerHTML = '<div><strong>Solicitud de cambio de custodia enviada</strong><br><strong>' + proposalRequesterLabel(pr) + '</strong> solicita a <strong>' + proposalRequestedLabel(pr) + '</strong><br>Cambio: ' + fmtProposalDates(pr) + '<br>Enviada: ' + fmtDateTime(pr.createdAt || pr.date) + '<br>Esperando respuesta.<div class="proposal-flow-note">Mientras esta solicitud esté pendiente, no se pueden crear nuevas solicitudes.</div></div><div style="margin-top:8px"><button class="btn-outline cancel-prop-btn" style="font-size:11px;padding:5px 12px;color:var(--error)">Retirar solicitud</button></div>';
     div.querySelector('.cancel-prop-btn').addEventListener('click', async function() {
       if (!confirm('¿Retirar esta solicitud de cambio?')) return;
-      await famCol('proposals').doc(pr.id).delete();
+      await _supabase.from('custody_changes').delete().eq('id', pr.id);
     });
     el.appendChild(div);
   });

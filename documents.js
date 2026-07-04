@@ -21,19 +21,16 @@ async function saveDoc() {
   if (!title) { $('docTitle').focus(); return; }
   var data = {
     title:    title,
-    type:     $('docType').value,
-    childId:  $('docChild').value || null,
+    doc_type: $('docType').value,
+    child_id: $('docChild').value || null,
     url:      $('docUrl').value.trim() || null,
-    notes:    $('docNotes').value.trim() || null,
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    notes:    $('docNotes').value.trim() || null
   };
   if (editingDocId) {
-    await famCol('documents').doc(editingDocId).update(data);
+    await _supabase.from('documents').update(data).eq('id', editingDocId);
     editingDocId = null;
   } else {
-    data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-    data.createdBy = USER.uid;
-    await famCol('documents').add(data);
+    await _supabase.from('documents').insert(Object.assign(data, { family_id: FAMILY_ID, created_by: USER.id }));
   }
   _resetDocForm();
   hide('docForm');
@@ -42,7 +39,7 @@ async function saveDoc() {
 function openDocEdit(doc) {
   editingDocId = doc.id;
   $('docTitle').value = doc.title || '';
-  $('docType').value  = doc.type || 'otro';
+  $('docType').value  = doc.docType || doc.type || 'otro';
   $('docChild').value = doc.childId || '';
   $('docUrl').value   = doc.url || '';
   $('docNotes').value = doc.notes || '';
@@ -92,12 +89,13 @@ function renderDocuments() {
   sorted.forEach(function(doc) {
     var child = (children || []).find(function(c) { return c.id === doc.childId; });
     var childName = child ? (child.name ? child.name.split(' ')[0] : '') : '';
+    var typeVal = doc.docType || doc.type || 'otro';
     var row = document.createElement('div');
     row.style.cssText = 'padding:13px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start';
     row.innerHTML =
       '<div style="flex:1;min-width:0">' +
         '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:4px">' +
-          '<span style="font-size:10px;font-weight:700;background:rgba(107,122,87,.12);color:var(--primary-d);border-radius:6px;padding:2px 7px">' + docTypeLabel(doc.type) + '</span>' +
+          '<span style="font-size:10px;font-weight:700;background:rgba(107,122,87,.12);color:var(--primary-d);border-radius:6px;padding:2px 7px">' + docTypeLabel(typeVal) + '</span>' +
           (childName ? '<span style="font-size:10px;font-weight:600;background:var(--border);color:var(--text-s);border-radius:6px;padding:2px 7px">' + childName + '</span>' : '') +
         '</div>' +
         '<div style="font-size:14px;font-weight:600;color:var(--text)">' + doc.title + '</div>' +
@@ -110,7 +108,7 @@ function renderDocuments() {
       '</div>';
     row.querySelector('.doc-edit').addEventListener('click', function() { openDocEdit(doc); });
     row.querySelector('.doc-del').addEventListener('click', function() {
-      if (confirm('¿Eliminar "' + doc.title + '"?')) famCol('documents').doc(doc.id).delete();
+      if (confirm('¿Eliminar "' + doc.title + '"?')) _supabase.from('documents').delete().eq('id', doc.id);
     });
     card.appendChild(row);
   });

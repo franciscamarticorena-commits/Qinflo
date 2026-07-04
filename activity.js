@@ -3,13 +3,15 @@
 async function logActivity(type, description, meta) {
   if (!FAMILY_ID || !USER) return;
   try {
-    await famCol('activity').add({
+    await _supabase.from('activity_logs').insert({
+      family_id: FAMILY_ID,
+      actor_user_id: USER.id,
+      actor_name: USERDATA ? USERDATA.name : '',
+      actor_role: myRole(),
       type: type,
-      actorUid: USER.uid,
-      actorName: USERDATA ? USERDATA.name : '',
-      actorRole: myRole(),
+      summary: description,
       description: description,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      metadata: meta || {},
       meta: meta || {}
     });
   } catch(e) { console.error('[logActivity]', e); }
@@ -40,10 +42,11 @@ function renderTodayActivity() {
   el.innerHTML = activityLog.slice(0, 10).map(function(a) {
     var time = a.createdAt ? _relTime(a.createdAt) : '';
     var actor = a.actorName ? a.actorName.split(' ')[0] : '';
+    var desc = a.description || a.summary || '';
     return '<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border)">' +
       '<div style="width:6px;height:6px;border-radius:50%;background:var(--primary);flex-shrink:0;margin-top:6px"></div>' +
       '<div style="flex:1">' +
-        '<div style="font-size:13px;color:var(--text)">' + a.description + '</div>' +
+        '<div style="font-size:13px;color:var(--text)">' + desc + '</div>' +
         (actor || time ? '<div style="font-size:11px;color:var(--text-s);margin-top:2px">' + [actor, time].filter(Boolean).join(' · ') + '</div>' : '') +
       '</div>' +
     '</div>';

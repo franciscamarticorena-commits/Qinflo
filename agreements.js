@@ -13,28 +13,25 @@ async function saveAgr() {
   if (!title || !content) return;
 
   if (editingAgrId) {
-    await famCol('agreements').doc(editingAgrId).update({
-      title:     title,
-      content:   content,
-      category:  $('agrCat').value,
-      status:    $('agrStatus').value,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedBy: USER.uid
-    });
+    await _supabase.from('agreements').update({
+      title: title, content: content,
+      category: $('agrCat').value,
+      status: $('agrStatus').value,
+      updated_by: USER.id
+    }).eq('id', editingAgrId);
     editingAgrId = null;
   } else {
     var sig = {};
-    sig[USER.uid] = new Date().toISOString();
-    await famCol('agreements').add({
-      title:         title,
-      content:       content,
-      category:      $('agrCat').value,
-      status:        $('agrStatus').value,
-      date:          new Date().toISOString().slice(0, 10),
-      createdAt:     firebase.firestore.FieldValue.serverTimestamp(),
-      createdBy:     USER.uid,
-      createdByRole: myRole(),
-      signatures:    sig
+    sig[USER.id] = new Date().toISOString();
+    await _supabase.from('agreements').insert({
+      family_id: FAMILY_ID,
+      title: title, content: content,
+      category: $('agrCat').value,
+      status: $('agrStatus').value,
+      date: new Date().toISOString().slice(0, 10),
+      created_by: USER.id,
+      created_by_role: myRole(),
+      signatures: sig
     });
   }
   _resetAgrForm();
@@ -62,17 +59,15 @@ function _resetAgrForm() {
 }
 
 async function signAgreement(agrId) {
-  var sig = {};
-  sig['signatures.' + USER.uid] = new Date().toISOString();
-  await famCol('agreements').doc(agrId).update(sig);
+  var agr = agreements.find(function(a) { return a.id === agrId; });
+  if (!agr) return;
+  var sigs = Object.assign({}, agr.signatures || {});
+  sigs[USER.id] = new Date().toISOString();
+  await _supabase.from('agreements').update({ signatures: sigs }).eq('id', agrId);
 }
 
 async function changeAgrStatus(agrId, status) {
-  await famCol('agreements').doc(agrId).update({
-    status:    status,
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-    updatedBy: USER.uid
-  });
+  await _supabase.from('agreements').update({ status: status, updated_by: USER.id }).eq('id', agrId);
 }
 
 function renderAgreements() {
@@ -87,7 +82,7 @@ function renderAgreements() {
   agreements.forEach(function(agr) {
     var sc     = AGR_STATUS_COLORS[agr.status] || AGR_STATUS_COLORS['Activo'];
     var sigs   = agr.signatures || {};
-    var myUid  = USER && USER.uid;
+    var myUid  = USER && USER.id;
     var coUid  = USERDATA && USERDATA.coparentId;
     var iSigned  = !!sigs[myUid];
     var coSigned = coUid ? !!sigs[coUid] : false;
@@ -103,10 +98,9 @@ function renderAgreements() {
     }
 
     var dateStr = agr.date ? new Date(agr.date + 'T12:00').toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
-    var updStr  = agr.updatedAt ? ' · Editado' : '';
+    var updStr  = agr.updatedBy ? ' · Editado' : '';
     var creatorLabel = agr.createdByRole === myRole() ? 'Tú' : (CODATA && CODATA.name ? CODATA.name.split(' ')[0] : (agr.createdByRole === 'p1' ? p1() : p2()));
 
-    // Next status cycle
     var nextStatus = agr.status === 'Activo' ? 'En revisión' : agr.status === 'En revisión' ? 'Completado' : 'Activo';
     var nextIcon   = agr.status === 'Activo' ? '🔄' : agr.status === 'En revisión' ? '✓' : '↺';
 
@@ -127,9 +121,7 @@ function renderAgreements() {
       '<h3 style="margin:0 0 8px;font-size:15px;font-weight:700;color:var(--text);line-height:1.3">' + agr.title + '</h3>' +
       '<p style="font-size:13px;color:var(--text-s);line-height:1.6;margin:0 0 12px;white-space:pre-wrap">' + agr.content + '</p>' +
       '<div style="border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">' +
-        '<div>' +
-          sigHtml +
-        '</div>' +
+        '<div>' + sigHtml + '</div>' +
         '<div style="display:flex;gap:10px;align-items:center">' +
           (agr.status !== 'Completado'
             ? '<button class="btn-outline status-btn" style="font-size:11px;padding:4px 10px" title="Cambiar estado">' + nextIcon + ' ' + nextStatus + '</button>'
@@ -142,7 +134,7 @@ function renderAgreements() {
 
     card.querySelector('.edit-btn').addEventListener('click', function() { openAgrEdit(agr); });
     card.querySelector('.del-btn').addEventListener('click', function() {
-      if (confirm('¿Eliminar el acuerdo "' + agr.title + '"?')) famCol('agreements').doc(agr.id).delete();
+      if (confirm('¿Eliminar el acuerdo "' + agr.title + '"?')) _supabase.from('agreements').delete().eq('id', agr.id);
     });
     if (!iSigned) {
       var signBtn = card.querySelector('.sign-btn');

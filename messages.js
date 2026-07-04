@@ -22,7 +22,7 @@ function _collectQRInputs() {
 
 async function _saveQR(arr) {
   if (USERDATA) USERDATA.quickReplies = arr;
-  try { await db.collection('users').doc(USER.uid).update({ quickReplies: arr }); }
+  try { await _supabase.from('users').update({ quick_replies: arr }).eq('id', USER.id); }
   catch(e) { console.error('[saveQR]', e); }
 }
 
@@ -119,20 +119,24 @@ async function sendMsg() {
     var ok = confirm('Este mensaje podría interpretarse como ofensivo o poco colaborativo. ¿Quieres enviarlo igual?');
     if (!ok) return;
   }
-  await famCol('messages').add({
-    text: txt, senderName: USERDATA ? USERDATA.name : '',
-    senderRole: myRole(),
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    createdBy: USER.uid
+  await _supabase.from('messages').insert({
+    family_id: FAMILY_ID,
+    content: txt,
+    sender_name: USERDATA ? USERDATA.name : '',
+    author_role: myRole(),
+    author_id: USER.id,
+    type: 'message'
   });
   $('msgInput').value = '';
 }
 
 async function sendMsgDivider() {
-  await famCol('messages').add({
-    type: 'divider',
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    createdBy: USER.uid
+  await _supabase.from('messages').insert({
+    family_id: FAMILY_ID,
+    content: '',
+    author_role: myRole(),
+    author_id: USER.id,
+    type: 'divider'
   });
 }
 
@@ -142,9 +146,9 @@ function renderMessages() {
   if (!messages.length) { el.innerHTML = '<p style="text-align:center;color:var(--text-s);font-size:13px;margin:auto">Sin mensajes aún</p>'; return; }
   el.innerHTML = messages.map(function(m) {
     if (m.type === 'divider') return '<div class="msg-divider"></div>';
-    var isMe = m.createdBy === (USER && USER.uid);
-    var time = m.createdAt && m.createdAt.toDate ? m.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-    return '<div style="display:flex;justify-content:' + (isMe ? 'flex-end' : 'flex-start') + '"><div class="msg-bubble ' + (isMe ? 'me' : 'other') + '"><div class="msg-sender">' + (m.senderName || '') + '</div>' + m.text + '<div class="msg-time">' + time + '</div></div></div>';
+    var isMe = m.createdBy === (USER && USER.id);
+    var time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+    return '<div style="display:flex;justify-content:' + (isMe ? 'flex-end' : 'flex-start') + '"><div class="msg-bubble ' + (isMe ? 'me' : 'other') + '"><div class="msg-sender">' + (m.senderName || '') + '</div>' + (m.text || m.content || '') + '<div class="msg-time">' + time + '</div></div></div>';
   }).join('');
   el.scrollTop = el.scrollHeight;
 }

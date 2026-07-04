@@ -26,14 +26,25 @@ function openKidForm(kid) {
 async function saveKid() {
   var name = $('kidName').value.trim();
   if (!name) return;
+  var birthVal = $('kidBirth').value;
   var data = {
-    name: name, birthDate: $('kidBirth').value, age: $('kidBirth').value ? calcAge($('kidBirth').value) : $('kidAge').value, school: $('kidSchool').value,
-    doctor: $('kidDoctor').value, clinic: $('kidClinic').value, schoolInsurance: $('kidSchoolInsurance').value, allergies: $('kidAllergies').value,
-    bloodType: $('kidBlood').value, notes: $('kidNotes').value
+    name: name,
+    birth_date: birthVal || null,
+    age: birthVal ? calcAge(birthVal) : $('kidAge').value,
+    school: $('kidSchool').value,
+    doctor: $('kidDoctor').value,
+    clinic: $('kidClinic').value,
+    school_insurance: $('kidSchoolInsurance').value,
+    allergies: $('kidAllergies').value,
+    blood_type: $('kidBlood').value,
+    notes: $('kidNotes').value
   };
   var id = $('editKidId').value;
-  if (id) await famCol('children').doc(id).update(data);
-  else await famCol('children').add(Object.assign(data, { createdAt: firebase.firestore.FieldValue.serverTimestamp(), createdBy: USER.uid }));
+  if (id) {
+    await _supabase.from('children').update(data).eq('id', id);
+  } else {
+    await _supabase.from('children').insert(Object.assign(data, { family_id: FAMILY_ID, created_by: USER.id }));
+  }
   hide('kidForm');
 }
 
@@ -73,7 +84,9 @@ function renderChildren() {
         (kid.notes ? '<div class="notes-box"><div style="font-size:10px;color:var(--primary);font-weight:700;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px">Notas</div><div style="font-size:12px;color:var(--text);line-height:1.55">' + kid.notes + '</div></div>' : '') +
       '</div>';
     card.querySelector('.edit-btn').addEventListener('click', function() { openKidForm(kid); });
-    card.querySelector('.del-btn').addEventListener('click', function() { famCol('children').doc(kid.id).delete(); });
+    card.querySelector('.del-btn').addEventListener('click', function() {
+      _supabase.from('children').delete().eq('id', kid.id);
+    });
     el.appendChild(card);
   });
 }

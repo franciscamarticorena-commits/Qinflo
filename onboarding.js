@@ -87,15 +87,14 @@ async function onbAcceptDisclaimer() {
   var newsletter = $('onbCheckNewsletter') ? $('onbCheckNewsletter').checked : false;
   try {
     if (USER) {
-      await db.collection('users').doc(USER.uid).update({
-        legalAcceptance: {
-          tosVersion:     LEGAL_TOS_VERSION,
-          privacyVersion: LEGAL_PRIVACY_VERSION,
-          tosAccepted:    true,
-          privacyAccepted: true,
-          newsletter:     newsletter,
-          acceptedAt:     firebase.firestore.FieldValue.serverTimestamp()
-        }
+      await _supabase.from('legal_acceptances').insert({
+        user_id: USER.id,
+        family_id: FAMILY_ID || null,
+        tos_version: LEGAL_TOS_VERSION,
+        privacy_version: LEGAL_PRIVACY_VERSION,
+        tos_accepted: true,
+        privacy_accepted: true,
+        newsletter: newsletter
       });
     }
   } catch(e) {
@@ -313,12 +312,7 @@ async function skipOnbKids() {
 
 async function saveOnboardingData(includeKids) {
   try {
-    var config = Object.assign({}, onbCustodyConfig, {
-      configuredAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    // specialRules: estructura reservada para lógica futura de fechas especiales.
-    // La lógica de prioridad (ej. Navidad con papá si esta semana era de mamá) no está
-    // implementada — solo se persiste la estructura para no tener que migrar el schema después.
+    var config = Object.assign({}, onbCustodyConfig);
     var specialRules = {
       mothersDay:  { enabled: false, override: null },
       fathersDay:  { enabled: false, override: null },
@@ -326,16 +320,23 @@ async function saveOnboardingData(includeKids) {
       newYear:     { enabled: false, override: null },
       vacations:   []
     };
-    await db.collection('families').doc(FAMILY_ID).update({ custodyConfig: config, specialRules: specialRules });
+    await _supabase.from('families').update({
+      custody_config: config,
+      special_rules: specialRules
+    }).eq('id', FAMILY_ID);
     if (config.type === 'alternating_weeks' || config.type === 'fixed_days') {
       await generateOnbCalendar(config, FAMILY_ID);
     }
     if (includeKids && onbKidsList.length > 0) {
-      await Promise.all(onbKidsList.map(function(kid) {
-        return db.collection('families').doc(FAMILY_ID).collection('children').add(
-          Object.assign({}, kid, { createdAt: firebase.firestore.FieldValue.serverTimestamp(), createdBy: USER ? USER.uid : null })
-        );
-      }));
+      var kidRows = onbKidsList.map(function(kid) {
+        return {
+          family_id: FAMILY_ID,
+          name: kid.name,
+          birth_date: kid.birthDate || null,
+          created_by: USER ? USER.id : null
+        };
+      });
+      await _supabase.from('children').insert(kidRows);
     }
     showOnbPanel('onbPanelInvite');
     updateOnbProgress(5, 5, 'Invitar al otro padre/madre');
@@ -361,16 +362,23 @@ function buildOnbInviteLink() {
 }
 
 function _watchForCoparentJoin() {
-  if (_coparentWatcher || !USER) return;
-  _coparentWatcher = db.collection('users').doc(USER.uid).onSnapshot(function(snap) {
-    if (!snap.exists) return;
-    var data = snap.data();
-    if (data.coparentId && !USERDATA.coparentId) {
-      if (typeof _coparentWatcher === 'function') { _coparentWatcher(); _coparentWatcher = null; }
-      USERDATA.coparentId = data.coparentId;
-      db.collection('users').doc(data.coparentId).get().then(function(co) {
-        var coName = co.exists && co.data().name ? co.data().name.split(' ')[0] : 'Tu co-padre/madre';
-        if (co.exists) CODATA = co.data();
+  if (_coparentWatcher || !USER || !FAMILY_ID) return;
+  _coparentWatcher = _supabase.channel('coparent-join-' + FAMILY_ID)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'family_members',
+      filter: 'family_id=eq.' + FAMILY_ID
+    }, async function(payload) {
+      var newRow = payload.new;
+      if (!newRow || newRow.user_id === USER.id) return;
+      var coId = newRow.user_id;
+      if (USERDATA.coparentId) return;
+      USERDATA.coparentId = coId;
+      try {
+        var res = await _supabase.from('users').select('*').eq('id', coId).single();
+        var coName = res.data && res.data.name ? res.data.name.split(' ')[0] : 'Tu co-padre/madre';
+        if (res.data) CODATA = toCamel(res.data);
         var waitEl = $('onbWaitingForCoparent');
         if (waitEl) waitEl.style.display = 'none';
         var connEl = $('onbCoparentConnected');
@@ -378,16 +386,23 @@ function _watchForCoparentJoin() {
           connEl.classList.remove('hidden');
           connEl.textContent = '🎉 ¡' + coName + ' se conectó! Entrando…';
         }
+        if (_coparentWatcher && _coparentWatcher.unsubscribe) {
+          _coparentWatcher.unsubscribe();
+          _coparentWatcher = null;
+        }
         setTimeout(function() { finishOnboarding(); }, 1800);
-      }).catch(function() { finishOnboarding(); });
-    }
-  });
+      } catch(e) { finishOnboarding(); }
+    })
+    .subscribe();
 }
 
 async function finishOnboarding() {
-  if (typeof _coparentWatcher === 'function') { _coparentWatcher(); _coparentWatcher = null; }
+  if (_coparentWatcher && _coparentWatcher.unsubscribe) {
+    _coparentWatcher.unsubscribe();
+    _coparentWatcher = null;
+  }
   try {
-    await db.collection('users').doc(USER.uid).update({ onboardingCompleted: true });
+    await _supabase.from('users').update({ onboarding_completed: true }).eq('id', USER.id);
     USERDATA.onboardingCompleted = true;
   } catch(e) {
     console.error('[onboarding finish]', e);
@@ -402,35 +417,33 @@ function showOnbMsg(txt) { showMsg('onbMsg', txt, true); }
 
 async function generateOnbCalendar(config, familyId) {
   var today = new Date();
-  var writes = [];
+  var rows = [];
   for (var m = 0; m < 24; m++) {
     var target = new Date(today.getFullYear(), today.getMonth() + m, 1);
     var year = target.getFullYear();
     var month = target.getMonth();
     var daysInMonth = new Date(year, month + 1, 0).getDate();
-    var custody = {};
     for (var day = 1; day <= daysInMonth; day++) {
       var date = new Date(year, month, day);
       var c = getOnbCustodyForDate(date, config);
-      if (c) custody[String(day)] = c;
+      if (c) {
+        var custodian = c === 'mama' ? 'p1' : c === 'papa' ? 'p2' : c;
+        var dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        rows.push({ family_id: familyId, date: dateStr, custodian: custodian, is_override: false });
+      }
     }
-    var key = year + '-' + String(month + 1).padStart(2, '0');
-    writes.push(
-      db.collection('families').doc(familyId).collection('calendar').doc(key)
-        .set({ custody: custody }, { merge: true })
-    );
   }
-  await Promise.all(writes);
+  // Upsert in batches of 500 to avoid payload limits
+  var BATCH = 500;
+  for (var i = 0; i < rows.length; i += BATCH) {
+    await _supabase.from('custody_calendar').upsert(rows.slice(i, i + BATCH), { onConflict: 'family_id,date' });
+  }
 }
 
 function getOnbCustodyForDate(date, config) {
   if (!config || config.type === 'undefined' || config.type === 'custom') return null;
 
   if (config.type === 'alternating_weeks') {
-    // Parse startDate as LOCAL midnight to match how date objects are created below.
-    // new Date('YYYY-MM-DD') parses as UTC midnight; in UTC-3/4 that rolls back to the
-    // previous local day, shifting every 7-day block boundary by one day and causing
-    // Sunday to land in the wrong block.
     var sp = config.startDate.split('-');
     var start = new Date(Number(sp[0]), Number(sp[1]) - 1, Number(sp[2]));
     var d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -471,9 +484,9 @@ async function showCoparentWelcome() {
     $('copInviterName').textContent = CODATA.name.split(' ')[0];
   }
   try {
-    var famSnap = await db.collection('families').doc(FAMILY_ID).get();
-    if (famSnap.exists) {
-      var cfg = famSnap.data().custodyConfig;
+    var res = await _supabase.from('families').select('custody_config').eq('id', FAMILY_ID).single();
+    if (res.data) {
+      var cfg = res.data.custody_config;
       var labels = { alternating_weeks: 'Semana por medio', fixed_days: 'Días fijos', custom: 'Calendario personalizado', undefined: 'Sin rutina definida' };
       if ($('copCustodyType')) $('copCustodyType').textContent = cfg ? (labels[cfg.type] || 'Por configurar') : 'Por configurar';
       if ($('copChangeDay') && cfg && cfg.changeDay != null) {
@@ -491,7 +504,7 @@ async function showCoparentWelcome() {
 
 async function acceptCoparentInvite() {
   try {
-    await db.collection('users').doc(USER.uid).update({ onboardingCompleted: true });
+    await _supabase.from('users').update({ onboarding_completed: true }).eq('id', USER.id);
     USERDATA.onboardingCompleted = true;
   } catch(e) { console.error('[cop accept]', e); }
   hide('coparentWelcomeScreen');
