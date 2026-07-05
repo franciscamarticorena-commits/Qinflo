@@ -17,9 +17,6 @@ jobs:
       - name: Write service account credentials
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_QUINFLO }}' > /tmp/sa.json
 
-      - name: Install Functions dependencies
-        run: npm ci --prefix functions
-
       - name: Deploy Hosting
         run: firebase deploy --only hosting --project quinflo
         env:
