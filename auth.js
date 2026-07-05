@@ -80,16 +80,23 @@ async function doRegister() {
       mama_mama: ['Mamá 1', 'Mamá 2']
     };
     var fc = { type: ft, p1Label: labels[ft][0], p2Label: labels[ft][1] };
+    var familyId = (crypto && crypto.randomUUID) ? crypto.randomUUID() :
+      'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0;
+        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+      });
 
     // 2. Crear familia
-    var { data: family, error: famErr } = await supa.from('families').insert({
+    var { error: famErr } = await supa.from('families').insert({
+      id:         familyId,
       name:       'Familia ' + name.split(' ')[0],
       created_by: uid,
       config:     fc,
       p1_uid:     role === 'p1' ? uid : null,
       p2_uid:     role === 'p2' ? uid : null
-    }).select().single();
+    });
     if (famErr) throw famErr;
+    var family = { id: familyId };
 
     // 3. Crear membresía
     var { error: mbErr } = await supa.from('family_members').insert({
@@ -199,35 +206,44 @@ async function createGoogleUserProfile(user) {
              user.user_metadata?.name ||
              (user.email ? user.email.split('@')[0] : 'Usuario');
   var inviteCode = genCode();
+  // Generate UUID client-side to avoid RLS SELECT issue after INSERT
+  var familyId = (crypto && crypto.randomUUID) ? crypto.randomUUID() :
+    'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
 
   try {
-    var { data: family, error: famErr } = await supa.from('families').insert({
+    var { error: famErr } = await supa.from('families').insert({
+      id:         familyId,
       name:       'Familia ' + name.split(' ')[0],
       created_by: user.id,
       config:     fc,
       p1_uid:     user.id
-    }).select().single();
+    });
     if (famErr) throw famErr;
 
-    await supa.from('family_members').insert({ family_id: family.id, user_id: user.id, role });
+    var { error: mbErr } = await supa.from('family_members').insert({ family_id: familyId, user_id: user.id, role });
+    if (mbErr) throw mbErr;
 
-    await supa.from('invitations').insert({
-      family_id:  family.id,
+    var { error: invErr } = await supa.from('invitations').insert({
+      family_id:  familyId,
       invited_by: user.id,
       token:      inviteCode,
       role:       'p2'
     });
+    if (invErr) throw invErr;
 
     await supa.from('users').update({ onboarding_completed: false }).eq('id', user.id);
 
     USERDATA = {
       name, email: user.email || '', role, familyConfig: fc,
-      familyId:           family.id,
+      familyId:           familyId,
       coparentId:         null,
       inviteCode:         inviteCode,
       onboardingCompleted: false
     };
-    FAMILY_ID = family.id;
+    FAMILY_ID = familyId;
     updateLabels();
 
     var pending = localStorage.getItem('pendingInvite');
