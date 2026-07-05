@@ -1,9 +1,9 @@
-const QINFLO_CACHE = 'qinflo-cache-v24';
+const QINFLO_CACHE = 'qinflo-cache-v25';
 const STATIC_ASSETS = [
   './',
   './index.html',
   './styles.css',
-  './firebase.js',
+  './supabase.js',
   './state.js',
   './auth.js',
   './connect.js',
@@ -44,13 +44,10 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   const url = event.request.url;
-  // Never intercept Firebase auth redirect handler or Firebase API calls —
-  // doing so breaks signInWithRedirect by returning index.html instead of
-  // the auth response, causing an infinite redirect loop.
+  // Never intercept Supabase auth calls or external API calls
   if (url.includes('/__/auth/') ||
-      url.includes('firestore.googleapis.com') ||
-      url.includes('identitytoolkit.googleapis.com') ||
-      url.includes('securetoken.googleapis.com')) return;
+      url.includes('supabase.co') ||
+      url.includes('googleapis.com')) return;
   event.respondWith(
     caches.match(event.request).then(cached => cached || fetch(event.request).catch(() => caches.match('./index.html')))
   );
