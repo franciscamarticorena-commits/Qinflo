@@ -1,6 +1,16 @@
 # Qinflo — Contexto del proyecto para Claude
 
-> **Documentación de transferencia (2026-07-12)**: además de este archivo, existen `PROJECT_STATUS.md` (estado exhaustivo: arquitectura, modelo de datos, bugs verificados línea por línea contra el código y el schema real, errores ya resueltos con su causa raíz, riesgos técnicos) y `CLAUDE_HANDOFF.md` (resumen operativo para arrancar una sesión nueva — qué no repetir, qué no revertir, los bugs críticos activos). **Léelos** antes de asumir que este archivo por sí solo tiene el contexto completo — se detectaron un par de afirmaciones en este `CLAUDE.md` que ya no coinciden con el comportamiento real del código (ver nota sobre eventos privados más abajo).
+> **Documentación de transferencia (2026-07-12)**: este proyecto mantiene un set de documentos sincronizados, cada uno con un propósito distinto — no dupliques contenido libremente entre ellos, y **léelos** antes de asumir que este archivo por sí solo tiene el contexto completo (se detectaron afirmaciones en este `CLAUDE.md` que no coincidían con el comportamiento real del código — ver nota sobre eventos privados más abajo, ya corregida).
+>
+> - `HANDOFF.md` — transferencia de conocimiento exhaustiva: arquitectura, decisiones técnicas/UX con su motivo, qué se intentó y no funcionó, errores ya resueltos, bugs pendientes, dependencias entre módulos, convenciones, riesgos, supuestos del código, deuda técnica, y Lessons Learned de la sesión de auditoría. **El documento operativo principal si vas a tocar código.**
+> - `AI_MEMORY.md` — manual de comportamiento para sesiones de IA: patrones a seguir, errores a evitar, decisiones ya cerradas que no deben reabrirse sin pedido explícito del usuario. Léelo antes de escribir código nuevo.
+> - `ARCHITECTURE.md` — arquitectura técnica como referencia standalone.
+> - `ROADMAP.md` — roadmap de producto + técnico consolidado y priorizado.
+> - `CHANGELOG.md` — historial de fases y commits significativos.
+> - `PROJECT_STATUS.md` / `CLAUDE_HANDOFF.md` — auditoría original (turno previo de la misma sesión de documentación) con cita textual del código de cada bug encontrado; `HANDOFF.md` los reorganiza y completa, pero el detalle línea-por-línea sigue ahí.
+> - `README.md` — punto de entrada del repo, estructura y stack reales.
+>
+> Si dos documentos se contradicen, este archivo y `HANDOFF.md` son la fuente de verdad más reciente.
 
 ## Visión de producto (norte estratégico)
 
