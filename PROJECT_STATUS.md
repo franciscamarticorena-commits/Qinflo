@@ -2,7 +2,7 @@
 
 > **Generado**: 2026-07-12, al cierre de una sesión de trabajo en la rama `claude/resume-main-14rwyc` (sincronizada 1:1 con `main`, commit `9fbe25d`).
 > **Propósito**: Que cualquier persona (o instancia de Claude) que retome el proyecto tenga el 100% del contexto sin tener que releer commits, adivinar decisiones ni re-descubrir bugs ya identificados.
-> **Cómo usar este documento**: Es la fuente de verdad exhaustiva. `CLAUDE_HANDOFF.md` (en la raíz) es su resumen operativo para arrancar una sesión nueva de Claude Code — léanse juntos. `CLAUDE.md` sigue siendo el archivo de memoria persistente del proyecto (se actualiza en cada sesión); este documento es una foto congelada, más profunda, del momento en que se escribió.
+> **Cómo usar este documento**: Es la fuente de verdad exhaustiva de detalle línea-por-línea (bugs citados textual contra el código). `CLAUDE.md` sigue siendo el archivo de memoria persistente del proyecto (se actualiza en cada sesión); este documento es una foto congelada, más profunda, del momento en que se escribió. **Nota de una sesión posterior (mismo día)**: este documento originalmente convivía con `CLAUDE_HANDOFF.md` como su resumen operativo — ese archivo se eliminó por duplicar el propósito de `HANDOFF.md` (creado después, más completo) y generar ambigüedad de nombre entre "handoffs". `HANDOFF.md` es hoy el documento operativo de referencia; este archivo sigue vivo solo por su detalle línea-por-línea, no releas las referencias más abajo a `CLAUDE_HANDOFF.md` como si el archivo existiera.
 
 ---
 
@@ -188,9 +188,10 @@ Qinflo/
 ├── terms.html / privacy.html           # Páginas legales (T&C, privacidad) enlazadas desde onboarding
 │
 ├── CLAUDE.md                           # Memoria persistente del proyecto (leer siempre primero)
-├── PROJECT_STATUS.md                   # Este documento
-├── CLAUDE_HANDOFF.md                   # Handoff operativo para la próxima sesión de Claude
-├── README.md / "README 2.md"           # ⚠️ Obsoletos — describen una estructura js/css que no existe. Ver sección 15.
+├── PROJECT_STATUS.md                   # Este documento (detalle línea-por-línea de bugs)
+├── HANDOFF.md                          # Documento operativo principal (sesión posterior, más completo)
+├── AI_MEMORY.md, ARCHITECTURE.md, ROADMAP.md, CHANGELOG.md  # Añadidos en sesión posterior — ver HANDOFF.md
+├── README.md                           # Reescrito en sesión posterior para reflejar esta misma estructura
 │
 └── — Archivos Firebase huérfanos (no referenciados por index.html, dead code en el repo) —
     ├── firebase.js                     # Cliente Firebase — YA NO SE IMPORTA en index.html
@@ -669,7 +670,7 @@ Este commit documenta **tres causas raíz relacionadas** encontradas y arreglada
 
 ## 19. Próximos pasos priorizados
 
-Combinando el roadmap de producto explícito de `CLAUDE.md`, el roadmap técnico pendiente también explícito ahí, y los hallazgos de esta auditoría — en el orden en que se recomienda abordarlos (no necesariamente el orden en que se preguntará al usuario, ver `CLAUDE_HANDOFF.md` para cómo se dejó la conversación):
+Combinando el roadmap de producto explícito de `CLAUDE.md`, el roadmap técnico pendiente también explícito ahí, y los hallazgos de esta auditoría — en el orden en que se recomienda abordarlos (la versión consolidada y priorizada de esta lista, ya actualizada en sesiones posteriores, vive en `ROADMAP.md` y `HANDOFF.md` sección 12):
 
 ### Urgente (bugs activos en producción, sin roadmap explícito previo — hallazgo de esta sesión)
 1. Arreglar `children.js` (`saveKid()` y el insert de hijos en `onboarding.js saveOnboardingData()`) para que envíe solo columnas reales de la tabla `children`, en snake_case. Decidir qué hacer con los campos que la UI captura pero la tabla no soporta hoy (`age` es derivable de `birth_date` y no necesita persistirse; `clinic`, `schoolInsurance`, `bloodType` requieren una migración SQL para agregar esas columnas si se quieren conservar, o quitar esos campos del formulario si no).

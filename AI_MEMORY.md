@@ -85,7 +85,7 @@ Si una sesión arranca con algo genérico ("retomemos", "sigamos", "¿qué falta
 3. **Activar observabilidad (Sentry)** — apalancamiento alto: destaparía automáticamente bugs no documentados aquí.
 4. **Roadmap de producto** (Timeline histórico, Confirmaciones, Google Calendar) — features nuevas, la prioridad más baja de las cuatro salvo pedido explícito del usuario.
 
-No le preguntes al usuario "¿con qué seguimos?" de forma completamente abierta si ya existe un roadmap priorizado escrito — ofrécele las opciones concretas ya ordenadas (ver ejemplo de cómo se hizo esto al final de `HANDOFF.md`/`CLAUDE_HANDOFF.md`) para que decidir sea más rápido que releer todo el roadmap desde cero.
+No le preguntes al usuario "¿con qué seguimos?" de forma completamente abierta si ya existe un roadmap priorizado escrito — ofrécele las opciones concretas ya ordenadas (ver `HANDOFF.md` sección 12 o `ROADMAP.md`) para que decidir sea más rápido que releer todo el roadmap desde cero.
 
 ---
 

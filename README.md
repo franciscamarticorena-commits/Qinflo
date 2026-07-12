@@ -18,7 +18,7 @@ Este repo mantiene documentación extensa y activamente sincronizada con el cód
 | `ARCHITECTURE.md` | Arquitectura técnica como referencia standalone |
 | `ROADMAP.md` | Roadmap de producto + técnico consolidado, priorizado |
 | `CHANGELOG.md` | Historial de fases y commits significativos |
-| `PROJECT_STATUS.md` / `CLAUDE_HANDOFF.md` | Auditoría detallada de una sesión previa, con cita textual de cada bug encontrado en el código |
+| `PROJECT_STATUS.md` | Auditoría detallada de una sesión previa, con cita textual de cada bug encontrado en el código |
 
 Si dos documentos parecen contradecirse, `HANDOFF.md` y `CLAUDE.md` son la fuente de verdad más reciente. Ante cualquier duda sobre comportamiento real, verifica contra el código fuente y `supabase/migrations/*.sql`.
 

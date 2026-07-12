@@ -7,8 +7,10 @@
 > - `ARCHITECTURE.md` — arquitectura técnica como referencia standalone.
 > - `ROADMAP.md` — roadmap de producto + técnico consolidado y priorizado.
 > - `CHANGELOG.md` — historial de fases y commits significativos.
-> - `PROJECT_STATUS.md` / `CLAUDE_HANDOFF.md` — auditoría original (turno previo de la misma sesión de documentación) con cita textual del código de cada bug encontrado; `HANDOFF.md` los reorganiza y completa, pero el detalle línea-por-línea sigue ahí.
+> - `PROJECT_STATUS.md` — auditoría original (turno previo de la misma sesión de documentación) con cita textual del código de cada bug encontrado; `HANDOFF.md` la reorganiza y completa, pero el detalle línea-por-línea sigue ahí.
 > - `README.md` — punto de entrada del repo, estructura y stack reales.
+>
+> **Nota**: existió un archivo `CLAUDE_HANDOFF.md` (versión operativa más corta, del mismo turno que `PROJECT_STATUS.md`) que se **eliminó** por duplicar el propósito de `HANDOFF.md` y generar ambigüedad real ("¿cuál de los dos 'handoff' leo?") en sesiones nuevas sin este contexto. `HANDOFF.md` es ahora el único documento operativo con ese nombre — si ves una referencia vieja a `CLAUDE_HANDOFF.md` en algún commit histórico, apunta a contenido ya absorbido por `HANDOFF.md`.
 >
 > Si dos documentos se contradicen, este archivo y `HANDOFF.md` son la fuente de verdad más reciente.
 

@@ -10,7 +10,7 @@ Sesión dedicada exclusivamente a auditoría y documentación, sin cambios de c�
 
 - Auditoría profunda de los 17 módulos `.js` contra `supabase/migrations/001_initial_schema.sql` y `002_migration_compatibility.sql`.
 - `PROJECT_STATUS.md` — estado exhaustivo con cita textual de cada bug encontrado.
-- `CLAUDE_HANDOFF.md` — handoff operativo inicial.
+- `CLAUDE_HANDOFF.md` — handoff operativo inicial (creado en el primer turno de esta sesión, **eliminado más tarde el mismo día** — ver entrada siguiente).
 - `HANDOFF.md` — transferencia de conocimiento completa (segunda ronda, más estructurada, con dependencias entre módulos, supuestos del código, y sección de Lessons Learned).
 - `AI_MEMORY.md` — memoria de comportamiento/patrones para sesiones de IA futuras.
 - `ARCHITECTURE.md` — arquitectura como documento de referencia standalone (no existía antes).
@@ -27,6 +27,16 @@ Sesión dedicada exclusivamente a auditoría y documentación, sin cambios de c�
 - 🟡 Actividad de propuestas logueada con variables indefinidas en dos puntos distintos del código.
 - 🟡 Timestamps de mensajes nunca se muestran (API de Firestore Timestamp sobre datos de Supabase).
 - 🟢 `user.uid` en vez de `user.id` en `observability.js` (latente, inofensivo mientras Sentry/PostHog estén sin llaves).
+
+---
+
+## 2026-07-12 (continuación) — Corrección de nomenclatura de documentación
+
+Al abrir una sesión nueva para continuar el trabajo, el usuario le pidió "leé el handoff" y la IA de esa sesión preguntó de vuelta desde qué archivo — porque existían simultáneamente `HANDOFF.md` y `CLAUDE_HANDOFF.md`, ambos con el mismo propósito operativo aparente. Fix aplicado en la sesión original antes de cerrarla:
+
+- `CLAUDE_HANDOFF.md` **eliminado** — su contenido ya estaba absorbido y ampliado en `HANDOFF.md`.
+- Corregidas las ~7 referencias cruzadas a `CLAUDE_HANDOFF.md` en `CLAUDE.md`, `README.md`, `PROJECT_STATUS.md`, `AI_MEMORY.md` y `HANDOFF.md` (este archivo incluido).
+- Agregada una lección nueva a `HANDOFF.md` sección 16 (Lessons Learned) documentando el incidente, para que un futuro set de documentos nuevo no repita el mismo error de nomenclatura.
 
 ---
 
