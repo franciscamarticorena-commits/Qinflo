@@ -1,5 +1,7 @@
 # Qinflo — Contexto del proyecto para Claude
 
+> **Documentación de transferencia (2026-07-12)**: además de este archivo, existen `PROJECT_STATUS.md` (estado exhaustivo: arquitectura, modelo de datos, bugs verificados línea por línea contra el código y el schema real, errores ya resueltos con su causa raíz, riesgos técnicos) y `CLAUDE_HANDOFF.md` (resumen operativo para arrancar una sesión nueva — qué no repetir, qué no revertir, los bugs críticos activos). **Léelos** antes de asumir que este archivo por sí solo tiene el contexto completo — se detectaron un par de afirmaciones en este `CLAUDE.md` que ya no coinciden con el comportamiento real del código (ver nota sobre eventos privados más abajo).
+
 ## Visión de producto (norte estratégico)
 
 > "Qinflo no reemplaza al otro padre o madre. Reemplaza la necesidad de recordar y volver a conversar lo mismo."
@@ -41,7 +43,7 @@ No incorporar: IA, chat complejo, transferencias de dinero, fotos, álbumes, geo
 
 ## Stack actual (POST-MIGRACIÓN)
 
-**Firebase fue reemplazado completamente por Supabase.** No hay ninguna referencia a Firebase en el código activo.
+**Firebase fue reemplazado completamente por Supabase.** No hay ninguna referencia a Firebase en el código activo cargado por `index.html`. **Sí quedan archivos huérfanos en el repo** que ya no se usan ni se cargan: `firebase.js`, `firebase-messaging-sw.js`, `firestore.rules`, `functions/` (3 Cloud Functions sobre triggers de Firestore que ya nunca se disparan). La CI (`firebase-hosting-deploy.yml`) todavía intenta desplegar Firestore Rules y Functions en cada push, con `continue-on-error: true` — no rompe nada pero es deuda técnica pendiente de limpiar (ver `PROJECT_STATUS.md` sección 13).
 
 - **Auth**: Supabase Auth (`supa.auth`) — email+password y Google OAuth
 - **DB**: Supabase PostgreSQL con RLS
@@ -139,15 +141,27 @@ Los loaders en `app-shell.js` aplican `toCamel()` y agregan alias para compatibi
 | 10 | **Migración completa Firebase → Supabase** — Auth, DB, Realtime, RLS, RPCs | `d5db018` |
 | 10b | Fix flujo recuperación contraseña — pantalla nueva clave post-reset | `e139535` |
 
+## Bugs conocidos activos en producción (hallazgo de auditoría 2026-07-12)
+
+Verificados leyendo el código real contra el schema real (`supabase/migrations/*.sql`), no son suposiciones. Detalle completo con líneas exactas y fix recomendado en `PROJECT_STATUS.md` sección 13 y 19.
+
+1. **🔴 `children.js` (Hijos) no persiste nada** — `saveKid()` envía columnas que no existen en la tabla (`birthDate`, `age`, `clinic`, `schoolInsurance`, `bloodType`, `created_by`). El insert falla pero el código no chequea `{ error }`, así que la UI parece funcionar y no guarda nada.
+2. **🔴 `documents.js` (Documentos) no persiste nada** — `saveDoc()` envía `type` con valores que violan su `CHECK` (esos valores pertenecen semánticamente a `category`), más `childId`/`url` que no son columnas reales.
+3. **🟠 Eventos privados no se pueden crear** — ver nota en "Decisiones de diseño importantes" arriba.
+
+Estos tres bugs probablemente llevan tiempo sin detectarse porque Sentry/PostHog están desactivados (sin observabilidad en producción). Son candidatos a **máxima prioridad** — más urgentes que cualquier ítem del roadmap de abajo, porque afectan a usuarios reales ahora mismo.
+
 ## Roadmap pendiente (próxima sesión primero)
 
 | Tarea | Descripción | Prioridad |
 |-------|-------------|-----------|
+| Arreglar bugs de Hijos/Documentos/Eventos privados | Ver sección de arriba y `PROJECT_STATUS.md` sección 19 | **Urgente** |
 | SMTP personalizado | Configurar Resend para emails desde `@qinflo.cl` (no spam) | **Alta** |
 | Emails en español | Personalizar plantilla de recuperación de contraseña en Supabase | Alta |
 | Confirmación de email | Revisar si está activada en Supabase Auth y si conviene desactivarla | Alta |
 | Google OAuth test | Verificar que el login con Google funciona end-to-end | Alta |
-| Push notifications | FCM para mensajes nuevos, cambios pendientes, recordatorios | Baja |
+| Activar Sentry | Aunque sea free tier — hoy no hay ninguna visibilidad de errores en producción | Media |
+| Push notifications | Rehacer sobre Supabase (Edge Functions/Web Push) — el código FCM actual apunta a Firestore, que ya no se usa | Baja |
 
 ## Decisiones de diseño importantes
 - **Supabase JS v2** (no modular), instancia global `supa`, NO `supabase` (nombre reservado por el UMD)
@@ -156,7 +170,7 @@ Los loaders en `app-shell.js` aplican `toCamel()` y agregan alias para compatibi
 - **Labels dinámicos**: `p1()` y `p2()` devuelven el label según `familyConfig` (ej. "Mamá" / "Papá")
 - **`accept_invitation` RPC**: atómica, reemplaza el batch de Firestore. Idempotente.
 - **Overrides de custodia**: en `custody_months.overrides` JSONB. Sin edición directa — solo flujo propuesta/aprobación.
-- **Eventos privados**: `participants === 'p1'`/`'p2'` — solo visible para el rol correspondiente
+- **Eventos privados (intención de diseño, NO el comportamiento actual)**: la tabla `events.participants` tiene `CHECK (participants IN ('both','p1','p2'))`, pero `events.js` y el `<select id="evParticipants">` en `index.html` usan `'mama'/'papa'/'both'`. Resultado: **crear o editar un evento con destinatario "Mamá" o "Papá" falla el INSERT/UPDATE hoy** (viola el CHECK constraint; `saveEvent()` sí muestra un `alert()` de error). Ver `PROJECT_STATUS.md` sección 13 para el detalle y sección 19 para el fix recomendado.
 - **Soft deletes**: `deleted_at = nowISO()` en lugar de DELETE para expenses, children, documents, agreements, reminders
 - **Mensajes inmutables**: sin política DELETE en RLS — nadie puede borrar mensajes por diseño
 - **`USER.id`** (Supabase) — nunca `USER.uid` (era Firebase). Si aparece `.uid` en código es un bug.
