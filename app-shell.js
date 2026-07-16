@@ -490,7 +490,7 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 
 // --- TABS ---------------------------------------------------
-var INFO_SUBTABS = ['children', 'agreements', 'reminders', 'recursos', 'documents'];
+var INFO_SUBTABS = ['agreements', 'reminders', 'recursos', 'documents'];
 
 function switchTab(tab) {
   ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'reminders', 'recursos', 'documents', 'info'].forEach(function(t) {

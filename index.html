@@ -514,6 +514,9 @@
     <button class="active" data-tab="today">
       <i data-lucide="home"></i> Hoy
     </button>
+    <button data-tab="children">
+      <i data-lucide="baby"></i> Hijos
+    </button>
     <button data-tab="calendar">
       <i data-lucide="calendar-days"></i> Calendario
     </button>
@@ -817,10 +820,7 @@
 <!-- -- HIJOS --------------------------------------------- -->
 <div id="tab-children" class="hidden">
   <div class="section-header">
-    <div>
-      <button class="btn-outline" style="font-size:11px;padding:4px 10px;margin-bottom:8px" onclick="switchTab('info')">← Más</button>
-      <div class="section-title"><h2>Hijos</h2><p>Información importante</p></div>
-    </div>
+    <div class="section-title"><h2>Hijos</h2><p>Información importante</p></div>
     <button class="btn-sm" id="openKidFormBtn"><i data-lucide="plus"></i> Agregar</button>
   </div>
   <div id="kidForm" class="hidden form-box">
@@ -972,7 +972,6 @@
 <div id="tab-info" class="hidden">
   <p class="section-lbl">Info</p>
   <div class="card" style="padding:0;overflow:hidden;margin-bottom:24px">
-    <button onclick="switchTab('children')" class="info-nav-btn">Hijos<span>›</span></button>
     <button onclick="switchTab('agreements')" class="info-nav-btn">Acuerdos<span>›</span></button>
     <button onclick="switchTab('reminders')" class="info-nav-btn" style="border-bottom:none">Avisos<span>›</span></button>
   </div>
