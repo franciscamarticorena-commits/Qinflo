@@ -3,9 +3,10 @@ var editingRemId = null;
 
 async function saveRem() {
   var title = $('remTitle').value.trim(), date = $('remDate').value;
+  var notes = $('remNotes') ? $('remNotes').value.trim() : '';
   if (!title || !date) return;
   if (editingRemId) {
-    await supa.from('reminders').update({ title: title, date: date, assigned_to: $('remFor').value }).eq('id', editingRemId);
+    await supa.from('reminders').update({ title: title, date: date, assigned_to: $('remFor').value, notes: notes || null }).eq('id', editingRemId);
     editingRemId = null;
   } else {
     await supa.from('reminders').insert({
@@ -13,11 +14,13 @@ async function saveRem() {
       title:       title,
       date:        date,
       assigned_to: $('remFor').value,
+      notes:       notes || null,
       status:      'pending',
       created_by:  USER.id
     });
   }
   $('remTitle').value = ''; $('remDate').value = '';
+  if ($('remNotes')) $('remNotes').value = '';
   var hdr = document.querySelector('#remForm p');
   if (hdr) hdr.textContent = 'Nuevo aviso';
   hide('remForm');
@@ -26,6 +29,7 @@ async function saveRem() {
 function cancelRemForm() {
   editingRemId = null;
   $('remTitle').value = ''; $('remDate').value = '';
+  if ($('remNotes')) $('remNotes').value = '';
   var hdr = document.querySelector('#remForm p');
   if (hdr) hdr.textContent = 'Nuevo aviso';
   hide('remForm');
@@ -36,6 +40,7 @@ function openRemEdit(r) {
   $('remTitle').value = r.title || '';
   $('remDate').value = r.date || '';
   $('remFor').value = r.for || 'both';
+  if ($('remNotes')) $('remNotes').value = r.notes || '';
   var hdr = document.querySelector('#remForm p');
   if (hdr) hdr.textContent = 'Editar aviso';
   $('remForm').classList.remove('hidden');
@@ -73,6 +78,7 @@ function renderReminders() {
           '</div>' +
           '<div class="rem-title">' + r.title + '</div>' +
           '<div class="rem-meta">' + d.toLocaleDateString('es-CL', { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '</div>' +
+          (r.notes ? '<div class="rem-meta" style="margin-top:4px;color:var(--text)">' + r.notes + '</div>' : '') +
         '</div>' +
         '<div style="display:flex;gap:7px">' +
           '<button class="btn-outline edit-rem-btn" style="padding:5px 8px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
