@@ -332,14 +332,16 @@ async function saveOnboardingData(includeKids) {
       await generateOnbCalendar(config, FAMILY_ID);
     }
     if (includeKids && onbKidsList.length > 0) {
-      await Promise.all(onbKidsList.map(function(kid) {
-        return supa.from('children').insert({
+      for (var i = 0; i < onbKidsList.length; i++) {
+        var kid = onbKidsList[i];
+        var { error: kidErr } = await supa.from('children').insert({
           name:       kid.name,
           birth_date: kid.birthDate || null,
           family_id:  FAMILY_ID,
           created_at: nowISO()
         });
-      }));
+        if (kidErr) console.error('[onboarding save] hijo no guardado:', kid.name, kidErr);
+      }
     }
     showOnbPanel('onbPanelInvite');
     updateOnbProgress(5, 5, 'Invitar al otro padre/madre');
