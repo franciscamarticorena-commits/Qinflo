@@ -435,6 +435,10 @@ main { max-width: 880px; margin: 0 auto; padding: 24px 16px 80px; }
   width: 56%; height: 3px; border-radius: 999px;
   background: var(--warn); opacity: .55; margin-top: 2px;
 }
+.outing-line {
+  width: 56%; height: 3px; border-radius: 999px;
+  background: var(--accent); opacity: .55; margin-top: 2px;
+}
 .prop-flag {
   position: absolute; top: 3px; right: 3px;
   font-size: 8px; line-height: 1; padding: 2px 4px; border-radius: 999px;

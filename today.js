@@ -264,9 +264,23 @@ function _todayCustody(now) {
   var kidsBtn = custody === 'transition'
     ? '<button class="btn-outline" style="margin-top:14px;font-size:12px;padding:8px 16px" onclick="confirmKidsWithMe(this)">Los niños ya están conmigo ✓</button>'
     : '';
+  var outingsHtml = _todayOutingsHtml(now);
   el.innerHTML =
     '<div style="font-size:24px;font-weight:700;color:var(--text);letter-spacing:-.4px">' +
-    mainHtml + '</div>' + subHtml + nextHtml + kidsBtn;
+    mainHtml + '</div>' + subHtml + outingsHtml + nextHtml + kidsBtn;
+}
+
+function _todayOutingsHtml(now) {
+  if (typeof outingsForDay !== 'function') return '';
+  var outs = outingsForDay(now.getFullYear(), now.getMonth(), now.getDate());
+  if (!outs.length) return '';
+  return outs.map(function(o) {
+    var who = o.pickedUpByRole === 'p1' ? p1() : p2();
+    var names = typeof _outingChildNames === 'function' ? _outingChildNames(o.childIds) : '';
+    var timeRange = o.startTime + (o.endTime ? ' – ' + o.endTime : '');
+    return '<div style="font-size:12px;color:var(--accent);margin-top:8px;background:rgba(216,164,95,.1);border-radius:8px;padding:7px 10px">' +
+      '🚗 ' + who + ' retira a ' + names + ' · ' + timeRange + '</div>';
+  }).join('');
 }
 
 function _todayBalance() {

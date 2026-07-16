@@ -139,6 +139,7 @@ function renderCalendar() {
     var rems = remindersForDay(d);
     var prop = pendingProposalForDay(d);
     var hasEv = typeof eventsForDay === 'function' && eventsForDay(calYear, calMonth, d).length > 0;
+    var hasOut = typeof outingsForDay === 'function' && outingsForDay(calYear, calMonth, d).length > 0;
     var btn = document.createElement('button');
     btn.className = 'cal-day ' + c;
     if (calYear === now.getFullYear() && calMonth === now.getMonth() && d === now.getDate()) btn.classList.add('today');
@@ -146,7 +147,7 @@ function renderCalendar() {
     if (calFilter !== 'both' && c !== 'none' && c !== calFilter && c !== 'transition') {
       btn.style.opacity = '0.25';
     }
-    btn.innerHTML = (prop ? '<span class="prop-flag">Pend.</span>' : '') + '<div class="cal-num">' + d + '</div>' + custodySymbol(c) + (hasEv ? '<div class="event-line" title="Evento"></div>' : '') + (rems.length ? '<div class="reminder-line" title="Recordatorio"></div>' : '');
+    btn.innerHTML = (prop ? '<span class="prop-flag">Pend.</span>' : '') + '<div class="cal-num">' + d + '</div>' + custodySymbol(c) + (hasEv ? '<div class="event-line" title="Evento"></div>' : '') + (hasOut ? '<div class="outing-line" title="Retiro temporal"></div>' : '') + (rems.length ? '<div class="reminder-line" title="Recordatorio"></div>' : '');
     (function(day) {
       btn.addEventListener('click', function() { selDay = day; renderCalendar(); renderDayDetail(); });
     })(d);
@@ -182,6 +183,12 @@ function renderDayDetail() {
   if (typeof renderEventsForDay === 'function') {
     var evHtml = renderEventsForDay(selDay);
     if (evHtml) html += _detailSectionHdr('Eventos') + evHtml;
+  }
+
+  // Temporary outings section
+  if (typeof renderOutingsForDay === 'function') {
+    var outHtml = renderOutingsForDay(selDay);
+    if (outHtml) html += _detailSectionHdr('Retiros temporales') + outHtml;
   }
 
   // Reminders section

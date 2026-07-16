@@ -215,7 +215,8 @@ async function setupListeners() {
     loadCalendar(),
     loadDocuments(),
     loadSettlements(),
-    loadActivity()
+    loadActivity(),
+    loadTemporaryOutings()
   ]);
 
   // Suscripción realtime: un canal por tabla
@@ -233,6 +234,7 @@ async function setupListeners() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'documents',       filter: 'family_id=eq.' + FAMILY_ID }, loadDocuments)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'settlements',     filter: 'family_id=eq.' + FAMILY_ID }, loadSettlements)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs',   filter: 'family_id=eq.' + FAMILY_ID }, loadActivity)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'temporary_outings', filter: 'family_id=eq.' + FAMILY_ID }, loadTemporaryOutings)
     .subscribe();
 }
 
@@ -345,6 +347,13 @@ async function loadSettlements() {
     return c;
   });
   renderExpenses();
+}
+
+async function loadTemporaryOutings() {
+  var { data } = await supa.from('temporary_outings').select('*').eq('family_id', FAMILY_ID).is('deleted_at', null).order('date', { ascending: true });
+  temporaryOutings = rowsToCamel(data);
+  if (typeof renderCalendar === 'function') renderCalendar();
+  renderToday();
 }
 
 async function loadActivity() {

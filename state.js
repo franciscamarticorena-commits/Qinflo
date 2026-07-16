@@ -5,7 +5,7 @@ let IS_ONBOARDING_ACTIVE = false;
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
 let selDay = null, custodyMap = {}, calEventsMap = {}, custodyOverridesMap = {};
 let calFilter = 'both';
-let expenses = [], messages = [], children = [], agreements = [], reminders = [], proposals = [], events = [], documents = [], settlements = [], activityLog = [];
+let expenses = [], messages = [], children = [], agreements = [], reminders = [], proposals = [], events = [], documents = [], settlements = [], activityLog = [], temporaryOutings = [];
 let expPeriod = 'week', expCurrency = 'CLP', UF = 38650;
 let expandedAgr = null;
 
