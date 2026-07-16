@@ -332,9 +332,12 @@ async function saveOnboardingData(includeKids) {
     }
     if (includeKids && onbKidsList.length > 0) {
       await Promise.all(onbKidsList.map(function(kid) {
-        return supa.from('children').insert(
-          Object.assign({}, kid, { family_id: FAMILY_ID, created_at: nowISO(), created_by: USER ? USER.id : null })
-        );
+        return supa.from('children').insert({
+          name:       kid.name,
+          birth_date: kid.birthDate || null,
+          family_id:  FAMILY_ID,
+          created_at: nowISO()
+        });
       }));
     }
     showOnbPanel('onbPanelInvite');

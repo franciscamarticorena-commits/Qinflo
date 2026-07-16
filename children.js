@@ -27,15 +27,21 @@ async function saveKid() {
   var name = $('kidName').value.trim();
   if (!name) return;
   var data = {
-    name: name, birthDate: $('kidBirth').value, age: $('kidBirth').value ? calcAge($('kidBirth').value) : $('kidAge').value, school: $('kidSchool').value,
-    doctor: $('kidDoctor').value, clinic: $('kidClinic').value, schoolInsurance: $('kidSchoolInsurance').value, allergies: $('kidAllergies').value,
-    bloodType: $('kidBlood').value, notes: $('kidNotes').value
+    name:             name,
+    birth_date:       $('kidBirth').value || null,
+    school:           $('kidSchool').value,
+    doctor:           $('kidDoctor').value,
+    clinic:           $('kidClinic').value,
+    school_insurance: $('kidSchoolInsurance').value,
+    allergies:        $('kidAllergies').value,
+    blood_type:       $('kidBlood').value,
+    notes:            $('kidNotes').value
   };
   var id = $('editKidId').value;
   if (id) {
     await supa.from('children').update({ ...data, updated_at: nowISO() }).eq('id', id);
   } else {
-    await supa.from('children').insert({ ...data, family_id: FAMILY_ID, created_by: USER.id });
+    await supa.from('children').insert({ ...data, family_id: FAMILY_ID });
   }
   hide('kidForm');
 }
