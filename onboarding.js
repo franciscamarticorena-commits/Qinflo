@@ -379,6 +379,10 @@ function buildOnbInviteLink() {
   if ($('onbInviteMsgPreview')) $('onbInviteMsgPreview').textContent = _onbInviteMessage(link);
   if ($('onbWhatsappBtn')) {
     $('onbWhatsappBtn').onclick = function() {
+      if (!$('onbInviteName') || !$('onbInviteName').value.trim()) {
+        showOnbMsg('Escribe el nombre del otro padre/madre antes de invitar.');
+        return;
+      }
       var msg = encodeURIComponent(_onbInviteMessage(link));
       window.open('https://wa.me/?text=' + msg, '_blank');
     };

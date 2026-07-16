@@ -19,6 +19,10 @@ function showConnectScreen() {
       if ($('connectInviteMsgPreview')) $('connectInviteMsgPreview').textContent = inviteMessage(link);
     };
     $('whatsappBtn').onclick = function() {
+      if (!$('connectInviteName') || !$('connectInviteName').value.trim()) {
+        showMsg('connectMsg', 'Escribe el nombre del otro padre/madre antes de invitar.', true);
+        return;
+      }
       var msg = encodeURIComponent(inviteMessage(link));
       window.open('https://wa.me/?text=' + msg, '_blank');
     };
