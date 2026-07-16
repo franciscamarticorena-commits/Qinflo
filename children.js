@@ -38,11 +38,18 @@ async function saveKid() {
     notes:            $('kidNotes').value
   };
   var id = $('editKidId').value;
+  var error;
   if (id) {
-    await supa.from('children').update({ ...data, updated_at: nowISO() }).eq('id', id);
+    ({ error } = await supa.from('children').update({ ...data, updated_at: nowISO() }).eq('id', id));
   } else {
-    await supa.from('children').insert({ ...data, family_id: FAMILY_ID });
+    ({ error } = await supa.from('children').insert({ ...data, family_id: FAMILY_ID }));
   }
+  if (error) {
+    console.error('[saveKid]', error);
+    alert('No se pudo guardar: ' + error.message);
+    return;
+  }
+  await loadChildren();
   hide('kidForm');
 }
 
