@@ -20,7 +20,7 @@ function renderResources() {
           '<span class="badge" style="background:rgba(95,124,110,.1);color:var(--primary);border:1px solid rgba(95,124,110,.2);height:fit-content">' + r.tag + '</span>' +
         '</div>' +
         '<div class="resource-desc">' + r.desc + '</div>' +
-        '<a href="' + r.link + '" target="_blank" class="resource-link">Acceder</a>' +
+        '<a href="' + r.link + '" class="resource-link">Acceder</a>' +
       '</div>';
     el.appendChild(card);
   });

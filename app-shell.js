@@ -180,7 +180,9 @@ function loadApp() {
   try {
     hide('authScreen'); hide('connectScreen'); show('app');
     updateLabels();
-    switchTab('today');
+    var lastTab = null;
+    try { lastTab = sessionStorage.getItem('qinfloLastTab'); } catch(e) {}
+    switchTab(APP_TABS.indexOf(lastTab) !== -1 ? lastTab : 'today');
     if (!FAMILY_ID) return;
     setupListeners();
     setupNotifications();
@@ -505,8 +507,10 @@ window.addEventListener('DOMContentLoaded', function() {
 // --- TABS ---------------------------------------------------
 var INFO_SUBTABS = ['agreements', 'recursos', 'documents'];
 
+var APP_TABS = ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'recursos', 'documents', 'info'];
+
 function switchTab(tab) {
-  ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'recursos', 'documents', 'info'].forEach(function(t) {
+  APP_TABS.forEach(function(t) {
     $('tab-' + t).classList.toggle('hidden', t !== tab);
   });
   document.querySelectorAll('#mainNav button').forEach(function(b) {
@@ -516,6 +520,7 @@ function switchTab(tab) {
   });
   if (tab === 'today') renderToday();
   if (tab === 'info') lucide.createIcons();
+  try { sessionStorage.setItem('qinfloLastTab', tab); } catch(e) {}
 }
 
 // --- PROFILE PANEL ------------------------------------------
