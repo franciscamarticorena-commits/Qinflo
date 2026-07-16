@@ -50,10 +50,33 @@ function identifyObservabilityUser(user, userData) {
 
 function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
+  var reg = null;
+  var refreshing = false;
+
+  // Cuando el nuevo service worker toma el control, recargamos una sola vez
+  // para que la pestaña/app abierta pase a usar el código nuevo.
+  navigator.serviceWorker.addEventListener('controllerchange', function() {
+    if (refreshing) return;
+    refreshing = true;
+    window.location.reload();
+  });
+
   window.addEventListener('load', function() {
-    navigator.serviceWorker.register('./service-worker.js').catch(function(err) {
+    navigator.serviceWorker.register('./service-worker.js').then(function(r) {
+      reg = r;
+    }).catch(function(err) {
       console.warn('Service worker no registrado:', err);
     });
+  });
+
+  // Como app instalada, Qinflo puede quedar abierta en segundo plano por
+  // días sin que el sistema vuelva a pedir service-worker.js. Al volver a
+  // primer plano forzamos ese chequeo, para no depender de cerrar sesión
+  // (o reinstalar la app) para ver los últimos cambios.
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible' && reg) {
+      reg.update().catch(function() {});
+    }
   });
 }
 
