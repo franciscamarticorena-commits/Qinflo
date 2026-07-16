@@ -2,12 +2,24 @@
 function showConnectScreen() {
   hide('authScreen'); hide('app'); show('connectScreen');
 
+  function inviteMessage(link) {
+    var otherName = $('connectInviteName') ? $('connectInviteName').value.trim().split(' ')[0] : '';
+    var myName = USERDATA && USERDATA.name ? USERDATA.name.split(' ')[0] : '';
+    var greeting = otherName ? ('Hola ' + otherName + '! ') : 'Hola! ';
+    var from = myName ? (myName + ' te invita') : 'Te invito';
+    return greeting + from + ' a conectarte en Qinflo para coordinar mejor los temas de nuestros hijos. Entra aqui: ' + link;
+  }
+
   function buildInviteLink(code) {
     var baseUrl = window.location.origin + window.location.pathname.replace(/index\.html$/, '');
     var link = baseUrl + '?invite=' + code;
     $('inviteLinkDisplay').textContent = link;
+    if ($('connectInviteMsgPreview')) $('connectInviteMsgPreview').textContent = inviteMessage(link);
+    if ($('connectInviteName')) $('connectInviteName').oninput = function() {
+      if ($('connectInviteMsgPreview')) $('connectInviteMsgPreview').textContent = inviteMessage(link);
+    };
     $('whatsappBtn').onclick = function() {
-      var msg = encodeURIComponent('Hola! Te invito a conectarte en Qinflo para coordinar mejor los temas de nuestros hijos. Entra aqui: ' + link);
+      var msg = encodeURIComponent(inviteMessage(link));
       window.open('https://wa.me/?text=' + msg, '_blank');
     };
   }

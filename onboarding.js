@@ -363,14 +363,23 @@ async function saveOnboardingData(includeKids) {
   }
 }
 
+function _onbInviteMessage(link) {
+  var otherName = $('onbInviteName') ? $('onbInviteName').value.trim().split(' ')[0] : '';
+  var myName = USERDATA.name ? USERDATA.name.split(' ')[0] : '';
+  var greeting = otherName ? ('Hola ' + otherName + '! ') : 'Hola! ';
+  var from = myName ? (myName + ' te invita') : 'Te invito';
+  return greeting + from + ' a conectarte en Qinflo para coordinar el cuidado de nuestros hijos. Entra aquí: ' + link;
+}
+
 function buildOnbInviteLink() {
   if (!USERDATA || !USERDATA.inviteCode) return;
   var baseUrl = window.location.origin + window.location.pathname.replace(/index\.html$/, '');
   var link = baseUrl + '?invite=' + USERDATA.inviteCode;
   if ($('onbInviteLinkDisplay')) $('onbInviteLinkDisplay').textContent = link;
+  if ($('onbInviteMsgPreview')) $('onbInviteMsgPreview').textContent = _onbInviteMessage(link);
   if ($('onbWhatsappBtn')) {
     $('onbWhatsappBtn').onclick = function() {
-      var msg = encodeURIComponent('Hola! Te invito a conectarte en Qinflo para coordinar el cuidado de nuestros hijos. Entra aquí: ' + link);
+      var msg = encodeURIComponent(_onbInviteMessage(link));
       window.open('https://wa.me/?text=' + msg, '_blank');
     };
   }
