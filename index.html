@@ -665,7 +665,7 @@
           <i data-lucide="plus"></i> Agregar evento
         </button>
         <button class="btn-outline" onclick="openOutingForm()" style="width:100%;justify-content:center;margin-bottom:14px;font-size:12px">
-          <i data-lucide="car"></i> Registrar retiro temporal
+          <i data-lucide="car"></i> Registrar salida temporal
         </button>
         <div style="border-top:1px solid var(--border);padding-top:10px">
           <button class="btn-outline" id="togglePropBtn" style="font-size:12px;width:100%;justify-content:center">
@@ -1107,10 +1107,10 @@
 <div id="outingModal" class="hidden" style="position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:flex-end">
   <div style="background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding:20px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-      <h3 id="outFormTitle" style="font-size:16px;font-weight:700;color:var(--text)">Nuevo retiro temporal</h3>
+      <h3 id="outFormTitle" style="font-size:16px;font-weight:700;color:var(--text)">Nueva salida temporal</h3>
       <button onclick="closeOutingForm()" style="background:var(--bg);border:1.5px solid var(--border);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--text-s);font-size:20px;font-family:inherit;line-height:1">&times;</button>
     </div>
-    <p style="font-size:12px;color:var(--text-s);margin:0 0 14px">Un retiro temporal no modifica la custodia del día — solo registra una salida por horas.</p>
+    <p style="font-size:12px;color:var(--text-s);margin:0 0 14px">Una salida temporal no modifica la custodia del día — solo registra una salida por horas.</p>
     <div style="display:grid;gap:10px">
       <div>
         <label class="lbl">Hijo(s) que retira</label>
@@ -1128,7 +1128,7 @@
       <div><label class="lbl">Motivo o actividad</label><textarea class="inp" id="outReason" placeholder="Ej: comida los miércoles, partido de fútbol, cine..." rows="2" style="resize:none;line-height:1.4"></textarea></div>
     </div>
     <div style="display:flex;gap:8px;margin-top:16px;padding-bottom:env(safe-area-inset-bottom,0px)">
-      <button class="btn-primary" style="flex:1" onclick="saveOuting()">Guardar retiro</button>
+      <button class="btn-primary" style="flex:1" onclick="saveOuting()">Guardar salida</button>
       <button class="btn-outline" onclick="closeOutingForm()">Cancelar</button>
     </div>
   </div>
@@ -1136,7 +1136,7 @@
 
 
 <script src="supabase.js?v=1"></script>
-<script src="state.js?v=10"></script>
+<script src="state.js?v=11"></script>
 <script src="auth.js?v=9"></script>
 <script src="connect.js?v=8"></script>
 <script src="calendar.js?v=14"></script>
@@ -1149,12 +1149,13 @@
 <script src="observability.js?v=8"></script>
 <script src="onboarding.js?v=11"></script>
 <script src="events.js?v=10"></script>
-<script src="outings.js?v=1"></script>
+<script src="outings.js?v=2"></script>
+<script src="confirmations.js?v=1"></script>
 <script src="documents.js?v=1"></script>
 <script src="activity.js?v=1"></script>
-<script src="today.js?v=13"></script>
+<script src="today.js?v=14"></script>
 <script src="theme.js?v=1"></script>
-<script src="app-shell.js?v=14"></script>
+<script src="app-shell.js?v=15"></script>
 </body>
 </html>
 

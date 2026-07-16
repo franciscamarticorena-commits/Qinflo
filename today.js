@@ -29,19 +29,16 @@ async function confirmKidsWithMe(btnEl) {
   if (!FAMILY_ID || !USER) return;
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '…'; }
   try {
-    var { error } = await supa.from('families').update({
-      last_pickup: { uid: USER.id, role: myRole(), at: nowISO() }
-    }).eq('id', FAMILY_ID);
-    if (error) throw error;
+    var childIds = (children || []).map(function(c) { return c.id; });
+    var res = await recordCustodyConfirmation('custody_day', null, childIds);
+    if (res.error) throw res.error;
     if (typeof logActivity === 'function') {
       logActivity('custody_confirmed', myLabel() + ' confirmó que los niños ya están en casa');
     }
-    if (btnEl) {
-      btnEl.textContent = '✓ Confirmado';
-      setTimeout(function() { renderToday(); }, 2000);
-    }
+    renderToday();
   } catch(e) {
     console.error('[confirmKidsWithMe]', e);
+    alert('No se pudo confirmar. Intenta de nuevo.');
     if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Los niños ya están conmigo ✓'; }
   }
 }
@@ -191,6 +188,7 @@ function _todayCustody(now) {
   var el = $('todayCustodyBlock');
   if (!el) return;
 
+  var todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
   var custody = _todayGetCustody(now);
 
   if (!custody) {
@@ -261,9 +259,13 @@ function _todayCustody(now) {
     }
   }
 
-  var kidsBtn = custody === 'transition'
-    ? '<button class="btn-outline" style="margin-top:14px;font-size:12px;padding:8px 16px" onclick="confirmKidsWithMe(this)">Los niños ya están conmigo ✓</button>'
-    : '';
+  var kidsBtn = '';
+  if (custody === 'transition') {
+    var dayConf = typeof custodyDayConfirmation === 'function' ? custodyDayConfirmation(todayStr) : null;
+    kidsBtn = dayConf
+      ? '<div style="margin-top:14px;font-size:12px;color:var(--success);font-weight:600">' + _confirmationLabel(dayConf) + '</div>'
+      : '<button class="btn-outline" style="margin-top:14px;font-size:12px;padding:8px 16px" onclick="confirmKidsWithMe(this)">Los niños ya están conmigo ✓</button>';
+  }
   var outingsHtml = _todayOutingsHtml(now);
   el.innerHTML =
     '<div style="font-size:24px;font-weight:700;color:var(--text);letter-spacing:-.4px">' +
@@ -278,8 +280,12 @@ function _todayOutingsHtml(now) {
     var who = o.pickedUpByRole === 'p1' ? p1() : p2();
     var names = typeof _outingChildNames === 'function' ? _outingChildNames(o.childIds) : '';
     var timeRange = o.startTime + (o.endTime ? ' – ' + o.endTime : '');
+    var conf = typeof outingConfirmation === 'function' ? outingConfirmation(o.id) : null;
+    var confirmHtml = conf
+      ? '<span style="color:var(--success);font-weight:600">' + _confirmationLabel(conf) + '</span>'
+      : '<button class="btn-outline" style="font-size:10px;padding:2px 8px" onclick="confirmOutingReceived(\'' + o.id + '\')">Los niños ya están conmigo ✓</button>';
     return '<div style="font-size:12px;color:var(--accent);margin-top:8px;background:rgba(216,164,95,.1);border-radius:8px;padding:7px 10px">' +
-      '🚗 ' + who + ' retira a ' + names + ' · ' + timeRange + '</div>';
+      '🚗 ' + who + ' retira a ' + names + ' · ' + timeRange + '<div style="margin-top:5px">' + confirmHtml + '</div></div>';
   }).join('');
 }
 

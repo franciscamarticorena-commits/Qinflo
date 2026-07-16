@@ -216,7 +216,8 @@ async function setupListeners() {
     loadDocuments(),
     loadSettlements(),
     loadActivity(),
-    loadTemporaryOutings()
+    loadTemporaryOutings(),
+    loadCustodyConfirmations()
   ]);
 
   // Suscripción realtime: un canal por tabla
@@ -235,6 +236,7 @@ async function setupListeners() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'settlements',     filter: 'family_id=eq.' + FAMILY_ID }, loadSettlements)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs',   filter: 'family_id=eq.' + FAMILY_ID }, loadActivity)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'temporary_outings', filter: 'family_id=eq.' + FAMILY_ID }, loadTemporaryOutings)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'custody_confirmations', filter: 'family_id=eq.' + FAMILY_ID }, loadCustodyConfirmations)
     .subscribe();
 }
 
@@ -354,6 +356,13 @@ async function loadTemporaryOutings() {
   temporaryOutings = rowsToCamel(data);
   if (typeof renderCalendar === 'function') renderCalendar();
   renderToday();
+}
+
+async function loadCustodyConfirmations() {
+  var { data } = await supa.from('custody_confirmations').select('*').eq('family_id', FAMILY_ID).order('confirmed_at', { ascending: false });
+  custodyConfirmations = rowsToCamel(data);
+  renderToday();
+  if (typeof renderDayDetail === 'function' && selDay) renderDayDetail();
 }
 
 async function loadActivity() {

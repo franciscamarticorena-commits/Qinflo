@@ -147,7 +147,7 @@ function renderCalendar() {
     if (calFilter !== 'both' && c !== 'none' && c !== calFilter && c !== 'transition') {
       btn.style.opacity = '0.25';
     }
-    btn.innerHTML = (prop ? '<span class="prop-flag">Pend.</span>' : '') + '<div class="cal-num">' + d + '</div>' + custodySymbol(c) + (hasEv ? '<div class="event-line" title="Evento"></div>' : '') + (hasOut ? '<div class="outing-line" title="Retiro temporal"></div>' : '') + (rems.length ? '<div class="reminder-line" title="Recordatorio"></div>' : '');
+    btn.innerHTML = (prop ? '<span class="prop-flag">Pend.</span>' : '') + '<div class="cal-num">' + d + '</div>' + custodySymbol(c) + (hasEv ? '<div class="event-line" title="Evento"></div>' : '') + (hasOut ? '<div class="outing-line" title="Salida temporal"></div>' : '') + (rems.length ? '<div class="reminder-line" title="Recordatorio"></div>' : '');
     (function(day) {
       btn.addEventListener('click', function() { selDay = day; renderCalendar(); renderDayDetail(); });
     })(d);
@@ -188,7 +188,7 @@ function renderDayDetail() {
   // Temporary outings section
   if (typeof renderOutingsForDay === 'function') {
     var outHtml = renderOutingsForDay(selDay);
-    if (outHtml) html += _detailSectionHdr('Retiros temporales') + outHtml;
+    if (outHtml) html += _detailSectionHdr('Salidas temporales') + outHtml;
   }
 
   // Reminders section

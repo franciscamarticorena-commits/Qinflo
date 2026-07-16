@@ -1,5 +1,5 @@
-// --- RETIROS TEMPORALES ---------------------------------------
-// Un retiro temporal registra que un padre/madre retira a uno o más
+// --- SALIDAS TEMPORALES ---------------------------------------
+// Una salida temporal registra que un padre/madre retira a uno o más
 // hijos por algunas horas (ej: comida, partido, cine). NUNCA modifica
 // el día de custodia base — solo queda como un registro por horas
 // dentro de ese día, asociado a child_id(s) específicos.
@@ -48,7 +48,7 @@ function openOutingForm(outingId) {
     if ($('outOptPapa')) $('outOptPapa').textContent = p2();
   }
   if ($('outReason')) $('outReason').value = o ? (o.reason || '') : '';
-  if ($('outFormTitle')) $('outFormTitle').textContent = outingId ? 'Editar retiro temporal' : 'Nuevo retiro temporal';
+  if ($('outFormTitle')) $('outFormTitle').textContent = outingId ? 'Editar salida temporal' : 'Nueva salida temporal';
   _populateOutingChildren(o ? o.childIds : null);
   show('outingModal');
 }
@@ -94,7 +94,7 @@ async function saveOuting() {
     }
     if (error) {
       console.error('[saveOuting]', error);
-      alert('No se pudo guardar el retiro temporal: ' + error.message);
+      alert('No se pudo guardar la salida temporal: ' + error.message);
       return;
     }
     var camelRow = toCamel(savedRow);
@@ -105,7 +105,7 @@ async function saveOuting() {
       var names = _outingChildNames(childIds);
       var verb = editingOutingId ? 'actualizó' : 'registró';
       logActivity('outing_' + (editingOutingId ? 'edited' : 'created'),
-        myLabel() + ' ' + verb + ' un retiro temporal: ' + names + ' (' + date + ' ' + startTime + (endTime ? '–' + endTime : '') + ')',
+        myLabel() + ' ' + verb + ' una salida temporal: ' + names + ' (' + date + ' ' + startTime + (endTime ? '–' + endTime : '') + ')',
         { date: date, childIds: childIds });
     }
 
@@ -120,7 +120,7 @@ async function saveOuting() {
 }
 
 async function deleteOuting(outingId) {
-  if (!confirm('¿Eliminar este retiro temporal?')) return;
+  if (!confirm('¿Eliminar esta salida temporal?')) return;
   var { error } = await supa.from('temporary_outings').update({ deleted_at: nowISO() }).eq('id', outingId);
   if (error) {
     console.error('[deleteOuting]', error);
@@ -140,15 +140,36 @@ function renderOutingsForDay(day) {
     var who = o.pickedUpByRole === 'p1' ? p1() : p2();
     var names = _outingChildNames(o.childIds);
     var timeRange = o.startTime + (o.endTime ? ' – ' + o.endTime : ' (regreso estimado sin definir)');
+    var conf = typeof outingConfirmation === 'function' ? outingConfirmation(o.id) : null;
+    var confirmHtml = conf
+      ? '<div style="font-size:11px;color:var(--success);font-weight:600;margin-top:6px">' + _confirmationLabel(conf) + '</div>'
+      : '<button class="btn-outline" style="font-size:11px;padding:4px 9px;margin-top:6px" onclick="confirmOutingReceived(\'' + o.id + '\')">Los niños ya están conmigo ✓</button>';
     return '<div class="detail-card" style="border-left:2px solid var(--accent)">' +
       '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">' +
-      '<strong style="font-size:13px;color:var(--text)">🚗 Retiro temporal — ' + names + '</strong></div>' +
+      '<strong style="font-size:13px;color:var(--text)">🚗 Salida temporal — ' + names + '</strong></div>' +
       '<div style="font-size:11px;color:var(--text-s)">' + who + ' · ' + timeRange + '</div>' +
       (o.reason ? '<div style="font-size:12px;color:var(--text-s);margin-top:4px;line-height:1.4">' + o.reason + '</div>' : '') +
       '<div style="font-size:10px;color:var(--text-s);margin-top:4px;font-style:italic">No modifica la custodia del día</div>' +
+      confirmHtml +
       '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
       '<button class="btn-outline" style="font-size:11px;padding:4px 9px" onclick="openOutingForm(\'' + o.id + '\')">Editar</button>' +
       '<button class="btn-outline" style="font-size:11px;padding:4px 9px;color:var(--error)" onclick="deleteOuting(\'' + o.id + '\')">Eliminar</button>' +
       '</div></div>';
   }).join('');
+}
+
+async function confirmOutingReceived(outingId) {
+  var o = (temporaryOutings || []).find(function(x) { return x.id === outingId; });
+  if (!o) return;
+  var res = await recordCustodyConfirmation('outing', outingId, o.childIds);
+  if (res.error) {
+    console.error('[confirmOutingReceived]', res.error);
+    alert('No se pudo confirmar: ' + res.error.message);
+    return;
+  }
+  if (typeof logActivity === 'function') {
+    logActivity('outing_confirmed', myLabel() + ' confirmó que los niños ya están de vuelta: ' + _outingChildNames(o.childIds));
+  }
+  if (typeof renderDayDetail === 'function') renderDayDetail();
+  if (typeof renderToday === 'function') renderToday();
 }
