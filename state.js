@@ -1,6 +1,7 @@
 // --- ESTADO -------------------------------------------------
 let USER = null, USERDATA = null, CODATA = null, FAMILY_ID = null;
 let IS_REGISTERING = false;
+let IS_ONBOARDING_ACTIVE = false;
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
 let selDay = null, custodyMap = {}, calEventsMap = {}, custodyOverridesMap = {};
 let calFilter = 'both';

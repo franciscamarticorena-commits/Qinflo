@@ -73,7 +73,7 @@ supa.auth.onAuthStateChange(async function(event, session) {
     return;
   }
 
-  if (IS_REGISTERING) return;
+  if (IS_REGISTERING || IS_ONBOARDING_ACTIVE) return;
 
   // Ocultar pantalla de auth cuanto antes
   hide('authScreen');

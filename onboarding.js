@@ -51,6 +51,7 @@ function _initOnbHourSelect() {
 }
 
 function startOnboarding() {
+  IS_ONBOARDING_ACTIVE = true;
   hide('authScreen'); hide('app'); hide('connectScreen');
   if ($('coparentWelcomeScreen')) hide('coparentWelcomeScreen');
   show('onboardingScreen');
@@ -395,6 +396,7 @@ function _watchForCoparentJoin() {
 }
 
 async function finishOnboarding() {
+  IS_ONBOARDING_ACTIVE = false;
   if (_coparentWatcher) { supa.removeChannel(_coparentWatcher); _coparentWatcher = null; }
 
   if (!USER) {
