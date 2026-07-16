@@ -274,16 +274,26 @@ function updateOnbKidAge() {
   if ($('onbKidAgeDisplay')) $('onbKidAgeDisplay').textContent = iso ? calcAge(iso) + ' años' : '';
 }
 
-function addOnbKid() {
+// Agrega a la lista lo que haya escrito en el formulario (si hay nombre).
+// Devuelve false solo cuando hay un nombre escrito pero es inválido, para
+// poder avisarle al usuario en vez de perderlo en silencio.
+function _addPendingOnbKid() {
   var name = $('onbKidName') ? $('onbKidName').value.trim() : '';
+  if (!name) return true;
   var rawBirth = $('onbKidBirth') ? $('onbKidBirth').value : '';
   var birth = parseDateInput(rawBirth);
-  if (!name) { showOnbMsg('El nombre del niño es requerido.'); return; }
   onbKidsList.push({ name: name, birthDate: birth || null, age: birth ? calcAge(birth) + ' años' : '' });
   if ($('onbKidName')) $('onbKidName').value = '';
   if ($('onbKidBirth')) $('onbKidBirth').value = '';
   if ($('onbKidAgeDisplay')) $('onbKidAgeDisplay').textContent = '';
   renderOnbKidsList();
+  return true;
+}
+
+function addOnbKid() {
+  var name = $('onbKidName') ? $('onbKidName').value.trim() : '';
+  if (!name) { showOnbMsg('El nombre del niño es requerido.'); return; }
+  _addPendingOnbKid();
   hideMsg('onbMsg');
 }
 
@@ -305,6 +315,7 @@ function renderOnbKidsList() {
 }
 
 async function saveOnbKids() {
+  _addPendingOnbKid();
   await saveOnboardingData(true);
 }
 
