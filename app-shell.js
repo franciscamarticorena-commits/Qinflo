@@ -75,6 +75,12 @@ supa.auth.onAuthStateChange(async function(event, session) {
 
   if (IS_REGISTERING || IS_ONBOARDING_ACTIVE) return;
 
+  // Limpiar el token de la URL (Google OAuth lo deja como #access_token=...)
+  // para que un refresh no vuelva a procesarlo.
+  if (window.location.hash.includes('access_token')) {
+    window.history.replaceState({}, '', window.location.pathname + window.location.search);
+  }
+
   // Ocultar pantalla de auth cuanto antes
   hide('authScreen');
   document.getElementById('app').style.display = 'block';

@@ -82,7 +82,11 @@ function renderChildren() {
         (kid.notes ? '<div class="notes-box"><div style="font-size:10px;color:var(--primary);font-weight:700;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px">Notas</div><div style="font-size:12px;color:var(--text);line-height:1.55">' + kid.notes + '</div></div>' : '') +
       '</div>';
     card.querySelector('.edit-btn').addEventListener('click', function() { openKidForm(kid); });
-    card.querySelector('.del-btn').addEventListener('click', function() { supa.from('children').update({ deleted_at: nowISO() }).eq('id', kid.id); });
+    card.querySelector('.del-btn').addEventListener('click', async function() {
+      var { error } = await supa.from('children').update({ deleted_at: nowISO() }).eq('id', kid.id);
+      if (error) { console.error('[delete kid]', error); alert('No se pudo eliminar: ' + error.message); return; }
+      loadChildren();
+    });
     el.appendChild(card);
   });
 }
