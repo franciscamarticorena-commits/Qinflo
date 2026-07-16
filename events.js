@@ -64,13 +64,14 @@ async function saveEvent() {
   if (!title || !date) { alert('Título y fecha son obligatorios.'); return; }
   if (!FAMILY_ID) return;
   var participants = $('evParticipants') ? $('evParticipants').value : 'both';
+  var participantsDb = participants === 'mama' ? 'p1' : participants === 'papa' ? 'p2' : 'both';
   var requiresApproval = participants === 'both' && !!($('evRequiresApproval') && $('evRequiresApproval').checked);
   var data = {
     title: title,
     date: date,
     time: $('evTime') ? $('evTime').value : '',
     category: $('evCat') ? $('evCat').value : 'otro',
-    participants: participants,
+    participants: participantsDb,
     description: $('evDescription') ? $('evDescription').value.trim() : '',
     reminder: $('evReminder') ? $('evReminder').value : '',
     requiresApproval: requiresApproval

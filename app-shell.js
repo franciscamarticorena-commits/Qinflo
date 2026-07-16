@@ -282,7 +282,7 @@ async function loadReminders() {
   var { data } = await supa.from('reminders').select('*').eq('family_id', FAMILY_ID).is('deleted_at', null).order('date', { ascending: true });
   reminders = (data || []).map(function(r) {
     var c = toCamel(r);
-    c.for  = r.assigned_to;   // campo 'for' usado en los renders
+    c.for  = r.assigned_to === 'p1' ? 'mama' : r.assigned_to === 'p2' ? 'papa' : 'both';
     c.done = r.status === 'completed';
     return c;
   });
@@ -317,6 +317,7 @@ async function loadEvents() {
     c.approvalStatus = r.status === 'pending' ? 'pending' : (r.status === 'confirmed' ? 'approved' : r.status);
     c.createdByRole  = r.created_by_role;
     c.createdBy      = r.created_by;
+    c.participants   = r.participants === 'p1' ? 'mama' : r.participants === 'p2' ? 'papa' : 'both';
     return c;
   });
   if (typeof renderEventApprovals === 'function') renderEventApprovals();

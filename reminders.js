@@ -5,16 +5,18 @@ async function saveRem() {
   var title = $('remTitle').value.trim(), date = $('remDate').value;
   var notes = $('remNotes') ? $('remNotes').value.trim() : '';
   if (!title || !date) return;
+  var remFor = $('remFor') ? $('remFor').value : 'both';
+  var assignedToDb = remFor === 'mama' ? 'p1' : remFor === 'papa' ? 'p2' : 'both';
   var error;
   if (editingRemId) {
-    ({ error } = await supa.from('reminders').update({ title: title, date: date, assigned_to: $('remFor').value, notes: notes || null }).eq('id', editingRemId));
+    ({ error } = await supa.from('reminders').update({ title: title, date: date, assigned_to: assignedToDb, notes: notes || null }).eq('id', editingRemId));
     editingRemId = null;
   } else {
     ({ error } = await supa.from('reminders').insert({
       family_id:   FAMILY_ID,
       title:       title,
       date:        date,
-      assigned_to: $('remFor').value,
+      assigned_to: assignedToDb,
       notes:       notes || null,
       status:      'pending',
       created_by:  USER.id
