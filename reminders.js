@@ -5,11 +5,12 @@ async function saveRem() {
   var title = $('remTitle').value.trim(), date = $('remDate').value;
   var notes = $('remNotes') ? $('remNotes').value.trim() : '';
   if (!title || !date) return;
+  var error;
   if (editingRemId) {
-    await supa.from('reminders').update({ title: title, date: date, assigned_to: $('remFor').value, notes: notes || null }).eq('id', editingRemId);
+    ({ error } = await supa.from('reminders').update({ title: title, date: date, assigned_to: $('remFor').value, notes: notes || null }).eq('id', editingRemId));
     editingRemId = null;
   } else {
-    await supa.from('reminders').insert({
+    ({ error } = await supa.from('reminders').insert({
       family_id:   FAMILY_ID,
       title:       title,
       date:        date,
@@ -17,8 +18,14 @@ async function saveRem() {
       notes:       notes || null,
       status:      'pending',
       created_by:  USER.id
-    });
+    }));
   }
+  if (error) {
+    console.error('[saveRem]', error);
+    alert('No se pudo guardar el aviso: ' + error.message);
+    return;
+  }
+  if (typeof loadReminders === 'function') await loadReminders();
   $('remTitle').value = ''; $('remDate').value = '';
   if ($('remNotes')) $('remNotes').value = '';
   var hdr = document.querySelector('#remForm p');
@@ -86,8 +93,18 @@ function renderReminders() {
           '<button class="btn-danger del-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>' +
         '</div>';
       row.querySelector('.edit-rem-btn').addEventListener('click', function() { openRemEdit(r); });
-      row.querySelector('.done-btn').addEventListener('click', function() { supa.from('reminders').update({ status: 'completed' }).eq('id', r.id); });
-      row.querySelector('.del-btn').addEventListener('click', function() { supa.from('reminders').update({ deleted_at: nowISO() }).eq('id', r.id); });
+      row.querySelector('.done-btn').addEventListener('click', async function() {
+        var { error } = await supa.from('reminders').update({ status: 'completed' }).eq('id', r.id);
+        if (error) { console.error('[reminder done]', error); alert('No se pudo actualizar: ' + error.message); return; }
+        r.done = true;
+        renderReminders();
+      });
+      row.querySelector('.del-btn').addEventListener('click', async function() {
+        var { error } = await supa.from('reminders').update({ deleted_at: nowISO() }).eq('id', r.id);
+        if (error) { console.error('[reminder delete]', error); alert('No se pudo eliminar: ' + error.message); return; }
+        reminders = reminders.filter(function(x) { return x.id !== r.id; });
+        renderReminders();
+      });
       card.appendChild(row);
     });
     el.appendChild(card);
@@ -102,7 +119,12 @@ function renderReminders() {
       var row = document.createElement('div');
       row.style.cssText = 'background:var(--surface);border-radius:11px;padding:11px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;opacity:.45;border:1px solid var(--border)';
       row.innerHTML = '<div style="font-weight:600;font-size:12px;text-decoration:line-through;color:var(--text-s)">' + r.title + '</div><button class="btn-undo undone-btn"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13C5.5 7 12 5 17 8s6.5 9.5 2 14"/></svg></button>';
-      row.querySelector('.undone-btn').addEventListener('click', function() { supa.from('reminders').update({ status: 'pending' }).eq('id', r.id); });
+      row.querySelector('.undone-btn').addEventListener('click', async function() {
+        var { error } = await supa.from('reminders').update({ status: 'pending' }).eq('id', r.id);
+        if (error) { console.error('[reminder undone]', error); alert('No se pudo actualizar: ' + error.message); return; }
+        r.done = false;
+        renderReminders();
+      });
       el.appendChild(row);
     });
   }

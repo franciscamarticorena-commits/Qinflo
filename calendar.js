@@ -40,14 +40,20 @@ function remindersForDay(day) {
   });
 }
 
-function setCustody(d, val) {
+async function setCustody(d, val) {
   if (!FAMILY_ID) return;
-  supa.rpc('set_custody_day', {
+  var { error } = await supa.rpc('set_custody_day', {
     p_family_id: FAMILY_ID,
     p_month_key: calKey(),
     p_day:       String(d),
     p_parent:    val
-  }).catch(function(e) { console.error('[setCustody]', e); });
+  });
+  if (error) {
+    console.error('[setCustody]', error);
+    alert('No se pudo actualizar la custodia: ' + error.message);
+    return;
+  }
+  if (typeof loadCalendar === 'function') await loadCalendar();
 }
 
 function prevMonth() {
@@ -247,7 +253,7 @@ async function saveProp() {
     updateProposalButtonState();
     return;
   }
-  await supa.from('custody_changes').insert({
+  var { error } = await supa.from('custody_changes').insert({
     family_id:          FAMILY_ID,
     from_date:          fromDate,
     to_date:            toDate,
@@ -257,9 +263,15 @@ async function saveProp() {
     requested_to_role:  oppositeRole(myRole()),
     status:             'pending'
   });
+  if (error) {
+    console.error('[saveProp]', error);
+    alert('No se pudo enviar la solicitud: ' + error.message);
+    return;
+  }
   if (typeof logActivity === 'function') {
     logActivity('proposal_created', myLabel() + ' solicitó cambio de custodia: Día ' + from + ' → Día ' + to, { fromDay: from, toDay: to });
   }
+  await loadProposals();
   $('propFrom').value = ''; $('propTo').value = ''; $('propReason').value = '';
   hide('propForm');
 }
@@ -276,13 +288,17 @@ function renderProposals() {
     div.className = 'proposal-alert';
     div.innerHTML = '<div><strong>Solicitud de cambio de custodia</strong><br><strong>' + proposalRequesterLabel(pr) + '</strong> solicita a <strong>' + proposalRequestedLabel(pr) + '</strong><br>Cambio: ' + fmtProposalDates(pr) + '<br>Enviada: ' + fmtDateTime(pr.createdAt || pr.date) + (pr.reason ? '<br>' + pr.reason : '') + '<div class="proposal-flow-note">Debes aprobar o rechazar esta solicitud antes de crear una nueva.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm accept-btn" style="background:var(--success)">Aceptar</button><button class="btn-outline reject-btn">Rechazar</button></div>';
     div.querySelector('.accept-btn').addEventListener('click', async function() {
-      await supa.from('custody_changes').update({ status: 'accepted', responded_at: nowISO(), responded_by: USER.id }).eq('id', pr.id);
+      var { error } = await supa.from('custody_changes').update({ status: 'accepted', responded_at: nowISO(), responded_by: USER.id }).eq('id', pr.id);
+      if (error) { console.error('[accept proposal]', error); alert('No se pudo aceptar: ' + error.message); return; }
       setCustody(Number(pr.toDay), 'transition');
       if (typeof logActivity === 'function') logActivity('proposal_accepted', myLabel() + ' aprobó cambio de custodia: ' + fmtProposalDates(pr), { proposalId: pr.id });
+      await loadProposals();
     });
-    div.querySelector('.reject-btn').addEventListener('click', function() {
-      supa.from('custody_changes').update({ status: 'rejected', responded_at: nowISO(), responded_by: USER.id }).eq('id', pr.id);
+    div.querySelector('.reject-btn').addEventListener('click', async function() {
+      var { error } = await supa.from('custody_changes').update({ status: 'rejected', responded_at: nowISO(), responded_by: USER.id }).eq('id', pr.id);
+      if (error) { console.error('[reject proposal]', error); alert('No se pudo rechazar: ' + error.message); return; }
       if (typeof logActivity === 'function') logActivity('proposal_rejected', myLabel() + ' rechazó cambio de custodia: ' + fmtProposalDates(pr), { proposalId: pr.id });
+      await loadProposals();
     });
     el.appendChild(div);
   });
@@ -292,7 +308,9 @@ function renderProposals() {
     div.innerHTML = '<div><strong>Solicitud de cambio de custodia enviada</strong><br><strong>' + proposalRequesterLabel(pr) + '</strong> solicita a <strong>' + proposalRequestedLabel(pr) + '</strong><br>Cambio: ' + fmtProposalDates(pr) + '<br>Enviada: ' + fmtDateTime(pr.createdAt || pr.date) + '<br>Esperando respuesta.<div class="proposal-flow-note">Mientras esta solicitud esté pendiente, no se pueden crear nuevas solicitudes.</div></div><div style="margin-top:8px"><button class="btn-outline cancel-prop-btn" style="font-size:11px;padding:5px 12px;color:var(--error)">Retirar solicitud</button></div>';
     div.querySelector('.cancel-prop-btn').addEventListener('click', async function() {
       if (!confirm('¿Retirar esta solicitud de cambio?')) return;
-      await supa.from('custody_changes').delete().eq('id', pr.id);
+      var { error } = await supa.from('custody_changes').delete().eq('id', pr.id);
+      if (error) { console.error('[cancel proposal]', error); alert('No se pudo retirar: ' + error.message); return; }
+      await loadProposals();
     });
     el.appendChild(div);
   });

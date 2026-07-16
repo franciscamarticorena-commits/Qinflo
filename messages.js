@@ -112,6 +112,15 @@ function isPotentiallyOffensive(txt) {
   return bad.some(function(w) { return t.indexOf(w) >= 0; });
 }
 
+function _msgFromRow(r) {
+  var c = toCamel(r);
+  c.text       = r.content;
+  c.createdBy  = r.author_id;
+  c.senderRole = r.author_role;
+  c.senderName = r.sender_name;
+  return c;
+}
+
 async function sendMsg() {
   var txt = $('msgInput').value.trim();
   if (!txt) return;
@@ -119,25 +128,31 @@ async function sendMsg() {
     var ok = confirm('Este mensaje podría interpretarse como ofensivo o poco colaborativo. ¿Quieres enviarlo igual?');
     if (!ok) return;
   }
-  await supa.from('messages').insert({
+  var { data, error } = await supa.from('messages').insert({
     family_id:   FAMILY_ID,
     author_id:   USER.id,
     author_role: myRole(),
     content:     txt,
     sender_name: USERDATA ? USERDATA.name : '',
     type:        'message'
-  });
+  }).select().single();
+  if (error) { console.error('[sendMsg]', error); alert('No se pudo enviar el mensaje: ' + error.message); return; }
+  messages.push(_msgFromRow(data));
+  renderMessages();
   $('msgInput').value = '';
 }
 
 async function sendMsgDivider() {
-  await supa.from('messages').insert({
+  var { data, error } = await supa.from('messages').insert({
     family_id:   FAMILY_ID,
     author_id:   USER.id,
     author_role: myRole(),
     content:     '—',
     type:        'divider'
-  });
+  }).select().single();
+  if (error) { console.error('[sendMsgDivider]', error); alert('No se pudo agregar el divisor: ' + error.message); return; }
+  messages.push(_msgFromRow(data));
+  renderMessages();
 }
 
 function renderMessages() {

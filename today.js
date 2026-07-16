@@ -29,9 +29,10 @@ async function confirmKidsWithMe(btnEl) {
   if (!FAMILY_ID || !USER) return;
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '…'; }
   try {
-    await supa.from('families').update({
+    var { error } = await supa.from('families').update({
       last_pickup: { uid: USER.id, role: myRole(), at: nowISO() }
     }).eq('id', FAMILY_ID);
+    if (error) throw error;
     if (typeof logActivity === 'function') {
       logActivity('custody_confirmed', myLabel() + ' confirmó que los niños ya están en casa');
     }
@@ -62,22 +63,26 @@ function _pendingRow(badge, title, sub, actions) {
     '</div>';
 }
 
-function acceptPropInline(propId) {
+async function acceptPropInline(propId) {
   var p = (proposals || []).find(function(x) { return x.id === propId; });
   if (!p) return;
-  supa.from('custody_changes').update({ status: 'accepted', responded_at: nowISO(), responded_by: USER.id }).eq('id', propId);
-  if (typeof setCustody === 'function') setCustody(Number(p.toDay), 'transition');
+  var { error } = await supa.from('custody_changes').update({ status: 'accepted', responded_at: nowISO(), responded_by: USER.id }).eq('id', propId);
+  if (error) { console.error('[acceptPropInline]', error); alert('No se pudo aceptar: ' + error.message); return; }
+  if (typeof setCustody === 'function') await setCustody(Number(p.toDay), 'transition');
   if (typeof logActivity === 'function') {
     logActivity('proposal_accepted', myLabel() + ' aprobó cambio de custodia: Día ' + p.fromDay + ' → Día ' + p.toDay, { proposalId: propId });
   }
+  if (typeof loadProposals === 'function') await loadProposals();
 }
 
-function rejectPropInline(propId) {
+async function rejectPropInline(propId) {
   var p = (proposals || []).find(function(x) { return x.id === propId; });
-  supa.from('custody_changes').update({ status: 'rejected', responded_at: nowISO(), responded_by: USER.id }).eq('id', propId);
+  var { error } = await supa.from('custody_changes').update({ status: 'rejected', responded_at: nowISO(), responded_by: USER.id }).eq('id', propId);
+  if (error) { console.error('[rejectPropInline]', error); alert('No se pudo rechazar: ' + error.message); return; }
   if (typeof logActivity === 'function' && p) {
     logActivity('proposal_rejected', myLabel() + ' rechazó cambio de custodia: Día ' + p.fromDay + ' → Día ' + p.toDay, { proposalId: propId });
   }
+  if (typeof loadProposals === 'function') await loadProposals();
 }
 
 function _todayPendingRequests() {

@@ -12,19 +12,20 @@ async function saveAgr() {
   var content = $('agrContent').value.trim();
   if (!title || !content) return;
 
+  var error;
   if (editingAgrId) {
-    await supa.from('agreements').update({
+    ({ error } = await supa.from('agreements').update({
       title:      title,
       content:    content,
       category:   $('agrCat').value,
       status:     $('agrStatus').value,
       updated_at: nowISO()
-    }).eq('id', editingAgrId);
+    }).eq('id', editingAgrId));
     editingAgrId = null;
   } else {
     var initSig = {};
     initSig[USER.id] = new Date().toISOString();
-    await supa.from('agreements').insert({
+    ({ error } = await supa.from('agreements').insert({
       family_id:      FAMILY_ID,
       title:          title,
       content:        content,
@@ -33,8 +34,14 @@ async function saveAgr() {
       created_by:     USER.id,
       created_by_role: myRole(),
       signatures:     initSig
-    });
+    }));
   }
+  if (error) {
+    console.error('[saveAgr]', error);
+    alert('No se pudo guardar el acuerdo: ' + error.message);
+    return;
+  }
+  if (typeof loadAgreements === 'function') await loadAgreements();
   _resetAgrForm();
   hide('agrForm');
 }
@@ -61,14 +68,23 @@ function _resetAgrForm() {
 
 async function signAgreement(agrId) {
   // Obtener el acuerdo actual para hacer merge del campo signatures
-  var { data: agr } = await supa.from('agreements').select('signatures').eq('id', agrId).single();
+  var { data: agr, error: selErr } = await supa.from('agreements').select('signatures').eq('id', agrId).single();
+  if (selErr) { console.error('[signAgreement]', selErr); alert('No se pudo firmar: ' + selErr.message); return; }
   var sigs = (agr && agr.signatures) ? agr.signatures : {};
   sigs[USER.id] = new Date().toISOString();
-  await supa.from('agreements').update({ signatures: sigs, updated_at: nowISO() }).eq('id', agrId);
+  var { error } = await supa.from('agreements').update({ signatures: sigs, updated_at: nowISO() }).eq('id', agrId);
+  if (error) { console.error('[signAgreement]', error); alert('No se pudo firmar: ' + error.message); return; }
+  var local = agreements.find(function(a) { return a.id === agrId; });
+  if (local) local.signatures = sigs;
+  renderAgreements();
 }
 
 async function changeAgrStatus(agrId, status) {
-  await supa.from('agreements').update({ status: status, updated_at: nowISO() }).eq('id', agrId);
+  var { error } = await supa.from('agreements').update({ status: status, updated_at: nowISO() }).eq('id', agrId);
+  if (error) { console.error('[changeAgrStatus]', error); alert('No se pudo cambiar el estado: ' + error.message); return; }
+  var local = agreements.find(function(a) { return a.id === agrId; });
+  if (local) local.status = status;
+  renderAgreements();
 }
 
 function renderAgreements() {
@@ -137,8 +153,12 @@ function renderAgreements() {
       '</div>';
 
     card.querySelector('.edit-btn').addEventListener('click', function() { openAgrEdit(agr); });
-    card.querySelector('.del-btn').addEventListener('click', function() {
-      if (confirm('¿Eliminar el acuerdo "' + agr.title + '"?')) supa.from('agreements').update({ deleted_at: nowISO() }).eq('id', agr.id);
+    card.querySelector('.del-btn').addEventListener('click', async function() {
+      if (!confirm('¿Eliminar el acuerdo "' + agr.title + '"?')) return;
+      var { error } = await supa.from('agreements').update({ deleted_at: nowISO() }).eq('id', agr.id);
+      if (error) { console.error('[delete agreement]', error); alert('No se pudo eliminar: ' + error.message); return; }
+      agreements = agreements.filter(function(a) { return a.id !== agr.id; });
+      renderAgreements();
     });
     if (!iSigned) {
       var signBtn = card.querySelector('.sign-btn');

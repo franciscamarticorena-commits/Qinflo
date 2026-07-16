@@ -20,24 +20,30 @@ async function saveDoc() {
   var title = $('docTitle').value.trim();
   if (!title) { $('docTitle').focus(); return; }
   var data = {
-    title:    title,
-    type:     $('docType').value,
-    childId:  $('docChild').value || null,
-    url:      $('docUrl').value.trim() || null,
-    notes:    $('docNotes').value.trim() || null,
+    title:      title,
+    type:       $('docType').value,
+    child_id:   $('docChild').value || null,
+    url:        $('docUrl').value.trim() || null,
+    notes:      $('docNotes').value.trim() || null,
     updated_at: nowISO()
   };
+  var error;
   if (editingDocId) {
-    await supa.from('documents').update(data).eq('id', editingDocId);
+    ({ error } = await supa.from('documents').update(data).eq('id', editingDocId));
     editingDocId = null;
   } else {
-    await supa.from('documents').insert({
+    ({ error } = await supa.from('documents').insert({
       ...data,
       family_id:  FAMILY_ID,
-      child_id:   data.childId || null,
       created_by: USER.id
-    });
+    }));
   }
+  if (error) {
+    console.error('[saveDoc]', error);
+    alert('No se pudo guardar el documento: ' + error.message);
+    return;
+  }
+  await loadDocuments();
   _resetDocForm();
   hide('docForm');
 }
@@ -112,8 +118,12 @@ function renderDocuments() {
         '<button class="btn-danger doc-del" style="padding:5px 8px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>' +
       '</div>';
     row.querySelector('.doc-edit').addEventListener('click', function() { openDocEdit(doc); });
-    row.querySelector('.doc-del').addEventListener('click', function() {
-      if (confirm('¿Eliminar "' + doc.title + '"?')) supa.from('documents').update({ deleted_at: nowISO() }).eq('id', doc.id);
+    row.querySelector('.doc-del').addEventListener('click', async function() {
+      if (!confirm('¿Eliminar "' + doc.title + '"?')) return;
+      var { error } = await supa.from('documents').update({ deleted_at: nowISO() }).eq('id', doc.id);
+      if (error) { console.error('[delete doc]', error); alert('No se pudo eliminar: ' + error.message); return; }
+      documents = documents.filter(function(d) { return d.id !== doc.id; });
+      renderDocuments();
     });
     card.appendChild(row);
   });

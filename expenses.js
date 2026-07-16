@@ -233,8 +233,12 @@ async function saveExp() {
       });
       if (insErr) throw insErr;
     }
+    if (typeof loadExpenses === 'function') await loadExpenses();
     _resetExpForm();
     hide('expForm');
+  } catch(e) {
+    console.error('[saveExp]', e);
+    alert('No se pudo guardar el gasto: ' + e.message);
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
   }
@@ -262,7 +266,12 @@ async function liquidarBalance() {
     date:       new Date().toISOString().slice(0, 10),
     created_by: USER.id
   });
-  if (sErr) throw sErr;
+  if (sErr) {
+    console.error('[liquidarBalance]', sErr);
+    alert('No se pudo registrar la liquidación: ' + sErr.message);
+    return;
+  }
+  if (typeof loadSettlements === 'function') await loadSettlements();
 }
 
 function exportarResumen() {
@@ -418,14 +427,20 @@ function renderExpenses() {
       '</div>' +
       (ex.attachmentName ? '<div class="file-pill" style="margin-top:5px">📎 ' + ex.attachmentName + '</div>' : '') +
       (ex.reimbursementAttachmentName ? '<div class="file-pill" style="margin-top:3px">📎 Reembolso: ' + ex.reimbursementAttachmentName + '</div>' : '');
-    row.querySelector('.toggle-paid-btn').addEventListener('click', function() {
+    row.querySelector('.toggle-paid-btn').addEventListener('click', async function() {
       var newStatus = ex.paid ? 'pending_review' : 'paid';
-      supa.from('expenses').update({ status: newStatus, updated_at: nowISO() }).eq('id', ex.id);
+      var { error } = await supa.from('expenses').update({ status: newStatus, updated_at: nowISO() }).eq('id', ex.id);
+      if (error) { console.error('[toggle paid]', error); alert('No se pudo actualizar: ' + error.message); return; }
+      ex.paid = newStatus === 'paid';
+      renderExpenses(); renderToday();
     });
     row.querySelector('.edit-btn').addEventListener('click', function() { openExpEdit(ex); });
-    row.querySelector('.void-btn').addEventListener('click', function() {
-      if (confirm('Este gasto no se eliminará. Quedará anulado en el historial.'))
-        supa.from('expenses').update({ voided: true, voided_at: nowISO(), voided_by: USER.id, updated_at: nowISO() }).eq('id', ex.id);
+    row.querySelector('.void-btn').addEventListener('click', async function() {
+      if (!confirm('Este gasto no se eliminará. Quedará anulado en el historial.')) return;
+      var { error } = await supa.from('expenses').update({ voided: true, voided_at: nowISO(), voided_by: USER.id, updated_at: nowISO() }).eq('id', ex.id);
+      if (error) { console.error('[void expense]', error); alert('No se pudo anular: ' + error.message); return; }
+      ex.voided = true;
+      renderExpenses(); renderToday();
     });
     el.appendChild(row);
   });
