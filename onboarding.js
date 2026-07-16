@@ -33,9 +33,9 @@ function parseDateInput(str) {
   return '';
 }
 
-function _todayDDMMAAAA() {
+function _todayISO() {
   var t = new Date();
-  return String(t.getDate()).padStart(2, '0') + '/' + String(t.getMonth() + 1).padStart(2, '0') + '/' + t.getFullYear();
+  return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
 }
 
 function _initOnbHourSelect() {
@@ -133,7 +133,7 @@ function selectOnbCustodyType(type) {
   onbCustodyConfig = { type: type };
   if (type === 'alternating_weeks') {
     if ($('onbStartDate') && !$('onbStartDate').value) {
-      $('onbStartDate').value = _todayDDMMAAAA();
+      $('onbStartDate').value = _todayISO();
     }
     showOnbPanel('onbPanelAltWeeks');
     updateOnbProgress(2, 5, 'Semana por medio');
@@ -157,7 +157,7 @@ function saveOnbAltWeeks() {
   var rawStartDate = $('onbStartDate') ? $('onbStartDate').value : '';
   var startDate = parseDateInput(rawStartDate);
   var firstWeekEl = document.querySelector('input[name="onbFirstWeek"]:checked');
-  if (!startDate) { showOnbMsg('Ingresa la fecha de inicio en formato DD/MM/AAAA.'); return; }
+  if (!startDate) { showOnbMsg('Ingresa la fecha de inicio.'); return; }
   if (!firstWeekEl) { showOnbMsg('Indica quién tiene a los niños la primera semana.'); return; }
   Object.assign(onbCustodyConfig, {
     changeDay: changeDay,

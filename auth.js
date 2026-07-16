@@ -55,7 +55,7 @@ async function doRegister() {
   }
 
   var urlParams = new URLSearchParams(window.location.search);
-  var pendingInviteParam = urlParams.get('invite');
+  var pendingInviteParam = urlParams.get('invite') || localStorage.getItem('pendingInvite');
   if (pendingInviteParam) localStorage.setItem('pendingInvite', pendingInviteParam);
 
   try {
@@ -71,6 +71,17 @@ async function doRegister() {
     if (authErr) throw authErr;
 
     var uid = authData.user.id;
+    USER = authData.user;
+
+    if (pendingInviteParam) {
+      // Se está uniendo a una familia existente vía invitación: no crear
+      // una familia propia, solo unirse a la del invitante.
+      IS_REGISTERING = false;
+      localStorage.removeItem('pendingInvite');
+      await autoConnect(pendingInviteParam);
+      return;
+    }
+
     var ft   = $('regFamType').value;
     var role = $('regRole').value;
 
@@ -129,14 +140,7 @@ async function doRegister() {
     };
     FAMILY_ID = family.id;
     updateLabels();
-
-    var storedInvite = localStorage.getItem('pendingInvite');
-    if (storedInvite) {
-      localStorage.removeItem('pendingInvite');
-      autoConnect(storedInvite);
-    } else {
-      startOnboarding();
-    }
+    startOnboarding();
 
   } catch(e) {
     IS_REGISTERING = false;
@@ -199,6 +203,16 @@ async function doUpdatePassword() {
 
 async function createGoogleUserProfile(user) {
   dbg('[google] creating profile ' + user.id + ' ' + user.email);
+
+  var pending = localStorage.getItem('pendingInvite');
+  if (pending) {
+    // Se está uniendo a una familia existente vía invitación: no crear
+    // una familia propia, solo unirse a la del invitante.
+    localStorage.removeItem('pendingInvite');
+    await autoConnect(pending);
+    return;
+  }
+
   var ft   = 'mama_papa';
   var role = 'p1';
   var fc   = { type: ft, p1Label: 'Mamá', p2Label: 'Papá' };
@@ -245,14 +259,7 @@ async function createGoogleUserProfile(user) {
     };
     FAMILY_ID = familyId;
     updateLabels();
-
-    var pending = localStorage.getItem('pendingInvite');
-    if (pending) {
-      localStorage.removeItem('pendingInvite');
-      autoConnect(pending);
-    } else {
-      startOnboarding();
-    }
+    startOnboarding();
   } catch(e) {
     dbg('[createGoogleUserProfile] ERROR ' + e.message);
     await supa.auth.signOut();
