@@ -34,10 +34,10 @@ function identifyObservabilityUser(user, userData) {
   try {
     if (!user) return;
     if (window.Sentry && QINFLO_OBSERVABILITY.sentryDsn) {
-      window.Sentry.setUser({ id: user.uid, email: user.email });
+      window.Sentry.setUser({ id: user.id, email: user.email });
     }
     if (window.posthog && QINFLO_OBSERVABILITY.posthogKey) {
-      window.posthog.identify(user.uid, {
+      window.posthog.identify(user.id, {
         email: user.email,
         role: userData && userData.role,
         familyId: userData && userData.familyId

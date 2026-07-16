@@ -4,13 +4,11 @@
     "ignore": [
       "firebase.json",
       ".firebaserc",
-      "firestore.rules",
       "CLAUDE.md",
       "README.md",
       ".github/**",
       ".git/**",
-      "node_modules/**",
-      "functions/**"
+      "node_modules/**"
     ],
     "rewrites": [
       {
@@ -26,12 +24,5 @@
         ]
       }
     ]
-  },
-  "firestore": {
-    "rules": "firestore.rules"
-  },
-  "functions": {
-    "source": "functions",
-    "runtime": "nodejs18"
   }
 }

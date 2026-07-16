@@ -21,15 +21,3 @@ jobs:
         run: firebase deploy --only hosting --project quinflo
         env:
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json
-
-      - name: Deploy Firestore Rules
-        run: firebase deploy --only firestore:rules --project quinflo
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json
-        continue-on-error: true
-
-      - name: Deploy Functions
-        run: firebase deploy --only functions --project quinflo
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json
-        continue-on-error: true
