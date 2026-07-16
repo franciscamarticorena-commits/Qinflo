@@ -5,7 +5,7 @@ var EVENT_CATEGORIES = {
   cumpleanos: 'Cumpleaños', vacaciones: 'Vacaciones', otro: 'Otro'
 };
 var EVENT_STATUS_LABELS = {
-  pending: 'Pendiente', confirmed: 'Confirmado', done: 'Realizado', cancelled: 'Cancelado'
+  pending: 'Pendiente', confirmed: 'Confirmado', completed: 'Realizado', cancelled: 'Cancelado'
 };
 var REMINDER_LABELS = { '2h': '2 h antes', '1d': '1 día antes', '1w': '1 semana antes' };
 var CAT_ICONS = {
@@ -141,7 +141,7 @@ async function updateEventStatus(eventId, status) {
       ev.approvalStatus = status === 'confirmed' ? 'approved' : status;
       if (status === 'cancelled') ev.cancelledAt = upd.cancelled_at;
       if (typeof logActivity === 'function') {
-        var verb = status === 'cancelled' ? 'canceló' : status === 'done' ? 'marcó como realizado' : 'actualizó';
+        var verb = status === 'cancelled' ? 'canceló' : status === 'completed' ? 'marcó como realizado' : 'actualizó';
         logActivity('event_' + status, myLabel() + ' ' + verb + ' el evento: ' + (ev.title || '') + ' (' + (ev.date || '') + ')', { eventId: eventId });
       }
     }
@@ -222,7 +222,7 @@ function renderEventsForDay(day) {
     var statusBadge = '';
     if (pendingForMe || pendingByMe) {
       statusBadge = '<span style="background:#FEF3C7;color:#D97706;font-size:10px;font-weight:700;border-radius:5px;padding:1px 6px;margin-left:4px">Pend. confirmación</span>';
-    } else if (ev.status === 'done') {
+    } else if (ev.status === 'completed') {
       statusBadge = '<span style="background:#DCFCE7;color:#166534;font-size:10px;font-weight:700;border-radius:5px;padding:1px 6px;margin-left:4px">Realizado ✓</span>';
     }
     if (wasEdited && ev.status !== 'cancelled') {
@@ -234,10 +234,10 @@ function renderEventsForDay(day) {
         '<button class="btn-sm" style="background:var(--success);font-size:11px;padding:5px 12px" onclick="approveEvent(\'' + ev.id + '\')">Confirmar</button>' +
         '<button class="btn-outline" style="font-size:11px;padding:5px 12px" onclick="rejectEvent(\'' + ev.id + '\')">Rechazar</button>' +
         '</div>';
-    } else if (ev.status !== 'cancelled' && ev.status !== 'done') {
+    } else if (ev.status !== 'cancelled' && ev.status !== 'completed') {
       actions = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
         '<button class="btn-outline" style="font-size:11px;padding:4px 9px" onclick="openEventForm(\'' + ev.id + '\')">Editar</button>' +
-        (pendingByMe ? '' : '<button class="btn-outline" style="font-size:11px;padding:4px 9px" onclick="updateEventStatus(\'' + ev.id + '\',\'done\')">✓ Realizado</button>') +
+        (pendingByMe ? '' : '<button class="btn-outline" style="font-size:11px;padding:4px 9px" onclick="updateEventStatus(\'' + ev.id + '\',\'completed\')">✓ Realizado</button>') +
         '<button class="btn-outline" style="font-size:11px;padding:4px 9px;color:var(--error)" onclick="updateEventStatus(\'' + ev.id + '\',\'cancelled\')">Cancelar</button>' +
         '</div>';
     } else if (ev.status === 'cancelled') {
