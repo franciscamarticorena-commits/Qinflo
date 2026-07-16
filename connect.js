@@ -87,6 +87,11 @@ async function autoConnect(code) {
     var { data: coUser } = await supa.from('users').select('name, email').eq('id', inviterId).single();
     CODATA = coUser || null;
 
+    if (typeof logActivity === 'function') {
+      var myFirstName = USERDATA.name ? USERDATA.name.split(' ')[0] : 'Tu coparent';
+      logActivity('coparent_joined', myFirstName + ' se conectó a Qinflo');
+    }
+
     if (typeof showCoparentWelcome === 'function') {
       showCoparentWelcome();
     } else {

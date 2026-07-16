@@ -346,10 +346,12 @@ async function loadSettlements() {
 }
 
 async function loadActivity() {
-  var { data } = await supa.from('activity_logs').select('*').eq('family_id', FAMILY_ID).order('created_at', { ascending: false }).limit(20);
+  var { data } = await supa.from('activity_logs').select('*, users(name)').eq('family_id', FAMILY_ID).order('created_at', { ascending: false }).limit(20);
   activityLog = (data || []).map(function(r) {
     var c = toCamel(r);
-    c.createdBy = r.actor_user_id;
+    c.createdBy   = r.actor_user_id;
+    c.description = r.summary;
+    c.actorName   = r.users ? r.users.name : '';
     return c;
   });
   if (typeof renderTodayActivity === 'function') renderTodayActivity();
