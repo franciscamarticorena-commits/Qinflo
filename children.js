@@ -38,18 +38,26 @@ async function saveKid() {
     notes:            $('kidNotes').value
   };
   var id = $('editKidId').value;
-  var error;
+  var camelData = toCamel(data);
   if (id) {
-    ({ error } = await supa.from('children').update({ ...data, updated_at: nowISO() }).eq('id', id));
+    var { error } = await supa.from('children').update({ ...data, updated_at: nowISO() }).eq('id', id);
+    if (error) {
+      console.error('[saveKid]', error);
+      alert('No se pudo guardar: ' + error.message);
+      return;
+    }
+    var idx = children.findIndex(function(k) { return k.id === id; });
+    if (idx !== -1) children[idx] = Object.assign({}, children[idx], camelData);
   } else {
-    ({ error } = await supa.from('children').insert({ ...data, family_id: FAMILY_ID }));
+    var { data: inserted, error: insErr } = await supa.from('children').insert({ ...data, family_id: FAMILY_ID }).select().single();
+    if (insErr) {
+      console.error('[saveKid]', insErr);
+      alert('No se pudo guardar: ' + insErr.message);
+      return;
+    }
+    children.push(toCamel(inserted));
   }
-  if (error) {
-    console.error('[saveKid]', error);
-    alert('No se pudo guardar: ' + error.message);
-    return;
-  }
-  await loadChildren();
+  renderChildren(); renderToday();
   hide('kidForm');
 }
 
@@ -92,7 +100,8 @@ function renderChildren() {
     card.querySelector('.del-btn').addEventListener('click', async function() {
       var { error } = await supa.from('children').update({ deleted_at: nowISO() }).eq('id', kid.id);
       if (error) { console.error('[delete kid]', error); alert('No se pudo eliminar: ' + error.message); return; }
-      loadChildren();
+      children = children.filter(function(k) { return k.id !== kid.id; });
+      renderChildren(); renderToday();
     });
     el.appendChild(card);
   });
