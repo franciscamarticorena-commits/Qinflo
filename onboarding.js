@@ -368,7 +368,7 @@ function _onbInviteMessage(link) {
   var myName = USERDATA.name ? USERDATA.name.split(' ')[0] : '';
   var greeting = otherName ? ('¡Hola, ' + otherName + '! ') : '¡Hola! ';
   var from = myName ? (myName + ' te invita') : 'Te invito';
-  return greeting + from + ' a sumarte a Qinflo. Es un espacio pensado para que puedan coordinar de forma organizada y fluida todo lo relacionado con sus hijos. Entra aquí: ' + link;
+  return greeting + from + ' a Qinflo. Un espacio pensado para que puedan coordinar de forma organizada y fluida todo lo relacionado con sus hijos. Entra aquí: ' + link;
 }
 
 function buildOnbInviteLink() {
