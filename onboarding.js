@@ -393,6 +393,18 @@ function _watchForCoparentJoin() {
 
 async function finishOnboarding() {
   if (_coparentWatcher) { supa.removeChannel(_coparentWatcher); _coparentWatcher = null; }
+
+  if (!USER) {
+    var { data: sessionData } = await supa.auth.getSession();
+    USER = sessionData && sessionData.session ? sessionData.session.user : null;
+  }
+
+  if (!USER) {
+    show('authScreen'); hide('onboardingScreen'); hide('app');
+    showMsg('authMsg', 'Tu sesión se cerró. Inicia sesión de nuevo para continuar.', true);
+    return;
+  }
+
   try {
     await supa.from('users').update({ onboarding_completed: true }).eq('id', USER.id);
     USERDATA.onboardingCompleted = true;
