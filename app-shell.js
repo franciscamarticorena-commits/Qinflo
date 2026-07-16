@@ -9,12 +9,17 @@ async function loadUserData(userId) {
   if (uErr || !user) return null;
 
   // Membresía activa con datos de familia
-  var { data: mb, error: mbErr } = await supa
+  // (order + limit 1 en vez de maybeSingle: si por alguna razón hubiera más
+  // de una fila, no queremos que la consulta falle y dispare la creación
+  // de otra familia — nos quedamos con la más antigua)
+  var { data: mbRows, error: mbErr } = await supa
     .from('family_members')
     .select('role, family_id, families(id, name, config, custody_config, special_rules, cal_alg_version, p1_uid, p2_uid)')
     .eq('user_id', userId)
     .eq('status', 'active')
-    .maybeSingle();
+    .order('joined_at', { ascending: true })
+    .limit(1);
+  var mb = mbRows && mbRows[0];
   if (mbErr || !mb) return null;
 
   // Coparent (otro miembro activo de la misma familia)
