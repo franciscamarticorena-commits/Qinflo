@@ -77,33 +77,44 @@ async function saveEvent() {
     requiresApproval: requiresApproval
   };
   try {
+    var error;
     if (editingEventId) {
-      await supa.from('events').update({
+      ({ error } = await supa.from('events').update({
         title:                  data.title,
         start_at:               data.date + (data.time ? 'T' + data.time + ':00' : 'T00:00:00'),
         category:               data.category,
         participants:           data.participants,
         description:            data.description,
+        reminder:               data.reminder || null,
         requires_confirmation:  data.requiresApproval,
         updated_at:             nowISO()
-      }).eq('id', editingEventId);
+      }).eq('id', editingEventId));
     } else {
-      await supa.from('events').insert({
+      ({ error } = await supa.from('events').insert({
         family_id:              FAMILY_ID,
         title:                  data.title,
         start_at:               data.date + (data.time ? 'T' + data.time + ':00' : 'T00:00:00'),
         category:               data.category,
         participants:           data.participants,
         description:            data.description,
+        reminder:               data.reminder || null,
         requires_confirmation:  data.requiresApproval,
         status:                 requiresApproval ? 'pending' : 'confirmed',
         created_by:             USER ? USER.id : null,
         created_by_role:        myRole()
-      });
-      if (typeof logActivity === 'function') {
+      }));
+      if (!error && typeof logActivity === 'function') {
         logActivity('event_created', myLabel() + ' creó el evento: ' + title + ' (' + date + ')', { title: title, date: date });
       }
     }
+    if (error) {
+      console.error('[saveEvent]', error);
+      alert('No se pudo guardar el evento: ' + error.message);
+      return;
+    }
+    if (typeof loadEvents === 'function') await loadEvents();
+    if (typeof renderCalendar === 'function') renderCalendar();
+    if (typeof renderDayDetail === 'function') renderDayDetail();
     closeEventForm();
   } catch(e) {
     console.error('[saveEvent]', e);
