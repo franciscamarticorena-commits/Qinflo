@@ -490,10 +490,10 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 
 // --- TABS ---------------------------------------------------
-var INFO_SUBTABS = ['agreements', 'reminders', 'recursos', 'documents'];
+var INFO_SUBTABS = ['agreements', 'recursos', 'documents'];
 
 function switchTab(tab) {
-  ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'reminders', 'recursos', 'documents', 'info'].forEach(function(t) {
+  ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'recursos', 'documents', 'info'].forEach(function(t) {
     $('tab-' + t).classList.toggle('hidden', t !== tab);
   });
   document.querySelectorAll('#mainNav button').forEach(function(b) {
