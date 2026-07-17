@@ -148,6 +148,7 @@ async function updateEventStatus(eventId, status) {
     }
     if (typeof renderCalendar === 'function') renderCalendar();
     if (typeof renderDayDetail === 'function') renderDayDetail();
+    if (typeof renderToday === 'function') renderToday();
   } catch(e) {
     console.error('[updateEventStatus]', e);
     alert('Error al actualizar. Intenta de nuevo.');
@@ -174,6 +175,7 @@ async function approveEvent(eventId) {
     }
     if (typeof renderCalendar === 'function') renderCalendar();
     if (typeof renderDayDetail === 'function') renderDayDetail();
+    if (typeof renderToday === 'function') renderToday();
   } catch(e) {
     console.error('[approveEvent]', e);
     alert('Error al confirmar. Intenta de nuevo.');
@@ -203,6 +205,7 @@ async function rejectEvent(eventId) {
     }
     if (typeof renderCalendar === 'function') renderCalendar();
     if (typeof renderDayDetail === 'function') renderDayDetail();
+    if (typeof renderToday === 'function') renderToday();
   } catch(e) {
     console.error('[rejectEvent]', e);
     alert('Error al rechazar. Intenta de nuevo.');

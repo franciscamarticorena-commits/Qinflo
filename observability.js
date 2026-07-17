@@ -53,12 +53,25 @@ function registerServiceWorker() {
   var reg = null;
   var refreshing = false;
 
-  // Cuando el nuevo service worker toma el control, recargamos una sola vez
-  // para que la pestaña/app abierta pase a usar el código nuevo.
+  // Cuando el nuevo service worker toma el control, recargamos para que la
+  // pestaña/app abierta pase a usar el código nuevo. Si la app está en
+  // primer plano (uso activo), no recargamos de inmediato -- interrumpiría
+  // lo que el usuario está haciendo (ej. justo al tocar un botón). Esperamos
+  // a que la app pase a segundo plano y recargamos recién ahí.
   navigator.serviceWorker.addEventListener('controllerchange', function() {
     if (refreshing) return;
-    refreshing = true;
-    window.location.reload();
+    if (document.visibilityState === 'hidden') {
+      refreshing = true;
+      window.location.reload();
+      return;
+    }
+    var reloadOnHide = function() {
+      if (document.visibilityState !== 'hidden' || refreshing) return;
+      refreshing = true;
+      document.removeEventListener('visibilitychange', reloadOnHide);
+      window.location.reload();
+    };
+    document.addEventListener('visibilitychange', reloadOnHide);
   });
 
   window.addEventListener('load', function() {
