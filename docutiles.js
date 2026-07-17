@@ -30,7 +30,7 @@ var DOC_UTILES = [
     sites: [
       { icon: '🪪', name: 'Registro Civil e Identificación', sub: 'registrocivil.cl', url: 'https://www.registrocivil.cl' },
       { icon: '🕵️', name: 'Policía de Investigaciones (PDI)', sub: 'pdichile.cl', url: 'https://www.pdichile.cl' },
-      { icon: '🏛️', name: 'ChileAtiende', sub: 'chileatiende.gob.cl', url: 'https://www.chileatiende.gob.cl' },
+      { icon: '🏛️', name: 'ChileAtiende', sub: 'Asesoría jurídica para autorización de salida de niños, niñas o adolescentes', url: 'https://www.chileatiende.gob.cl/fichas/76194-asesoria-juridica-para-solicitar-la-autorizacion-para-las-salidas-de-ninos-ninas-o-adolescentes-del-pais' },
       { icon: '🛂', name: 'Consulado de Chile', sub: 'Requisitos cuando viaja un menor de edad', url: 'https://www.consulado.gob.cl/cuando-viaja-un-menor-de-edad' },
       { icon: '🌎', name: 'Ministerio de Relaciones Exteriores', sub: 'minrel.gob.cl', url: 'https://www.minrel.gob.cl' }
     ],
