@@ -503,6 +503,8 @@ window.addEventListener('DOMContentLoaded', function() {
   // Messages
   $('sendMsgBtn').addEventListener('click', sendMsg);
   $('msgInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') sendMsg(); });
+  if ($('msgWarnEditBtn')) $('msgWarnEditBtn').addEventListener('click', editMsgFromWarning);
+  if ($('msgWarnSendBtn')) $('msgWarnSendBtn').addEventListener('click', sendMsgOverride);
 
   // Children
   $('openKidFormBtn').addEventListener('click', function() { openKidForm(null); });

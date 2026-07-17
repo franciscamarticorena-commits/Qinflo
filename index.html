@@ -856,6 +856,13 @@
   <div class="card" style="margin-bottom:14px">
     <div class="msg-list" id="msgList"></div>
   </div>
+  <div id="msgWarningBox" class="hidden" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:12px;padding:12px 14px;margin-bottom:10px">
+    <div style="font-size:13px;color:var(--text);margin-bottom:10px">Este mensaje podría sonar agresivo u ofensivo. ¿Quieres editarlo o enviarlo igual?</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn-outline" id="msgWarnEditBtn" style="font-size:12px;padding:6px 12px">Editar mensaje</button>
+      <button class="btn-sm" id="msgWarnSendBtn" style="font-size:12px;padding:6px 12px;background:var(--error)">Enviar igual</button>
+    </div>
+  </div>
   <div class="msg-input-row">
     <input class="inp" id="msgInput" placeholder="Escribe un mensaje…"/>
     <button class="btn-divider" id="dividerMsgBtn" title="Separar tema" onclick="sendMsgDivider()">—</button>
@@ -1190,7 +1197,7 @@
 <script src="connect.js?v=8"></script>
 <script src="calendar.js?v=14"></script>
 <script src="expenses.js?v=13"></script>
-<script src="messages.js?v=9"></script>
+<script src="messages.js?v=10"></script>
 <script src="children.js?v=8"></script>
 <script src="agreements.js?v=11"></script>
 <script src="reminders.js?v=11"></script>
@@ -1206,7 +1213,7 @@
 <script src="activity.js?v=3"></script>
 <script src="today.js?v=15"></script>
 <script src="theme.js?v=1"></script>
-<script src="app-shell.js?v=20"></script>
+<script src="app-shell.js?v=21"></script>
 </body>
 </html>
 

@@ -107,7 +107,18 @@ function renderQuickReplies() {
 }
 
 function isPotentiallyOffensive(txt) {
-  var bad = ['idiota','imbécil','imbecil','estúpido','estupido','inútil','inutil','weon','hueon','mierda','conchetumadre','ctm','pendejo','descriteriado','irresponsable'];
+  var bad = [
+    'idiota','imbécil','imbecil','estúpido','estupido','estúpida','estupida',
+    'inútil','inutil','weon','hueon','huevón','huevon','mierda','conchetumadre',
+    'ctm','pendejo','pendeja','descriteriado','descriteriada','irresponsable',
+    'negligente','mentiroso','mentirosa','manipulador','manipuladora',
+    'psicópata','psicopata','narcisista','tonto','tonta','bruto','bruta',
+    'maleducado','maleducada','patético','patetico','patética','patetica',
+    'ridículo','ridiculo','ridícula','ridicula','asqueroso','asquerosa',
+    'asco','odio','detesto','desgraciado','desgraciada','maldito','maldita',
+    'basura','feo','fea','cállate','callate','pésimo padre','pesimo padre',
+    'pésima madre','pesima madre','mal padre','mala madre'
+  ];
   var t = txt.toLowerCase();
   return bad.some(function(w) { return t.indexOf(w) >= 0; });
 }
@@ -121,13 +132,33 @@ function _msgFromRow(r) {
   return c;
 }
 
+var _msgSendOverride = false;
+
+function _hideMsgWarning() {
+  if ($('msgWarningBox')) $('msgWarningBox').classList.add('hidden');
+}
+
+function editMsgFromWarning() {
+  _msgSendOverride = false;
+  _hideMsgWarning();
+  $('msgInput').focus();
+}
+
+function sendMsgOverride() {
+  _msgSendOverride = true;
+  _hideMsgWarning();
+  sendMsg();
+}
+
 async function sendMsg() {
   var txt = $('msgInput').value.trim();
   if (!txt) return;
-  if (isPotentiallyOffensive(txt)) {
-    var ok = confirm('Este mensaje podría interpretarse como ofensivo o poco colaborativo. ¿Quieres enviarlo igual?');
-    if (!ok) return;
+  if (isPotentiallyOffensive(txt) && !_msgSendOverride) {
+    if ($('msgWarningBox')) $('msgWarningBox').classList.remove('hidden');
+    return;
   }
+  _msgSendOverride = false;
+  _hideMsgWarning();
   var { data, error } = await supa.from('messages').insert({
     family_id:   FAMILY_ID,
     author_id:   USER.id,
