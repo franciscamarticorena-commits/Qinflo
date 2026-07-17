@@ -524,9 +524,9 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 
 // --- TABS ---------------------------------------------------
-var INFO_SUBTABS = ['agreements', 'recursos', 'documents', 'docutiles', 'docutil-detail'];
+var INFO_SUBTABS = ['agreements', 'recursos', 'documents', 'docutiles', 'docutil-detail', 'servicios'];
 
-var APP_TABS = ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'recursos', 'documents', 'docutiles', 'docutil-detail', 'info'];
+var APP_TABS = ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'recursos', 'documents', 'docutiles', 'docutil-detail', 'servicios', 'info'];
 
 function switchTab(tab) {
   if (tab === 'docutil-detail' && typeof _currentDocUtilId !== 'undefined' && !_currentDocUtilId) tab = 'docutiles';
@@ -541,6 +541,7 @@ function switchTab(tab) {
   if (tab === 'today') renderToday();
   if (tab === 'info') lucide.createIcons();
   if (tab === 'docutiles' && typeof renderDocUtilesList === 'function') renderDocUtilesList();
+  if (tab === 'servicios' && typeof renderServiciosList === 'function') renderServiciosList();
   try { sessionStorage.setItem('qinfloLastTab', tab); } catch(e) {}
 }
 

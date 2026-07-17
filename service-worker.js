@@ -1,4 +1,4 @@
-const QINFLO_CACHE = 'qinflo-cache-v59';
+const QINFLO_CACHE = 'qinflo-cache-v60';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -22,6 +22,7 @@ const STATIC_ASSETS = [
   './activity.js',
   './documents.js',
   './docutiles.js',
+  './services.js',
   './today.js',
   './theme.js',
   './app-shell.js',

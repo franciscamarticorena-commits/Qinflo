@@ -989,7 +989,8 @@
     <button onclick="switchTab('agreements')" class="info-nav-btn">Acuerdos<span>›</span></button>
     <button onclick="switchTab('documents')" class="info-nav-btn">Cartas tipo<span>›</span></button>
     <button onclick="switchTab('recursos')" class="info-nav-btn">Sitios de interés<span>›</span></button>
-    <button onclick="switchTab('docutiles')" class="info-nav-btn" style="border-bottom:none">Documentos útiles<span>›</span></button>
+    <button onclick="switchTab('docutiles')" class="info-nav-btn">Documentos útiles<span>›</span></button>
+    <button onclick="switchTab('servicios')" class="info-nav-btn" style="border-bottom:none">Servicios recomendados<span>›</span></button>
   </div>
 </div>
 
@@ -1002,6 +1003,17 @@
     </div>
   </div>
   <div id="docutilesList"></div>
+</div>
+
+<!-- -- SERVICIOS RECOMENDADOS -------------------------------- -->
+<div id="tab-servicios" class="hidden">
+  <div class="section-header">
+    <div>
+      <button class="btn-outline" style="font-size:11px;padding:4px 10px;margin-bottom:8px" onclick="switchTab('info')">← Recursos</button>
+      <div class="section-title"><h2>Servicios recomendados</h2><p>Profesionales y empresas de utilidad para la crianza entre dos hogares</p></div>
+    </div>
+  </div>
+  <div id="serviciosList"></div>
 </div>
 
 <!-- -- DOCUMENTOS ÚTILES (detalle) -------------------------- -->
@@ -1176,6 +1188,7 @@
 <script src="confirmations.js?v=1"></script>
 <script src="documents.js?v=1"></script>
 <script src="docutiles.js?v=5"></script>
+<script src="services.js?v=1"></script>
 <script src="activity.js?v=1"></script>
 <script src="today.js?v=14"></script>
 <script src="theme.js?v=1"></script>
