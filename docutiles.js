@@ -13,10 +13,11 @@ var DOC_UTILES = [
     summary: 'Qué documentos preparar cuando un hijo o hija viaja fuera de Chile con un solo padre o madre.',
     intro: 'Si un niño, niña o adolescente sale de Chile acompañado por solo uno de sus padres, normalmente será necesario contar con una autorización otorgada por el padre o madre que no viaja (o por quien corresponda según la situación familiar). Los requisitos pueden variar según cada caso, por lo que siempre es recomendable revisar la información oficial antes del viaje.',
     checklist: [
+      'Cédula de identidad vigente de ambos padres (se solicita al firmar la autorización en notaría)',
+      'Cédula de identidad y certificado de nacimiento del niño, niña o adolescente (también se piden en notaría)',
+      'Autorización para salir del país cuando corresponda — la PDI acepta copias con Firma Electrónica Avanzada (FEA)',
       'Pasaporte o documento de identidad vigente (según el país de destino)',
       'Visa, si el país la exige',
-      'Autorización para salir del país cuando corresponda',
-      'Certificado de nacimiento u otro documento que permita acreditar la filiación, si fuese necesario',
       'Revisar si el país de destino exige documentación sanitaria o requisitos especiales',
       'Llevar copias digitales de todos los documentos importantes',
       'Guardar una copia impresa en un lugar distinto de los originales'
