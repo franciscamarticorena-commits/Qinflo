@@ -27,15 +27,54 @@ function _relTime(ts) {
   return d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
 }
 
+// Colapsada por defecto; se expande al tocar el encabezado. Muestra una
+// burbuja con la cantidad de hechos nuevos desde la última vez que se abrió
+// (estilo WhatsApp), guardada en localStorage por familia.
+var _activityExpanded = false;
+
+function _activitySeenKey() { return 'qinflo_activity_seen_' + (FAMILY_ID || ''); }
+function _getActivitySeenAt() {
+  try { return localStorage.getItem(_activitySeenKey()) || null; } catch(e) { return null; }
+}
+function _setActivitySeenNow() {
+  try { localStorage.setItem(_activitySeenKey(), nowISO()); } catch(e) {}
+}
+
+function toggleTodayActivity() {
+  _activityExpanded = !_activityExpanded;
+  if (_activityExpanded) _setActivitySeenNow();
+  renderTodayActivity();
+}
+
 function renderTodayActivity() {
-  var el = $('todayActivityBlock');
-  var card = $('todayActivityCard');
+  var el       = $('todayActivityBlock');
+  var card     = $('todayActivityCard');
+  var badgeEl  = $('todayActivityBadge');
+  var chevronEl = $('todayActivityChevron');
   if (!el) return;
   if (!activityLog || !activityLog.length) {
     if (card) card.classList.add('hidden');
     return;
   }
   if (card) card.classList.remove('hidden');
+
+  var seenAt = _getActivitySeenAt();
+  var unreadCount = activityLog.filter(function(a) {
+    return a.createdAt && (!seenAt || new Date(a.createdAt) > new Date(seenAt));
+  }).length;
+
+  if (badgeEl) {
+    if (unreadCount > 0 && !_activityExpanded) {
+      badgeEl.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
+      badgeEl.classList.remove('hidden');
+    } else {
+      badgeEl.classList.add('hidden');
+    }
+  }
+  if (chevronEl) chevronEl.textContent = _activityExpanded ? '▲' : '▼';
+  el.classList.toggle('hidden', !_activityExpanded);
+  if (!_activityExpanded) return;
+
   el.innerHTML = activityLog.slice(0, 10).map(function(a) {
     var time = a.createdAt ? _relTime(a.createdAt) : '';
     var actor = a.actorName ? a.actorName.split(' ')[0] : '';

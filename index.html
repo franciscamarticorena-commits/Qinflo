@@ -606,12 +606,18 @@
     </div>
   </div>
 
-  <!-- Actividad reciente — solo aparece si hay registros -->
+  <!-- Actividad reciente — solo aparece si hay registros; colapsada por defecto -->
   <div id="todayActivityCard" class="hidden">
     <div class="card">
       <div class="card-body">
-        <div class="stat-label" style="margin-bottom:8px">ACTIVIDAD RECIENTE</div>
-        <div id="todayActivityBlock"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleTodayActivity()">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="stat-label">ACTIVIDAD RECIENTE</div>
+            <span id="todayActivityBadge" class="hidden" style="background:var(--error);color:#fff;font-size:10px;font-weight:700;border-radius:9px;min-width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px"></span>
+          </div>
+          <span id="todayActivityChevron" style="color:var(--text-s);font-size:11px">▼</span>
+        </div>
+        <div id="todayActivityBlock" class="hidden" style="margin-top:8px"></div>
       </div>
     </div>
   </div>
@@ -1197,7 +1203,7 @@
 <script src="documents.js?v=1"></script>
 <script src="docutiles.js?v=5"></script>
 <script src="services.js?v=1"></script>
-<script src="activity.js?v=1"></script>
+<script src="activity.js?v=2"></script>
 <script src="today.js?v=14"></script>
 <script src="theme.js?v=1"></script>
 <script src="app-shell.js?v=19"></script>
