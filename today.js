@@ -7,6 +7,10 @@ var TODAY_MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio',
 
 function renderToday() {
   if (!$('tab-today')) return;
+  // Evita pintar "Calendario no configurado"/"Sin eventos" con los datos
+  // todavía sin cargar justo tras un reload -- se corrige solo apenas
+  // setupListeners() marque _dataReady = true y llame de nuevo.
+  if (typeof _dataReady !== 'undefined' && !_dataReady && FAMILY_ID) return;
   var now = new Date();
   var todayStr = now.getFullYear() + '-' +
     String(now.getMonth() + 1).padStart(2, '0') + '-' +

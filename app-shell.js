@@ -199,6 +199,11 @@ function loadApp() {
 
 // --- REALTIME + CARGA INICIAL --------------------------------
 var _realtimeChannel = null;
+// Evita que renderToday() pinte "Calendario no configurado" / "Sin eventos"
+// con los arrays todavía vacíos justo después de un reload, antes de que la
+// carga inicial de datos termine (se veía como un salto raro en la pantalla
+// Hoy: primero vacío/incorrecto, luego -tras un segundo- el dato real).
+var _dataReady = false;
 
 async function setupListeners() {
   if (!FAMILY_ID) return;
@@ -219,6 +224,8 @@ async function setupListeners() {
     loadTemporaryOutings(),
     loadCustodyConfirmations()
   ]);
+  _dataReady = true;
+  renderToday();
 
   // Suscripción realtime: un canal por tabla
   if (_realtimeChannel) _realtimeChannel.unsubscribe();
