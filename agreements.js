@@ -113,6 +113,10 @@ async function signAgreement(agrId) {
   var local = agreements.find(function(a) { return a.id === agrId; });
   if (local) local.signatures = sigs;
   renderAgreements();
+  if (typeof renderToday === 'function') renderToday();
+  if (typeof logActivity === 'function' && local) {
+    logActivity('agreement_signed', myLabel() + ' confirmó el acuerdo: ' + local.title, { agreementId: agrId });
+  }
 }
 
 async function changeAgrStatus(agrId, status) {
@@ -122,6 +126,7 @@ async function changeAgrStatus(agrId, status) {
   var local = agreements.find(function(a) { return a.id === agrId; });
   if (local) local.status = status;
   renderAgreements();
+  if (typeof renderToday === 'function') renderToday();
 }
 
 function renderAgreements() {

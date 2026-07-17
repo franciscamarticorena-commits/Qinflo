@@ -308,6 +308,7 @@ async function loadAgreements() {
     return c;
   });
   renderAgreements();
+  if (typeof renderToday === 'function') renderToday();
 }
 
 async function loadReminders() {

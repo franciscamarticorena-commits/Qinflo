@@ -107,8 +107,17 @@ function _todayPendingRequests() {
     if (r.for !== 'both' && r.for !== (role === 'p1' ? 'mama' : 'papa')) return false;
     return true;
   });
+  var coUid = USERDATA && USERDATA.coparentId;
+  var agrsToSign = (agreements || []).filter(function(a) {
+    var sigs = a.signatures || {};
+    return a.status === 'Activo' && !sigs[USER && USER.id];
+  });
+  var agrsWaiting = (agreements || []).filter(function(a) {
+    var sigs = a.signatures || {};
+    return a.status === 'Activo' && !!sigs[USER && USER.id] && coUid && !sigs[coUid];
+  });
 
-  var total = propsReceived.length + propsSent.length + evtsToApprove.length + evtsSent.length + remsToday.length;
+  var total = propsReceived.length + propsSent.length + evtsToApprove.length + evtsSent.length + remsToday.length + agrsToSign.length + agrsWaiting.length;
 
   if (total === 0) {
     if (card) card.classList.add('hidden');
@@ -164,6 +173,24 @@ function _todayPendingRequests() {
       _badge('HOY', 'var(--accent)'),
       r.title,
       fLbl(r.for),
+      null
+    );
+  });
+
+  agrsToSign.forEach(function(a) {
+    html += _pendingRow(
+      _badge('REVISAR', 'var(--warn)'),
+      'Acuerdo — ' + a.title,
+      a.category || null,
+      '<button class="btn-sm" style="background:var(--success);font-size:12px;padding:6px 14px" onclick="signAgreement(\'' + a.id + '\')">Confirmar</button>'
+    );
+  });
+
+  agrsWaiting.forEach(function(a) {
+    html += _pendingRow(
+      _badge('ESPERANDO', 'var(--primary)'),
+      'Acuerdo — ' + a.title,
+      'Esperando confirmación',
       null
     );
   });
