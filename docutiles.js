@@ -30,10 +30,10 @@ var DOC_UTILES = [
     },
     sites: [
       { icon: '🪪', name: 'Registro Civil (certificado de nacimiento)', sub: 'Servicios en línea', url: 'https://www.registrocivil.cl/principal/servicios-en-linea' },
-      { icon: '🕵️', name: 'Policía de Investigaciones (PDI)', sub: 'pdichile.cl', url: 'https://www.pdichile.cl' },
+      { icon: '🕵️', name: 'Policía de Investigaciones (PDI)', sub: 'Planifica tu viaje y sigue nuestros consejos', url: 'https://www.pdichile.cl/centro-de-prensa/detalle-prensa/2025/01/24/planifica-tu-viaje-y-sigue-nuestros-consejos' },
       { icon: '🏛️', name: 'ChileAtiende', sub: 'Asesoría jurídica para autorización de salida de niños, niñas o adolescentes', url: 'https://www.chileatiende.gob.cl/fichas/76194-asesoria-juridica-para-solicitar-la-autorizacion-para-las-salidas-de-ninos-ninas-o-adolescentes-del-pais' },
       { icon: '🛂', name: 'Consulado de Chile', sub: 'Requisitos cuando viaja un menor de edad', url: 'https://www.consulado.gob.cl/cuando-viaja-un-menor-de-edad' },
-      { icon: '🌎', name: 'Ministerio de Relaciones Exteriores', sub: 'minrel.gob.cl', url: 'https://www.minrel.gob.cl' }
+      { icon: '🌎', name: 'Ministerio de Relaciones Exteriores', sub: 'Servicios ciudadanos', url: 'https://www.minrel.gob.cl/servicios-ciudadanos' }
     ],
     warning: 'La información publicada por Qinflo tiene un carácter exclusivamente informativo y busca orientar a las familias en la preparación de un viaje internacional. Los requisitos pueden variar dependiendo de la situación familiar, resoluciones judiciales, país de destino y cambios en la normativa vigente. Antes de viajar, verifica siempre la información directamente en los organismos oficiales correspondientes.'
   }
@@ -93,7 +93,7 @@ function renderDocUtilDetail() {
       '<div style="flex:1">' +
         '<div class="resource-title">' + s.name + '</div>' +
         '<div class="resource-sub">' + s.sub + '</div>' +
-        '<a href="' + s.url + '" class="resource-link">Ir al sitio oficial</a>' +
+        '<a href="' + s.url + '" target="_blank" rel="noopener noreferrer" class="resource-link">Ir al sitio oficial</a>' +
       '</div>' +
     '</div>';
   }).join('');
