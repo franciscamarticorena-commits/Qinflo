@@ -1,4 +1,4 @@
-const QINFLO_CACHE = 'qinflo-cache-v54';
+const QINFLO_CACHE = 'qinflo-cache-v55';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -21,6 +21,7 @@ const STATIC_ASSETS = [
   './confirmations.js',
   './activity.js',
   './documents.js',
+  './docutiles.js',
   './today.js',
   './theme.js',
   './app-shell.js',
@@ -28,7 +29,8 @@ const STATIC_ASSETS = [
   './favicon.svg',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',
-  './assets/icons/icon-512-maskable.png'
+  './assets/icons/icon-512-maskable.png',
+  './assets/docs/modelo-autorizacion-viaje-menor.pdf'
 ];
 
 self.addEventListener('install', event => {

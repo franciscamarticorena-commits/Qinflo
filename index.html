@@ -988,8 +988,31 @@
   <div class="card" style="padding:0;overflow:hidden">
     <button onclick="switchTab('agreements')" class="info-nav-btn">Acuerdos<span>›</span></button>
     <button onclick="switchTab('documents')" class="info-nav-btn">Cartas tipo<span>›</span></button>
-    <button onclick="switchTab('recursos')" class="info-nav-btn" style="border-bottom:none">Sitios de interés<span>›</span></button>
+    <button onclick="switchTab('recursos')" class="info-nav-btn">Sitios de interés<span>›</span></button>
+    <button onclick="switchTab('docutiles')" class="info-nav-btn" style="border-bottom:none">Documentos útiles<span>›</span></button>
   </div>
+</div>
+
+<!-- -- DOCUMENTOS ÚTILES (lista) --------------------------- -->
+<div id="tab-docutiles" class="hidden">
+  <div class="section-header">
+    <div>
+      <button class="btn-outline" style="font-size:11px;padding:4px 10px;margin-bottom:8px" onclick="switchTab('info')">← Recursos</button>
+      <div class="section-title"><h2>Documentos útiles</h2><p>Guías prácticas para situaciones habituales de la crianza</p></div>
+    </div>
+  </div>
+  <div id="docutilesList"></div>
+</div>
+
+<!-- -- DOCUMENTOS ÚTILES (detalle) -------------------------- -->
+<div id="tab-docutil-detail" class="hidden">
+  <div class="section-header">
+    <div>
+      <button class="btn-outline" style="font-size:11px;padding:4px 10px;margin-bottom:8px" onclick="switchTab('docutiles')">← Documentos útiles</button>
+      <div class="section-title"><h2 id="docutilDetailTitle">Documento útil</h2></div>
+    </div>
+  </div>
+  <div id="docutilDetailContent"></div>
 </div>
 
 
@@ -1152,10 +1175,11 @@
 <script src="outings.js?v=2"></script>
 <script src="confirmations.js?v=1"></script>
 <script src="documents.js?v=1"></script>
+<script src="docutiles.js?v=1"></script>
 <script src="activity.js?v=1"></script>
 <script src="today.js?v=14"></script>
 <script src="theme.js?v=1"></script>
-<script src="app-shell.js?v=16"></script>
+<script src="app-shell.js?v=17"></script>
 </body>
 </html>
 
