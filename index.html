@@ -32,11 +32,18 @@
 </head>
 <body>
 
+<!-- Splash mientras se determina la sesión -- evita el "flash" de la
+     pantalla de login en cada recarga antes de que Supabase confirme
+     si ya hay una sesión guardada. -->
+<div id="appLoading" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:9999">
+  <div class="logo-mark" style="margin:0"></div>
+</div>
+
 <!-- ===========================================================
      AUTH
 ============================================================ -->
 
-<div id="authScreen">
+<div id="authScreen" class="hidden">
   <div class="authBox">
     <div class="logo">
       <div class="logo-mark">
@@ -1174,7 +1181,7 @@
 <script src="activity.js?v=3"></script>
 <script src="today.js?v=15"></script>
 <script src="theme.js?v=1"></script>
-<script src="app-shell.js?v=24"></script>
+<script src="app-shell.js?v=25"></script>
 </body>
 </html>
 

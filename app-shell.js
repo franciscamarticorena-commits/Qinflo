@@ -61,6 +61,7 @@ async function loadUserData(userId) {
 // --- AUTH LISTENER -------------------------------------------
 supa.auth.onAuthStateChange(async function(event, session) {
   dbg('[auth] event=' + event + ' user=' + (session ? session.user.id : 'null'));
+  hide('appLoading');
 
   if (event === 'PASSWORD_RECOVERY') {
     hide('authScreen'); hide('app');
@@ -134,6 +135,17 @@ supa.auth.onAuthStateChange(async function(event, session) {
     console.error(e);
   }
 });
+
+// Red de seguridad: si por lo que sea onAuthStateChange nunca dispara
+// (Supabase no carga, sin red), no dejar el splash pegado para siempre.
+setTimeout(function() {
+  var loading = $('appLoading');
+  if (loading && !loading.classList.contains('hidden')) {
+    hide('appLoading');
+    show('authScreen');
+    document.getElementById('authScreen').style.display = 'flex';
+  }
+}, 4000);
 
 function displayNameWithRole(data, role) {
   var nm    = data && data.name ? data.name.split(' ')[0] : '';
