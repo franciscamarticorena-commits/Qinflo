@@ -11,3 +11,7 @@
 
 ALTER TABLE public.events
   ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMPTZ DEFAULT NULL;
+
+-- Fuerza a PostgREST a refrescar su cache de esquema (ve la columna nueva
+-- de inmediato en vez de esperar al próximo reload automático).
+NOTIFY pgrst, 'reload schema';
