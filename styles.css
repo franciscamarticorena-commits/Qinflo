@@ -609,11 +609,12 @@ main { max-width: 880px; margin: 0 auto; padding: 24px 16px 80px; }
 }
 
 /* --- QUICK REPLIES --------------------------------- */
-.quick-replies { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.quick-replies { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; max-width: 100%; }
 .quick-reply-btn {
   background: var(--surface); border: 1.5px solid var(--border);
   border-radius: 20px; padding: 7px 14px; font-size: 11px;
   color: var(--text-s); font-family: inherit; transition: all .2s ease;
+  max-width: 100%; white-space: normal; text-align: left; line-height: 1.4;
 }
 .quick-reply-btn:hover { border-color: var(--primary); color: var(--primary); }
 
