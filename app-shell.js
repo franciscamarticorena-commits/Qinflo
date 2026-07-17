@@ -218,7 +218,6 @@ async function setupListeners() {
     loadProposals(),
     loadEvents(),
     loadCalendar(),
-    loadDocuments(),
     loadSettlements(),
     loadActivity(),
     loadTemporaryOutings(),
@@ -239,7 +238,6 @@ async function setupListeners() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'custody_changes', filter: 'family_id=eq.' + FAMILY_ID }, loadProposals)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'events',          filter: 'family_id=eq.' + FAMILY_ID }, loadEvents)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'custody_months',  filter: 'family_id=eq.' + FAMILY_ID }, loadCalendar)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'documents',       filter: 'family_id=eq.' + FAMILY_ID }, loadDocuments)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'settlements',     filter: 'family_id=eq.' + FAMILY_ID }, loadSettlements)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs',   filter: 'family_id=eq.' + FAMILY_ID }, loadActivity)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'temporary_outings', filter: 'family_id=eq.' + FAMILY_ID }, loadTemporaryOutings)
@@ -353,12 +351,6 @@ async function loadCalendar() {
     if (r.overrides) custodyOverridesMap[r.month_key] = r.overrides;
   });
   renderCalendar(); renderToday();
-}
-
-async function loadDocuments() {
-  var { data } = await supa.from('documents').select('*').eq('family_id', FAMILY_ID).is('deleted_at', null).order('created_at', { ascending: false });
-  documents = rowsToCamel(data);
-  renderDocuments();
 }
 
 async function loadSettlements() {
@@ -535,21 +527,12 @@ window.addEventListener('DOMContentLoaded', function() {
   });
   $('saveRemBtn').addEventListener('click', saveRem);
   $('cancelRemBtn').addEventListener('click', cancelRemForm);
-
-  // Documents
-  $('toggleDocBtn').addEventListener('click', function() {
-    var willOpen = $('docForm').classList.contains('hidden');
-    if (willOpen) _resetDocForm();
-    $('docForm').classList.toggle('hidden');
-  });
-  $('saveDocBtn').addEventListener('click', saveDoc);
-  $('cancelDocBtn').addEventListener('click', function() { _resetDocForm(); hide('docForm'); });
 });
 
 // --- TABS ---------------------------------------------------
-var INFO_SUBTABS = ['agreements', 'recursos', 'documents', 'docutiles', 'docutil-detail', 'servicios'];
+var INFO_SUBTABS = ['agreements', 'recursos', 'docutiles', 'docutil-detail', 'servicios'];
 
-var APP_TABS = ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'recursos', 'documents', 'docutiles', 'docutil-detail', 'servicios', 'info'];
+var APP_TABS = ['today', 'calendar', 'expenses', 'messages', 'children', 'agreements', 'recursos', 'docutiles', 'docutil-detail', 'servicios', 'info'];
 
 function switchTab(tab) {
   if (tab === 'docutil-detail' && typeof _currentDocUtilId !== 'undefined' && !_currentDocUtilId) tab = 'docutiles';

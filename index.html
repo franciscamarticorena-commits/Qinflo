@@ -965,50 +965,11 @@
 </div>
 
 
-<!-- -- DOCUMENTOS ----------------------------------------- -->
-<div id="tab-documents" class="hidden">
-  <div class="section-header">
-    <div>
-      <button class="btn-outline" style="font-size:11px;padding:4px 10px;margin-bottom:8px" onclick="switchTab('info')">← Recursos</button>
-      <div class="section-title"><h2>Cartas tipo</h2><p>Permisos y documentos habituales de la familia</p></div>
-    </div>
-    <button class="btn-sm" id="toggleDocBtn"><i data-lucide="plus"></i> Agregar</button>
-  </div>
-  <div id="docForm" class="hidden form-box">
-    <p style="font-weight:700;font-size:15px;color:var(--primary);margin-bottom:14px">Nuevo documento</p>
-    <div style="display:grid;gap:10px">
-      <input class="inp" id="docTitle" placeholder="Nombre del documento"/>
-      <div class="grid-2">
-        <select class="sel" id="docType">
-          <option value="rut">RUT / Cédula</option>
-          <option value="carnet_salud">Carnet de salud</option>
-          <option value="vacunas">Vacunas</option>
-          <option value="colegio">Colegio</option>
-          <option value="legal">Legal</option>
-          <option value="seguro">Seguro</option>
-          <option value="otro" selected>Otro</option>
-        </select>
-        <select class="sel" id="docChild">
-          <option value="">Todos / General</option>
-        </select>
-      </div>
-      <input class="inp" id="docUrl" placeholder="Enlace al documento (opcional)" type="url"/>
-      <textarea class="inp" id="docNotes" placeholder="Notas…" style="min-height:60px;resize:vertical"></textarea>
-      <div style="display:flex;gap:8px">
-        <button class="btn-sm" id="saveDocBtn">Guardar</button>
-        <button class="btn-outline" id="cancelDocBtn">Cancelar</button>
-      </div>
-    </div>
-  </div>
-  <div id="docList"></div>
-</div>
-
 <!-- -- RECURSOS -------------------------------------- -->
 <div id="tab-info" class="hidden">
   <p class="section-lbl">Recursos</p>
   <div class="card" style="padding:0;overflow:hidden">
     <button onclick="switchTab('agreements')" class="info-nav-btn">Acuerdos<span>›</span></button>
-    <button onclick="switchTab('documents')" class="info-nav-btn">Cartas tipo<span>›</span></button>
     <button onclick="switchTab('recursos')" class="info-nav-btn">Sitios de interés<span>›</span></button>
     <button onclick="switchTab('docutiles')" class="info-nav-btn">Documentos útiles<span>›</span></button>
     <button onclick="switchTab('servicios')" class="info-nav-btn" style="border-bottom:none">Servicios recomendados<span>›</span></button>
@@ -1192,7 +1153,7 @@
 
 
 <script src="supabase.js?v=1"></script>
-<script src="state.js?v=12"></script>
+<script src="state.js?v=13"></script>
 <script src="auth.js?v=9"></script>
 <script src="connect.js?v=8"></script>
 <script src="calendar.js?v=14"></script>
@@ -1207,13 +1168,12 @@
 <script src="events.js?v=14"></script>
 <script src="outings.js?v=2"></script>
 <script src="confirmations.js?v=1"></script>
-<script src="documents.js?v=1"></script>
 <script src="docutiles.js?v=5"></script>
 <script src="services.js?v=1"></script>
 <script src="activity.js?v=3"></script>
 <script src="today.js?v=15"></script>
 <script src="theme.js?v=1"></script>
-<script src="app-shell.js?v=21"></script>
+<script src="app-shell.js?v=22"></script>
 </body>
 </html>
 
