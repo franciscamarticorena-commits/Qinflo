@@ -24,9 +24,10 @@ var DOC_UTILES = [
     ],
     download: {
       title: 'Modelo de autorización',
-      desc: 'Qinflo pone a disposición un modelo referencial que puede servir como apoyo al momento de preparar la autorización correspondiente.',
+      desc: 'Qinflo pone a disposición un modelo referencial y editable que puede servir como apoyo al momento de preparar la autorización correspondiente. Debe completarse y formalizarse ante notario.',
       label: 'Descargar modelo PDF',
-      url: 'assets/docs/modelo-autorizacion-viaje-menor.pdf'
+      url: 'assets/docs/modelo-autorizacion-viaje-menor.pdf',
+      preview: 'assets/docs/modelo-autorizacion-viaje-menor-preview.jpg'
     },
     sites: [
       { icon: '🪪', name: 'Registro Civil (certificado de nacimiento)', sub: 'Servicios en línea', url: 'https://www.registrocivil.cl/principal/servicios-en-linea' },
@@ -106,11 +107,18 @@ function renderDocUtilDetail() {
 
     (d.download ?
       '<p class="section-lbl">' + d.download.title + '</p>' +
-      '<div class="resource-card" style="margin-bottom:22px">' +
-        '<div class="resource-icon" style="background:rgba(107,122,87,.12)">📄</div>' +
-        '<div style="flex:1">' +
-          '<div class="resource-desc" style="margin-bottom:12px">' + d.download.desc + '</div>' +
-          '<a class="resource-link" href="' + d.download.url + '" download>' + d.download.label + '</a>' +
+      '<div class="card" style="margin-bottom:22px;overflow:hidden">' +
+        (d.download.preview ?
+          '<a href="' + d.download.preview + '" target="_blank" rel="noopener noreferrer" title="Ver vista previa en tamaño completo">' +
+            '<img src="' + d.download.preview + '" alt="Vista previa del ' + d.download.title + '" style="display:block;width:100%;border-bottom:1px solid var(--border)"/>' +
+          '</a>'
+        : '') +
+        '<div style="padding:16px 18px;display:flex;gap:14px;align-items:flex-start">' +
+          '<div class="resource-icon" style="background:rgba(107,122,87,.12);flex-shrink:0">📄</div>' +
+          '<div style="flex:1">' +
+            '<div class="resource-desc" style="margin-bottom:12px">' + d.download.desc + '</div>' +
+            '<a class="resource-link" href="' + d.download.url + '" download>' + d.download.label + '</a>' +
+          '</div>' +
         '</div>' +
       '</div>'
     : '') +
