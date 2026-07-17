@@ -19,6 +19,9 @@ const genCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 const p1 = () => USERDATA && USERDATA.familyConfig ? USERDATA.familyConfig.p1Label : 'Mamá';
 const p2 = () => USERDATA && USERDATA.familyConfig ? USERDATA.familyConfig.p2Label : 'Papá';
 const myRole = () => USERDATA ? USERDATA.role : 'p1';
+// Escapa texto libre antes de insertarlo en innerHTML (usado para respuestas
+// de texto que otro usuario va a leer en Actividad reciente).
+const escHtml = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 const myLabel = () => myRole() === 'p1' ? p1() : p2();
 
 function showMsg(id, text, isError) {

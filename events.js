@@ -212,6 +212,24 @@ async function rejectEvent(eventId) {
   }
 }
 
+function _toggleEventReply(id) {
+  var box = document.getElementById('ev-reply-box-' + id);
+  if (box) box.classList.toggle('hidden');
+}
+
+async function sendEventReply(id) {
+  var box = document.getElementById('ev-reply-text-' + id);
+  var text = box ? box.value.trim() : '';
+  if (!text) return;
+  var ev = events.find(function(e) { return e.id === id; });
+  if (typeof logActivity === 'function') {
+    await logActivity('event_reply', myLabel() + ' respondió en el evento "' + (ev ? ev.title : '') + '": ' + text, { eventId: id });
+  }
+  if (box) box.value = '';
+  _toggleEventReply(id);
+  if (typeof loadActivity === 'function') await loadActivity();
+}
+
 function renderEventsForDay(day) {
   var dayEvs = eventsForDay(calYear, calMonth, day);
   if (!dayEvs.length) return '';
@@ -220,6 +238,7 @@ function renderEventsForDay(day) {
     var time = ev.time || '';
     var reminder = ev.reminder ? REMINDER_LABELS[ev.reminder] : '';
     var participantsLbl = ev.participants === 'mama' ? p1() : ev.participants === 'papa' ? p2() : 'Ambos';
+    var isCreator = ev.createdBy === (USER && USER.id);
     var pendingForMe = ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy !== (USER && USER.id);
     var pendingByMe  = ev.requiresApproval && ev.approvalStatus === 'pending' && ev.createdBy === (USER && USER.id);
     var wasEdited = ev.createdAt && ev.updatedAt && (new Date(ev.updatedAt) - new Date(ev.createdAt)) > 5000;
@@ -234,16 +253,26 @@ function renderEventsForDay(day) {
     }
     var actions = '';
     if (pendingForMe) {
-      actions = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
+      actions += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
         '<button class="btn-sm" style="background:var(--success);font-size:11px;padding:5px 12px" onclick="approveEvent(\'' + ev.id + '\')">Confirmar</button>' +
         '<button class="btn-outline" style="font-size:11px;padding:5px 12px" onclick="rejectEvent(\'' + ev.id + '\')">Rechazar</button>' +
         '</div>';
-    } else if (ev.status !== 'completed') {
-      actions = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
+    }
+    if (isCreator && ev.status !== 'completed') {
+      actions += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
         '<button class="btn-outline" style="font-size:11px;padding:4px 9px" onclick="openEventForm(\'' + ev.id + '\')">Editar</button>' +
         (pendingByMe ? '' : '<button class="btn-outline" style="font-size:11px;padding:4px 9px" onclick="updateEventStatus(\'' + ev.id + '\',\'completed\')">✓ Realizado</button>') +
         '<button class="btn-outline" style="font-size:11px;padding:4px 9px;color:var(--error)" onclick="updateEventStatus(\'' + ev.id + '\',\'cancelled\')">Cancelar</button>' +
         '</div>';
+    }
+    if (!isCreator) {
+      actions += '<div style="margin-top:8px">' +
+        '<button class="btn-outline" style="font-size:11px;padding:4px 9px" onclick="_toggleEventReply(\'' + ev.id + '\')">💬 Responder</button>' +
+        '<div id="ev-reply-box-' + ev.id + '" class="hidden" style="margin-top:8px">' +
+          '<textarea id="ev-reply-text-' + ev.id + '" class="inp" placeholder="Escribe una respuesta…" style="min-height:50px;font-size:12px;resize:vertical"></textarea>' +
+          '<button class="btn-sm" style="font-size:11px;padding:5px 12px;margin-top:6px" onclick="sendEventReply(\'' + ev.id + '\')">Enviar</button>' +
+        '</div>' +
+      '</div>';
     }
     return '<div class="detail-card" style="border-left:2px solid var(--border)">' +
       '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">' +

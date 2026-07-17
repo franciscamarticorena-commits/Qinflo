@@ -81,8 +81,8 @@ function renderTodayActivity() {
     return '<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border)">' +
       '<div style="width:6px;height:6px;border-radius:50%;background:var(--primary);flex-shrink:0;margin-top:6px"></div>' +
       '<div style="flex:1">' +
-        '<div style="font-size:13px;color:var(--text)">' + a.description + '</div>' +
-        (actor || time ? '<div style="font-size:11px;color:var(--text-s);margin-top:2px">' + [actor, time].filter(Boolean).join(' · ') + '</div>' : '') +
+        '<div style="font-size:13px;color:var(--text)">' + escHtml(a.description) + '</div>' +
+        (actor || time ? '<div style="font-size:11px;color:var(--text-s);margin-top:2px">' + escHtml([actor, time].filter(Boolean).join(' · ')) + '</div>' : '') +
       '</div>' +
     '</div>';
   }).join('');

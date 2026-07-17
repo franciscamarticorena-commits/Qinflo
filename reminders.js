@@ -59,6 +59,19 @@ function openRemEdit(r) {
 function fLbl(f) { return f === 'both' ? 'Ambos' : f === 'mama' ? p1() : p2(); }
 function fColor(f) { return f === 'both' ? '#8A8A78' : f === 'mama' ? 'var(--accent)' : 'var(--primary-d)'; }
 
+async function sendReminderReply(r) {
+  var box = document.getElementById('rem-reply-text-' + r.id);
+  var text = box ? box.value.trim() : '';
+  if (!text) return;
+  if (typeof logActivity === 'function') {
+    await logActivity('reminder_reply', myLabel() + ' respondió en el aviso "' + r.title + '": ' + text, { reminderId: r.id });
+  }
+  if (box) box.value = '';
+  var wrap = document.getElementById('rem-reply-box-' + r.id);
+  if (wrap) wrap.classList.add('hidden');
+  if (typeof loadActivity === 'function') await loadActivity();
+}
+
 function renderReminders() {
   var el = $('remList');
   if (!el) return;
@@ -77,6 +90,7 @@ function renderReminders() {
       var d = new Date(r.date);
       var near = (d - new Date()) < 86400000 * 3;
       var fc = fColor(r.for);
+      var isCreator = r.createdBy === (USER && USER.id);
       var row = document.createElement('div');
       row.className = 'rem-row';
       row.innerHTML =
@@ -88,20 +102,34 @@ function renderReminders() {
           '<div class="rem-title">' + r.title + '</div>' +
           '<div class="rem-meta">' + d.toLocaleDateString('es-CL', { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '</div>' +
           (r.notes ? '<div class="rem-meta" style="margin-top:4px;color:var(--text)">' + r.notes + '</div>' : '') +
+          (!isCreator ?
+            '<button class="btn-outline reply-rem-btn" style="font-size:11px;padding:4px 9px;margin-top:8px">💬 Responder</button>' +
+            '<div id="rem-reply-box-' + r.id + '" class="hidden" style="margin-top:8px">' +
+              '<textarea id="rem-reply-text-' + r.id + '" class="inp" placeholder="Escribe una respuesta…" style="min-height:50px;font-size:12px;resize:vertical"></textarea>' +
+              '<button class="btn-sm reply-rem-send" style="font-size:11px;padding:5px 12px;margin-top:6px">Enviar</button>' +
+            '</div>'
+          : '') +
         '</div>' +
         '<div style="display:flex;gap:7px">' +
-          '<button class="btn-outline edit-rem-btn" style="padding:5px 8px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
+          (isCreator ? '<button class="btn-outline edit-rem-btn" style="padding:5px 8px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' : '') +
           '<button class="btn-done done-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>' +
-          '<button class="btn-danger del-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>' +
+          (isCreator ? '<button class="btn-danger del-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>' : '') +
         '</div>';
-      row.querySelector('.edit-rem-btn').addEventListener('click', function() { openRemEdit(r); });
+      if (isCreator) row.querySelector('.edit-rem-btn').addEventListener('click', function() { openRemEdit(r); });
+      if (!isCreator) {
+        row.querySelector('.reply-rem-btn').addEventListener('click', function() {
+          var box = document.getElementById('rem-reply-box-' + r.id);
+          if (box) box.classList.toggle('hidden');
+        });
+        row.querySelector('.reply-rem-send').addEventListener('click', function() { sendReminderReply(r); });
+      }
       row.querySelector('.done-btn').addEventListener('click', async function() {
         var { error } = await supa.from('reminders').update({ status: 'completed' }).eq('id', r.id);
         if (error) { console.error('[reminder done]', error); alert('No se pudo actualizar: ' + error.message); return; }
         r.done = true;
         renderReminders();
       });
-      row.querySelector('.del-btn').addEventListener('click', async function() {
+      if (isCreator) row.querySelector('.del-btn').addEventListener('click', async function() {
         var { error } = await supa.from('reminders').update({ deleted_at: nowISO() }).eq('id', r.id);
         if (error) { console.error('[reminder delete]', error); alert('No se pudo eliminar: ' + error.message); return; }
         reminders = reminders.filter(function(x) { return x.id !== r.id; });
