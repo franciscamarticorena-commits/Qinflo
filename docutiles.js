@@ -24,7 +24,7 @@ var DOC_UTILES = [
     ],
     download: {
       title: 'Modelo de autorización',
-      desc: 'Qinflo pone a disposición un modelo referencial y editable que puede servir como apoyo al momento de preparar la autorización correspondiente. Debe completarse y formalizarse ante notario.',
+      desc: 'Qinflo pone a disposición un modelo referencial que puede servir como apoyo al momento de preparar la autorización correspondiente. Debe completarse y formalizarse ante notario.',
       label: 'Descargar modelo PDF',
       url: 'assets/docs/modelo-autorizacion-viaje-menor.pdf',
       preview: 'assets/docs/modelo-autorizacion-viaje-menor-preview.jpg'
