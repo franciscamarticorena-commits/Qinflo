@@ -8,6 +8,19 @@ const EXP_SUBCATS = {
   'Vida cotidiana': ['Celebraciones','Mesada','Celular / conectividad','Salidas / panoramas'],
   'Gastos extraordinarios': ['Gasto puntual / no recurrente']
 };
+
+// expenses.category / expenses.frequency en la DB solo aceptan valores en
+// minúscula sin tilde (CHECK constraint) -- el formulario usa etiquetas en
+// español, así que se convierten al escribir/leer.
+var EXP_CAT_TO_DB = {
+  'Educación': 'educacion', 'Salud': 'salud',
+  'Vida cotidiana': 'vida_cotidiana', 'Gastos extraordinarios': 'gastos_extraordinarios'
+};
+var DB_TO_EXP_CAT = {
+  educacion: 'Educación', salud: 'Salud',
+  vida_cotidiana: 'Vida cotidiana', gastos_extraordinarios: 'Gastos extraordinarios',
+  ropa: 'Vida cotidiana', alimentacion: 'Vida cotidiana', esparcimiento: 'Vida cotidiana', otro: 'Gastos extraordinarios'
+};
 function updateExpenseSubcats() {
   var cat = $('expCat') ? $('expCat').value : 'Educación';
   var sel = $('expSubcat');
@@ -133,7 +146,7 @@ function _resetExpForm() {
   $('expAmount').value = '';
   if ($('expFile')) $('expFile').value = '';
   if ($('expReimburseFile')) $('expReimburseFile').value = '';
-  if ($('expFrequency')) $('expFrequency').value = 'unique';
+  if ($('expFrequency')) $('expFrequency').value = 'once';
   if ($('expCat')) { $('expCat').value = 'Educación'; updateExpenseSubcats(); }
   if ($('expTreatment')) $('expTreatment').value = 'shared';
   if ($('expPaidBy')) $('expPaidBy').value = myRole() === 'p1' ? 'mama' : 'papa';
@@ -150,7 +163,7 @@ function openExpEdit(exp) {
   if ($('expFormTitle')) $('expFormTitle').textContent = 'Editar gasto';
   $('expDesc').value = exp.description || '';
   $('expAmount').value = exp.amount || '';
-  if ($('expFrequency')) $('expFrequency').value = exp.frequency || 'unique';
+  if ($('expFrequency')) $('expFrequency').value = exp.frequency || 'once';
   if ($('expCat')) { $('expCat').value = exp.category || 'Educación'; updateExpenseSubcats(); }
   if ($('expSubcat')) $('expSubcat').value = exp.subcategory || '';
   if ($('expTreatment')) $('expTreatment').value = exp.treatment || 'shared';
@@ -188,7 +201,7 @@ async function saveExp() {
       paidBy: $('expPaidBy').value,
       category: $('expCat').value,
       subcategory: $('expSubcat') ? $('expSubcat').value : '',
-      frequency: $('expFrequency') ? $('expFrequency').value : 'unique',
+      frequency: $('expFrequency') ? $('expFrequency').value : 'once',
       treatment: tval,
       healthRefund: $('expHealthRefund') ? $('expHealthRefund').value : '',
       pctMama: pctM, pctPapa: pctP
@@ -196,6 +209,7 @@ async function saveExp() {
 
     var paidByRole = data.paidBy === 'mama' ? 'p1' : 'p2';
     var amountClp  = data.currency === 'UF' ? data.amount * UF : data.amount;
+    var categoryDb = EXP_CAT_TO_DB[data.category] || 'otro';
 
     if (editingExpId) {
       if (f)  data.attachmentName = f;
@@ -209,7 +223,7 @@ async function saveExp() {
         paid_by_role:                   paidByRole,
         split_percentage_p1:            data.pctMama,
         split_percentage_p2:            data.pctPapa,
-        category:                       data.category,
+        category:                       categoryDb,
         subcat:                         data.subcategory,
         frequency:                      data.frequency,
         treatment:                      data.treatment,
@@ -230,7 +244,7 @@ async function saveExp() {
         paid_by_role:                   paidByRole,
         split_percentage_p1:            data.pctMama,
         split_percentage_p2:            data.pctPapa,
-        category:                       data.category,
+        category:                       categoryDb,
         subcat:                         data.subcategory,
         frequency:                      data.frequency,
         treatment:                      data.treatment,
@@ -428,7 +442,7 @@ function renderExpenses() {
       '<div style="font-size:11px;color:var(--text-s);margin-top:5px;display:flex;gap:6px;flex-wrap:wrap">' +
         '<span>Pagado por ' + (ex.paidBy === 'mama' ? p1() : p2()) + '</span>' +
         (ex.treatment === 'shared' ? '<span style="color:var(--border)">·</span><span>' + p1() + ' ' + (ex.pctMama == null ? 50 : ex.pctMama) + '% / ' + p2() + ' ' + (ex.pctPapa == null ? 50 : ex.pctPapa) + '%</span>' : '') +
-        (ex.frequency && ex.frequency !== 'unique' ? '<span style="color:var(--border)">·</span><span>' + frequencyLabel(ex.frequency) + '</span>' : '') +
+        (ex.frequency && ex.frequency !== 'once' ? '<span style="color:var(--border)">·</span><span>' + frequencyLabel(ex.frequency) + '</span>' : '') +
         (ex.category === 'Salud' && ex.healthRefund ? '<span style="color:var(--border)">·</span><span>Reembolso: ' + (ex.healthRefund === 'yes' ? 'Sí' : ex.healthRefund === 'no' ? 'No' : 'Pendiente') + '</span>' : '') +
       '</div>' +
       (ex.attachmentName ? '<div class="file-pill" style="margin-top:5px">📎 ' + ex.attachmentName + '</div>' : '') +

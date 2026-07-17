@@ -254,6 +254,7 @@ async function loadExpenses() {
     c.paidBy = r.paid_by_role === 'p1' ? 'mama' : 'papa';
     c.paid   = r.status === 'paid';
     c.subcategory = r.subcat;
+    c.category = (typeof DB_TO_EXP_CAT !== 'undefined' && DB_TO_EXP_CAT[r.category]) || r.category;
     return c;
   });
   renderExpenses(); renderToday();
