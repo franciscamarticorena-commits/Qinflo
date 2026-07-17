@@ -31,9 +31,8 @@ var DOC_UTILES = [
       { icon: '🪪', name: 'Registro Civil e Identificación', sub: 'registrocivil.cl', url: 'https://www.registrocivil.cl' },
       { icon: '🕵️', name: 'Policía de Investigaciones (PDI)', sub: 'pdichile.cl', url: 'https://www.pdichile.cl' },
       { icon: '🏛️', name: 'ChileAtiende', sub: 'chileatiende.gob.cl', url: 'https://www.chileatiende.gob.cl' },
-      { icon: '🛂', name: 'Servicio Nacional de Migraciones', sub: 'serviciomigraciones.cl', url: 'https://www.serviciomigraciones.cl' },
-      { icon: '🌎', name: 'Ministerio de Relaciones Exteriores', sub: 'minrel.gob.cl', url: 'https://www.minrel.gob.cl' },
-      { icon: '📮', name: 'Consulados de Chile', sub: 'embajadaschile.cl', url: 'https://embajadaschile.cl' }
+      { icon: '🛂', name: 'Consulado de Chile', sub: 'Requisitos cuando viaja un menor de edad', url: 'https://www.consulado.gob.cl/cuando-viaja-un-menor-de-edad' },
+      { icon: '🌎', name: 'Ministerio de Relaciones Exteriores', sub: 'minrel.gob.cl', url: 'https://www.minrel.gob.cl' }
     ],
     warning: 'La información publicada por Qinflo tiene un carácter exclusivamente informativo y busca orientar a las familias en la preparación de un viaje internacional. Los requisitos pueden variar dependiendo de la situación familiar, resoluciones judiciales, país de destino y cambios en la normativa vigente. Antes de viajar, verifica siempre la información directamente en los organismos oficiales correspondientes.'
   }
