@@ -117,6 +117,15 @@ function _computeSettlAdjust(settlList) {
   }, 0);
 }
 
+// El saldo pendiente es un acumulado histórico -- no depende del filtro de
+// período que el usuario tenga elegido para simplemente mirar la lista
+// (semana/mes/año/todo). Siempre se calcula sobre el historial completo,
+// igual que la tarjeta de Balance en Hoy.
+function _trueAdjNet() {
+  var allVis = (expenses || []).filter(function(e) { return !e.voided; });
+  return _computeSharedNet(allVis) - _computeSettlAdjust(settlements || []);
+}
+
 function _resetExpForm() {
   editingExpId = null;
   if ($('expFormTitle')) $('expFormTitle').textContent = 'Agregar gasto';
@@ -204,6 +213,7 @@ async function saveExp() {
         subcat:                         data.subcategory,
         frequency:                      data.frequency,
         treatment:                      data.treatment,
+        health_refund:                  data.healthRefund || null,
         attachment_name:                f || undefined,
         reimbursement_attachment_name:  rf || undefined,
         updated_at:                     nowISO()
@@ -224,6 +234,7 @@ async function saveExp() {
         subcat:                         data.subcategory,
         frequency:                      data.frequency,
         treatment:                      data.treatment,
+        health_refund:                  data.healthRefund || null,
         date:                           new Date().toISOString().slice(0, 10),
         attachment_name:                data.attachmentName || null,
         reimbursement_attachment_name:  data.reimbursementAttachmentName || null,
@@ -245,9 +256,7 @@ async function saveExp() {
 }
 
 async function liquidarBalance() {
-  var vis = filterPeriod(expenses).filter(function(e){ return !e.voided; });
-  var net = _computeSharedNet(vis);
-  var adjNet = net - _computeSettlAdjust(filterPeriod(settlements));
+  var adjNet = _trueAdjNet();
   if (Math.abs(adjNet) < 1) return;
 
   var debtorRole = adjNet > 0 ? 'papa' : 'mama';
@@ -279,9 +288,8 @@ function exportarResumen() {
   var periodLabel = { week: 'Última semana', month: 'Este mes', year: 'Este año', all: 'Todo el historial' }[expPeriod] || 'Este período';
   var mT = vis.filter(function(e){ return e.paidBy === 'mama'; }).reduce(function(s, e){ return s + toCLP(e); }, 0);
   var pT = vis.filter(function(e){ return e.paidBy === 'papa'; }).reduce(function(s, e){ return s + toCLP(e); }, 0);
-  var net = _computeSharedNet(vis);
   var filteredSettl = filterPeriod(settlements);
-  var adjNet = net - _computeSettlAdjust(filteredSettl);
+  var adjNet = _trueAdjNet();
 
   var balanceLine = Math.abs(adjNet) < 1
     ? '✓ Sin saldos compartidos pendientes'
@@ -299,7 +307,7 @@ function exportarResumen() {
     p2() + ' pagó:  ' + fmtCLP(pT),
     'Total:        ' + fmtCLP(mT + pT),
     '',
-    'Balance compartido:',
+    'Balance compartido (saldo total acumulado):',
     balanceLine
   ];
 
@@ -339,15 +347,12 @@ function exportarResumen() {
 function renderExpenses() {
   if (!$('expStats')) return;
   var vis = filterPeriod(expenses).filter(function(e){ return !e.voided; });
-  var chargeable = vis.filter(function(e) { return e.treatment !== 'pension'; });
   var mT = vis.filter(function(e) { return e.paidBy === 'mama'; }).reduce(function(s, e) { return s + toCLP(e); }, 0);
   var pT = vis.filter(function(e) { return e.paidBy === 'papa'; }).reduce(function(s, e) { return s + toCLP(e); }, 0);
   var tot = vis.reduce(function(s, e) { return s + toCLP(e); }, 0);
   var nonCharge = vis.filter(function(e) { return e.treatment === 'pension'; }).reduce(function(s, e) { return s + toCLP(e); }, 0);
 
-  var net = _computeSharedNet(vis);
-  var filteredSettl = filterPeriod(settlements);
-  var adjNet = net - _computeSettlAdjust(filteredSettl);
+  var adjNet = _trueAdjNet();
 
   $('expStats').innerHTML =
     '<div class="stat-card" style="border-top-color:var(--accent)"><div class="stat-label">' + p1() + '</div><div class="stat-val">' + fmtCLP(mT) + '</div></div>' +
@@ -365,7 +370,8 @@ function renderExpenses() {
 
   if ($('liquidarBtn')) $('liquidarBtn').classList.toggle('hidden', Math.abs(adjNet) < 1);
 
-  // settlements history
+  // settlements history (listado del período elegido, distinto del saldo real de arriba)
+  var filteredSettl = filterPeriod(settlements);
   var sh = $('settlementsHistory');
   if (sh) {
     if (filteredSettl.length) {

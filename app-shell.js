@@ -253,6 +253,7 @@ async function loadExpenses() {
     var c = toCamel(r);
     c.paidBy = r.paid_by_role === 'p1' ? 'mama' : 'papa';
     c.paid   = r.status === 'paid';
+    c.subcategory = r.subcat;
     return c;
   });
   renderExpenses(); renderToday();
