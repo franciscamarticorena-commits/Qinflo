@@ -2,9 +2,19 @@
 var editingAgrId = null;
 
 var AGR_STATUS_COLORS = {
-  'Activo':      { bg: 'rgba(107,171,107,.15)', color: 'var(--success)',  border: 'rgba(107,171,107,.35)' },
-  'En revisión': { bg: 'rgba(216,164,95,.15)',  color: 'var(--warn)',     border: 'rgba(216,164,95,.35)' },
-  'Completado':  { bg: 'rgba(0,0,0,.06)',       color: 'var(--text-s)',   border: 'rgba(0,0,0,.12)' }
+  'Activo':   { bg: 'rgba(107,171,107,.15)', color: 'var(--success)', border: 'rgba(107,171,107,.35)' },
+  'Caducado': { bg: 'rgba(0,0,0,.06)',       color: 'var(--text-s)',  border: 'rgba(0,0,0,.12)' }
+};
+
+// agreements.category / agreements.status en la DB solo aceptan valores en
+// minúscula sin tilde (CHECK constraint) — el formulario usa etiquetas en
+// español, así que se convierten al escribir/leer.
+var AGR_CAT_TO_DB = {
+  'Custodia': 'custodia', 'Económico': 'economico', 'Salud': 'salud',
+  'Educación': 'educacion', 'Vacaciones': 'vacaciones', 'Otro': 'otro'
+};
+var AGR_STATUS_TO_DB = {
+  'Activo': 'active', 'Caducado': 'archived'
 };
 
 async function saveAgr() {
@@ -13,12 +23,14 @@ async function saveAgr() {
   if (!title || !content) return;
 
   var error;
+  var catDb    = AGR_CAT_TO_DB[$('agrCat').value] || 'otro';
+  var statusDb = AGR_STATUS_TO_DB[$('agrStatus').value] || 'active';
   if (editingAgrId) {
     ({ error } = await supa.from('agreements').update({
       title:      title,
       content:    content,
-      category:   $('agrCat').value,
-      status:     $('agrStatus').value,
+      category:   catDb,
+      status:     statusDb,
       updated_at: nowISO()
     }).eq('id', editingAgrId));
     editingAgrId = null;
@@ -29,8 +41,8 @@ async function saveAgr() {
       family_id:      FAMILY_ID,
       title:          title,
       content:        content,
-      category:       $('agrCat').value,
-      status:         $('agrStatus').value,
+      category:       catDb,
+      status:         statusDb,
       created_by:     USER.id,
       created_by_role: myRole(),
       signatures:     initSig
@@ -80,7 +92,8 @@ async function signAgreement(agrId) {
 }
 
 async function changeAgrStatus(agrId, status) {
-  var { error } = await supa.from('agreements').update({ status: status, updated_at: nowISO() }).eq('id', agrId);
+  var statusDb = AGR_STATUS_TO_DB[status] || 'active';
+  var { error } = await supa.from('agreements').update({ status: statusDb, updated_at: nowISO() }).eq('id', agrId);
   if (error) { console.error('[changeAgrStatus]', error); alert('No se pudo cambiar el estado: ' + error.message); return; }
   var local = agreements.find(function(a) { return a.id === agrId; });
   if (local) local.status = status;
@@ -118,9 +131,9 @@ function renderAgreements() {
     var updStr  = agr.updatedAt ? ' · Editado' : '';
     var creatorLabel = agr.createdByRole === myRole() ? 'Tú' : (CODATA && CODATA.name ? CODATA.name.split(' ')[0] : (agr.createdByRole === 'p1' ? p1() : p2()));
 
-    // Next status cycle
-    var nextStatus = agr.status === 'Activo' ? 'En revisión' : agr.status === 'En revisión' ? 'Completado' : 'Activo';
-    var nextIcon   = agr.status === 'Activo' ? '🔄' : agr.status === 'En revisión' ? '✓' : '↺';
+    // Next status toggle
+    var nextStatus = agr.status === 'Activo' ? 'Caducado' : 'Activo';
+    var nextIcon   = agr.status === 'Activo' ? '✓' : '↺';
 
     var card = document.createElement('div');
     card.className = 'card';
@@ -143,9 +156,7 @@ function renderAgreements() {
           sigHtml +
         '</div>' +
         '<div style="display:flex;gap:10px;align-items:center">' +
-          (agr.status !== 'Completado'
-            ? '<button class="btn-outline status-btn" style="font-size:11px;padding:4px 10px" title="Cambiar estado">' + nextIcon + ' ' + nextStatus + '</button>'
-            : '') +
+          '<button class="btn-outline status-btn" style="font-size:11px;padding:4px 10px" title="Cambiar estado">' + nextIcon + ' ' + nextStatus + '</button>' +
         '</div>' +
       '</div>' +
       '<div style="margin-top:8px;font-size:11px;color:var(--text-s)">' +

@@ -272,9 +272,22 @@ async function loadChildren() {
   renderChildren(); renderToday();
 }
 
+var _DB_TO_AGR_CAT = {
+  custodia: 'Custodia', economico: 'Económico', salud: 'Salud',
+  educacion: 'Educación', vacaciones: 'Vacaciones', otro: 'Otro'
+};
+var _DB_TO_AGR_STATUS = {
+  draft: 'Activo', pending: 'Activo', active: 'Activo', archived: 'Caducado'
+};
+
 async function loadAgreements() {
   var { data } = await supa.from('agreements').select('*').eq('family_id', FAMILY_ID).is('deleted_at', null).order('created_at', { ascending: false });
-  agreements = rowsToCamel(data);
+  agreements = (data || []).map(function(r) {
+    var c = toCamel(r);
+    c.category = _DB_TO_AGR_CAT[r.category] || r.category;
+    c.status   = _DB_TO_AGR_STATUS[r.status] || r.status;
+    return c;
+  });
   renderAgreements();
 }
 
