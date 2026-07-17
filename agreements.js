@@ -196,7 +196,7 @@ function renderAgreements() {
           sigHtml +
         '</div>' +
         '<div style="display:flex;gap:10px;align-items:center">' +
-          '<button class="btn-outline status-btn" style="font-size:11px;padding:4px 10px" title="Cambiar estado">' + nextIcon + ' ' + nextStatus + '</button>' +
+          '<button class="btn-outline status-btn" style="font-size:11px;padding:4px 10px;color:var(--text-s);border-color:var(--border)" title="Cambiar estado">' + nextIcon + ' ' + nextStatus + '</button>' +
         '</div>' +
       '</div>' +
       deadlineHtml +

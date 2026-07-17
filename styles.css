@@ -334,6 +334,11 @@ main { max-width: 880px; margin: 0 auto; padding: 24px 16px 80px; }
   transition: all .2s ease; font-family: inherit;
 }
 .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+/* El botón de "cambiar estado" de acuerdos no debe verse como un badge de
+   estado (confundiría con Activo/Caducado) -- se mantiene neutro siempre. */
+.status-btn, .status-btn:hover, .status-btn:focus, .status-btn:active {
+  border-color: var(--border) !important; color: var(--text-s) !important;
+}
 .btn-outline svg { width: 14px; height: 14px; }
 
 .btn-ghost {
