@@ -18,6 +18,7 @@ function eventsForDay(year, month, day) {
   var dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
   return events.filter(function(ev) {
     if (ev.date !== dateStr) return false;
+    if (ev.status === 'cancelled') return false;
     if (ev.participants === 'mama') return myRole() === 'p1';
     if (ev.participants === 'papa') return myRole() === 'p2';
     return true; // 'both'
@@ -225,7 +226,7 @@ function renderEventsForDay(day) {
     } else if (ev.status === 'completed') {
       statusBadge = '<span style="background:#DCFCE7;color:#166534;font-size:10px;font-weight:700;border-radius:5px;padding:1px 6px;margin-left:4px">Realizado ✓</span>';
     }
-    if (wasEdited && ev.status !== 'cancelled') {
+    if (wasEdited) {
       statusBadge += '<span style="background:rgba(0,0,0,.06);color:var(--text-s);font-size:10px;font-weight:700;border-radius:5px;padding:1px 6px;margin-left:4px">Editado</span>';
     }
     var actions = '';
@@ -234,15 +235,12 @@ function renderEventsForDay(day) {
         '<button class="btn-sm" style="background:var(--success);font-size:11px;padding:5px 12px" onclick="approveEvent(\'' + ev.id + '\')">Confirmar</button>' +
         '<button class="btn-outline" style="font-size:11px;padding:5px 12px" onclick="rejectEvent(\'' + ev.id + '\')">Rechazar</button>' +
         '</div>';
-    } else if (ev.status !== 'cancelled' && ev.status !== 'completed') {
+    } else if (ev.status !== 'completed') {
       actions = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
         '<button class="btn-outline" style="font-size:11px;padding:4px 9px" onclick="openEventForm(\'' + ev.id + '\')">Editar</button>' +
         (pendingByMe ? '' : '<button class="btn-outline" style="font-size:11px;padding:4px 9px" onclick="updateEventStatus(\'' + ev.id + '\',\'completed\')">✓ Realizado</button>') +
         '<button class="btn-outline" style="font-size:11px;padding:4px 9px;color:var(--error)" onclick="updateEventStatus(\'' + ev.id + '\',\'cancelled\')">Cancelar</button>' +
         '</div>';
-    } else if (ev.status === 'cancelled') {
-      var cancelledStr = ev.cancelledAt ? new Date(ev.cancelledAt).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' }) : '';
-      actions = '<div style="font-size:11px;color:var(--text-s);margin-top:6px">Evento cancelado' + (cancelledStr ? ' · ' + cancelledStr : '') + '</div>';
     }
     return '<div class="detail-card" style="border-left:2px solid var(--border)">' +
       '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">' +
