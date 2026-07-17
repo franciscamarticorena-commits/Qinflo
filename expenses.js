@@ -358,6 +358,46 @@ function exportarResumen() {
   }
 }
 
+var EXP_CAT_ORDER = ['Educación', 'Salud', 'Vida cotidiana', 'Gastos extraordinarios'];
+var EXP_CAT_COLORS = {
+  'Educación': 'var(--accent)', 'Salud': 'var(--error)',
+  'Vida cotidiana': 'var(--primary)', 'Gastos extraordinarios': 'var(--warn)'
+};
+
+function _renderExpCategoryBreakdown(vis, tot) {
+  var el = $('expCategoryBreakdown');
+  if (!el) return;
+  if (!vis.length) { el.innerHTML = ''; return; }
+
+  var sums = {};
+  EXP_CAT_ORDER.forEach(function(c) { sums[c] = 0; });
+  vis.forEach(function(e) {
+    var cat = EXP_CAT_ORDER.indexOf(e.category) !== -1 ? e.category : 'Gastos extraordinarios';
+    sums[cat] += toCLP(e);
+  });
+
+  var rows = EXP_CAT_ORDER.filter(function(c) { return sums[c] > 0; }).map(function(c) {
+    var pct = tot > 0 ? Math.round((sums[c] / tot) * 100) : 0;
+    return '<div style="margin-bottom:12px">' +
+      '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">' +
+        '<span style="color:var(--text);font-weight:600">' + c + '</span>' +
+        '<span style="color:var(--text-s)">' + fmtCLP(sums[c]) + ' · ' + pct + '%</span>' +
+      '</div>' +
+      '<div style="background:var(--border);border-radius:6px;height:6px;overflow:hidden">' +
+        '<div style="background:' + EXP_CAT_COLORS[c] + ';height:100%;width:' + pct + '%"></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  el.innerHTML = '<div class="card" style="margin-top:14px"><div class="card-body">' +
+    '<div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:14px">Gasto por categoría</div>' +
+    rows +
+    '<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--text);margin-top:4px;padding-top:10px;border-top:1px solid var(--border)">' +
+      '<span>Total</span><span>' + fmtCLP(tot) + '</span>' +
+    '</div>' +
+  '</div></div>';
+}
+
 function renderExpenses() {
   if (!$('expStats')) return;
   var vis = filterPeriod(expenses).filter(function(e){ return !e.voided; });
@@ -406,6 +446,8 @@ function renderExpenses() {
       sh.innerHTML = '';
     }
   }
+
+  _renderExpCategoryBreakdown(vis, tot);
 
   $('expCount').textContent = vis.length + ' registros';
   var el = $('expList');
