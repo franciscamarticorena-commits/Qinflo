@@ -913,6 +913,14 @@
         <select class="sel" id="agrCat"><option>Custodia</option><option>Económico</option><option>Salud</option><option>Educación</option><option>Vacaciones</option><option>Otro</option></select>
         <select class="sel" id="agrStatus"><option>Activo</option><option>Caducado</option></select>
       </div>
+      <select class="sel" id="agrDeadlineType">
+        <option value="indefinite">Duración indefinida</option>
+        <option value="fixed">Con fecha tope</option>
+      </select>
+      <div class="grid-2 hidden" id="agrDeadlineFields">
+        <input type="date" class="inp" id="agrDeadlineDate"/>
+        <input type="number" class="inp" id="agrDeadlineWarnDays" placeholder="Avisar días antes" min="1" value="7"/>
+      </div>
       <textarea class="inp" id="agrContent" placeholder="Contenido del acuerdo…" style="min-height:84px;resize:vertical"></textarea>
       <div style="display:flex;gap:8px">
         <button class="btn-sm" id="saveAgrBtn">Guardar</button>
@@ -1178,7 +1186,7 @@
 <script src="expenses.js?v=13"></script>
 <script src="messages.js?v=9"></script>
 <script src="children.js?v=8"></script>
-<script src="agreements.js?v=9"></script>
+<script src="agreements.js?v=10"></script>
 <script src="reminders.js?v=10"></script>
 <script src="resources.js?v=8"></script>
 <script src="observability.js?v=9"></script>
@@ -1192,7 +1200,7 @@
 <script src="activity.js?v=1"></script>
 <script src="today.js?v=14"></script>
 <script src="theme.js?v=1"></script>
-<script src="app-shell.js?v=18"></script>
+<script src="app-shell.js?v=19"></script>
 </body>
 </html>
 

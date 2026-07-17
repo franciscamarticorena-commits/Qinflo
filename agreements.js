@@ -17,35 +17,51 @@ var AGR_STATUS_TO_DB = {
   'Activo': 'active', 'Caducado': 'archived'
 };
 
+function _updateAgrDeadlineFieldsVisibility() {
+  var sel = $('agrDeadlineType');
+  var box = $('agrDeadlineFields');
+  if (sel && box) box.classList.toggle('hidden', sel.value !== 'fixed');
+}
+
 async function saveAgr() {
   var title   = $('agrTitle').value.trim();
   var content = $('agrContent').value.trim();
   if (!title || !content) return;
 
   var error;
-  var catDb    = AGR_CAT_TO_DB[$('agrCat').value] || 'otro';
-  var statusDb = AGR_STATUS_TO_DB[$('agrStatus').value] || 'active';
+  var catDb        = AGR_CAT_TO_DB[$('agrCat').value] || 'otro';
+  var statusDb      = AGR_STATUS_TO_DB[$('agrStatus').value] || 'active';
+  var deadlineType  = $('agrDeadlineType') ? $('agrDeadlineType').value : 'indefinite';
+  var deadlineDate  = deadlineType === 'fixed' && $('agrDeadlineDate') ? ($('agrDeadlineDate').value || null) : null;
+  var deadlineWarn  = deadlineType === 'fixed' && $('agrDeadlineWarnDays') ? (Number($('agrDeadlineWarnDays').value) || 7) : null;
+
   if (editingAgrId) {
     ({ error } = await supa.from('agreements').update({
-      title:      title,
-      content:    content,
-      category:   catDb,
-      status:     statusDb,
-      updated_at: nowISO()
+      title:               title,
+      content:             content,
+      category:            catDb,
+      status:              statusDb,
+      deadline_type:       deadlineType,
+      deadline_date:       deadlineDate,
+      deadline_warn_days:  deadlineWarn,
+      updated_at:          nowISO()
     }).eq('id', editingAgrId));
     editingAgrId = null;
   } else {
     var initSig = {};
     initSig[USER.id] = new Date().toISOString();
     ({ error } = await supa.from('agreements').insert({
-      family_id:      FAMILY_ID,
-      title:          title,
-      content:        content,
-      category:       catDb,
-      status:         statusDb,
-      created_by:     USER.id,
-      created_by_role: myRole(),
-      signatures:     initSig
+      family_id:           FAMILY_ID,
+      title:               title,
+      content:             content,
+      category:            catDb,
+      status:              statusDb,
+      deadline_type:       deadlineType,
+      deadline_date:       deadlineDate,
+      deadline_warn_days:  deadlineWarn,
+      created_by:          USER.id,
+      created_by_role:     myRole(),
+      signatures:          initSig
     }));
   }
   if (error) {
@@ -64,6 +80,10 @@ function openAgrEdit(agr) {
   $('agrContent').value = agr.content || '';
   $('agrCat').value     = agr.category || 'Otro';
   $('agrStatus').value  = agr.status  || 'Activo';
+  if ($('agrDeadlineType')) $('agrDeadlineType').value = agr.deadlineType || 'indefinite';
+  if ($('agrDeadlineDate')) $('agrDeadlineDate').value = agr.deadlineDate || '';
+  if ($('agrDeadlineWarnDays')) $('agrDeadlineWarnDays').value = agr.deadlineWarnDays || 7;
+  _updateAgrDeadlineFieldsVisibility();
   var hdr = $('agrFormTitle');
   if (hdr) hdr.textContent = 'Editar acuerdo';
   $('agrForm').classList.remove('hidden');
@@ -74,6 +94,10 @@ function _resetAgrForm() {
   editingAgrId = null;
   $('agrTitle').value = ''; $('agrContent').value = '';
   $('agrCat').value = 'Custodia'; $('agrStatus').value = 'Activo';
+  if ($('agrDeadlineType')) $('agrDeadlineType').value = 'indefinite';
+  if ($('agrDeadlineDate')) $('agrDeadlineDate').value = '';
+  if ($('agrDeadlineWarnDays')) $('agrDeadlineWarnDays').value = 7;
+  _updateAgrDeadlineFieldsVisibility();
   var hdr = $('agrFormTitle');
   if (hdr) hdr.textContent = 'Nuevo acuerdo';
 }
@@ -135,10 +159,26 @@ function renderAgreements() {
     var nextStatus = agr.status === 'Activo' ? 'Caducado' : 'Activo';
     var nextIcon   = agr.status === 'Activo' ? '✓' : '↺';
 
+    // Vigencia / fecha tope
+    var deadlineHtml = '';
+    if (agr.deadlineType === 'fixed' && agr.deadlineDate) {
+      var deadline    = new Date(agr.deadlineDate + 'T12:00');
+      var deadlineStr = deadline.toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' });
+      var daysLeft    = Math.ceil((deadline - new Date()) / 86400000);
+      var warnDays    = agr.deadlineWarnDays || 7;
+      if (agr.status === 'Activo' && daysLeft < 0) {
+        deadlineHtml = '<div style="margin-top:8px;font-size:11px;font-weight:600;color:var(--error)">⚠️ Venció el ' + deadlineStr + '</div>';
+      } else if (agr.status === 'Activo' && daysLeft <= warnDays) {
+        deadlineHtml = '<div style="margin-top:8px;font-size:11px;font-weight:600;color:var(--warn)">⚠️ Vence en ' + daysLeft + ' día' + (daysLeft === 1 ? '' : 's') + ' (' + deadlineStr + ')</div>';
+      } else {
+        deadlineHtml = '<div style="margin-top:8px;font-size:11px;color:var(--text-s)">Vence el ' + deadlineStr + '</div>';
+      }
+    }
+
     var card = document.createElement('div');
     card.className = 'card';
     card.style.marginBottom = '10px';
-    card.innerHTML =
+    card.innerHTML = '<div class="card-body">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px">' +
         '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
           '<span style="font-size:10px;font-weight:700;border-radius:6px;padding:2px 8px;background:' + sc.bg + ';color:' + sc.color + ';border:1px solid ' + sc.border + '">' + agr.status + '</span>' +
@@ -159,9 +199,11 @@ function renderAgreements() {
           '<button class="btn-outline status-btn" style="font-size:11px;padding:4px 10px" title="Cambiar estado">' + nextIcon + ' ' + nextStatus + '</button>' +
         '</div>' +
       '</div>' +
+      deadlineHtml +
       '<div style="margin-top:8px;font-size:11px;color:var(--text-s)">' +
         (dateStr ? dateStr + ' · ' : '') + 'Creado por ' + creatorLabel + updStr +
-      '</div>';
+      '</div>' +
+    '</div>';
 
     card.querySelector('.edit-btn').addEventListener('click', function() { openAgrEdit(agr); });
     card.querySelector('.del-btn').addEventListener('click', async function() {

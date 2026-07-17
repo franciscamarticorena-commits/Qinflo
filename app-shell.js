@@ -511,6 +511,7 @@ window.addEventListener('DOMContentLoaded', function() {
   });
   $('saveAgrBtn').addEventListener('click', saveAgr);
   $('cancelAgrBtn').addEventListener('click', function() { _resetAgrForm(); hide('agrForm'); });
+  if ($('agrDeadlineType')) $('agrDeadlineType').addEventListener('change', _updateAgrDeadlineFieldsVisibility);
 
   // Reminders
   $('toggleRemBtn').addEventListener('click', function() {

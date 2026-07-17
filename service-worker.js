@@ -1,4 +1,4 @@
-const QINFLO_CACHE = 'qinflo-cache-v62';
+const QINFLO_CACHE = 'qinflo-cache-v63';
 const STATIC_ASSETS = [
   './',
   './index.html',
