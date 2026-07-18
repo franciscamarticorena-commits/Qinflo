@@ -24,9 +24,27 @@ function renderToday() {
   _todayCustody(now);
   _todayPendingRequests();
   _todayBalance();
+  _todayDayBalance();
   _todayEvents(todayStr);
   _todayReminders(now, todayStr);
   if (typeof renderTodayActivity === 'function') renderTodayActivity();
+}
+
+function _todayDayBalance() {
+  var card = $('todayDayBalanceCard');
+  var el = $('todayDayBalanceBlock');
+  if (!card || !el) return;
+  var p1Bal = (typeof familyDayBalance !== 'undefined' && familyDayBalance.p1) || 0;
+  var p2Bal = (typeof familyDayBalance !== 'undefined' && familyDayBalance.p2) || 0;
+  if (!p1Bal && !p2Bal) { card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+  var row = function(label, color, n, role) {
+    return '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+      '<span style="font-size:14px"><strong style="color:' + color + '">' + label + '</strong> tiene ' + n + ' día' + (n > 1 ? 's' : '') + ' a favor</span>' +
+      '<button class="btn-outline" style="font-size:11px;padding:4px 9px" onclick="settleDayBalance(\'' + role + '\')">Marcar usado</button>' +
+      '</div>';
+  };
+  el.innerHTML = (p1Bal ? row(p1(), 'var(--accent)', p1Bal, 'p1') : '') + (p2Bal ? row(p2(), 'var(--primary-d)', p2Bal, 'p2') : '');
 }
 
 async function confirmKidsWithMe(btnEl) {

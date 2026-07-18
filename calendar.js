@@ -280,12 +280,52 @@ async function _setCustodyOverrideForDate(dateStr, value) {
   if (error) console.error('[set_custody_override]', error);
 }
 
-// Intercambio 1x1: lo que había en dateA pasa a dateB y viceversa.
-async function _swapCustodyDates(dateA, dateB) {
-  var valA = await _effectiveCustodyForDate(dateA);
-  var valB = await _effectiveCustodyForDate(dateB);
-  await _setCustodyOverrideForDate(dateA, valB);
-  await _setCustodyOverrideForDate(dateB, valA);
+function _addDaysISO(dateStr, n) {
+  var d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+// "Quiero tener a los niños, pero no puedo el [fromDate]; propongo el
+// [toDate] en su lugar." Al aceptar: fromDate..toDate-1 quedan con quien
+// propuso (sigue teniendo a los niños esos días), toDate pasa a ser el
+// nuevo "Cambio de casa". El padre/madre que aprueba (quien se ajusta)
+// queda con esos días como saldo a favor para reclamar más adelante.
+async function _applyCustodyChange(pr) {
+  var requesterVal = pr.createdByRole === 'p1' ? 'mama' : 'papa';
+  var fromD = new Date(pr.fromDate + 'T00:00:00');
+  var toD   = new Date(pr.toDate + 'T00:00:00');
+  var daysGained = Math.round((toD - fromD) / 86400000);
+  if (daysGained < 1) daysGained = 1;
+
+  var cur = pr.fromDate;
+  for (var i = 0; i < daysGained; i++) {
+    await _setCustodyOverrideForDate(cur, requesterVal);
+    cur = _addDaysISO(cur, 1);
+  }
+  await _setCustodyOverrideForDate(pr.toDate, 'transition');
+
+  var { error: balErr } = await supa.rpc('adjust_custody_day_balance', {
+    p_family_id: FAMILY_ID,
+    p_role:      pr.requestedToRole,
+    p_delta:     daysGained
+  });
+  if (balErr) console.error('[adjust_custody_day_balance]', balErr);
+  if (typeof loadFamilyBalance === 'function') await loadFamilyBalance();
+}
+
+async function settleDayBalance(role) {
+  if (!FAMILY_ID) return;
+  var current = role === 'p1' ? familyDayBalance.p1 : familyDayBalance.p2;
+  if (!current) return;
+  var label = role === 'p1' ? p1() : p2();
+  if (!confirm('¿Marcar como usados los ' + current + ' día(s) a favor de ' + label + '?')) return;
+  var { error } = await supa.rpc('adjust_custody_day_balance', {
+    p_family_id: FAMILY_ID, p_role: role, p_delta: -current
+  });
+  if (error) { console.error('[settleDayBalance]', error); alert('No se pudo actualizar: ' + error.message); return; }
+  if (typeof logActivity === 'function') logActivity('day_balance_settled', myLabel() + ' marcó como usados los días a favor de ' + label);
+  if (typeof loadFamilyBalance === 'function') await loadFamilyBalance();
 }
 
 async function saveProp() {
@@ -345,11 +385,7 @@ function renderProposals() {
     div.querySelector('.accept-btn').addEventListener('click', async function() {
       var { error } = await supa.from('custody_changes').update({ status: 'accepted', responded_at: nowISO(), responded_by: USER.id }).eq('id', pr.id);
       if (error) { console.error('[accept proposal]', error); alert('No se pudo aceptar: ' + error.message); return; }
-      // Intercambio real: lo que tenía el día que se cede pasa al día que
-      // se recibe, y viceversa. Así nadie "gana" un día extra ni queda
-      // debiendo -- es un trueque 1x1, guardado como override (no se toca
-      // el patrón base recurrente).
-      await _swapCustodyDates(pr.fromDate, pr.toDate);
+      await _applyCustodyChange(pr);
       if (typeof loadCalendar === 'function') await loadCalendar();
       if (typeof logActivity === 'function') logActivity('proposal_accepted', myLabel() + ' aprobó cambio de custodia: ' + fmtProposalDates(pr), { proposalId: pr.id });
       await loadProposals();

@@ -242,7 +242,8 @@ async function setupListeners() {
     loadSettlements(),
     loadActivity(),
     loadTemporaryOutings(),
-    loadCustodyConfirmations()
+    loadCustodyConfirmations(),
+    loadFamilyBalance()
   ]);
   _dataReady = true;
   renderToday();
@@ -375,6 +376,13 @@ async function loadCalendar() {
     if (r.overrides) custodyOverridesMap[r.month_key] = r.overrides;
   });
   renderCalendar(); renderToday();
+}
+
+async function loadFamilyBalance() {
+  if (!FAMILY_ID) return;
+  var { data } = await supa.from('families').select('p1_day_balance, p2_day_balance').eq('id', FAMILY_ID).single();
+  familyDayBalance = { p1: (data && data.p1_day_balance) || 0, p2: (data && data.p2_day_balance) || 0 };
+  renderToday();
 }
 
 async function loadSettlements() {
