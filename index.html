@@ -686,7 +686,8 @@
           </button>
         </div>
         <div id="propForm" class="hidden" style="margin-top:12px;display:grid;gap:10px">
-          <p style="font-size:12px;color:var(--text-s);margin:0">Es un intercambio: pides cambio de uno de tus días y recuperas con uno del otro padre/madre. Debe ser del mismo tipo de día (viernes/sábado por viernes/sábado, o domingo a jueves por domingo a jueves), y solicitarse con al menos 3 días de anticipación (2 días si es una contrapropuesta). Se enviará para que lo apruebe, rechace o contraproponga otro día de reposición (si contrapropone, tú solo podrás aprobar o rechazar esa contrapropuesta).</p>
+          <div id="propCounterBanner" class="hidden" style="background:rgba(216,164,95,.12);border:1px solid rgba(216,164,95,.35);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--warn);font-weight:600"></div>
+          <p id="propFormIntro" style="font-size:12px;color:var(--text-s);margin:0">Es un intercambio: pides cambio de uno de tus días y recuperas con uno del otro padre/madre. Debe ser del mismo tipo de día (viernes/sábado por viernes/sábado, o domingo a jueves por domingo a jueves), y solicitarse con al menos 3 días de anticipación (2 días si es una contrapropuesta). Se enviará para que lo apruebe, rechace o contraproponga otro día de reposición (si contrapropone, tú solo podrás aprobar o rechazar esa contrapropuesta).</p>
           <div style="display:grid;gap:5px">
             <label style="font-size:11px;font-weight:700;color:var(--text-s);text-transform:uppercase;letter-spacing:.5px">Día que pides cambio (uno de los tuyos)</label>
             <input class="inp" type="date" id="propFrom"/>
@@ -1166,7 +1167,7 @@
 <script src="state.js?v=15"></script>
 <script src="auth.js?v=9"></script>
 <script src="connect.js?v=8"></script>
-<script src="calendar.js?v=25"></script>
+<script src="calendar.js?v=26"></script>
 <script src="expenses.js?v=17"></script>
 <script src="messages.js?v=10"></script>
 <script src="children.js?v=8"></script>
@@ -1183,7 +1184,7 @@
 <script src="activity.js?v=3"></script>
 <script src="today.js?v=23"></script>
 <script src="theme.js?v=1"></script>
-<script src="app-shell.js?v=32"></script>
+<script src="app-shell.js?v=33"></script>
 </body>
 </html>
 

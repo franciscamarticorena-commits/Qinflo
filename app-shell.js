@@ -480,6 +480,8 @@ window.addEventListener('DOMContentLoaded', function() {
       return;
     }
     _counteringProposalId = null;
+    if ($('propCounterBanner')) hide('propCounterBanner');
+    if ($('savePropBtn')) $('savePropBtn').textContent = 'Enviar solicitud';
     var minDate = _minDateISO(3);
     if ($('propFrom')) { $('propFrom').min = minDate; $('propFrom').readOnly = false; }
     if ($('propTo'))   $('propTo').min   = minDate;
@@ -493,6 +495,8 @@ window.addEventListener('DOMContentLoaded', function() {
   $('savePropBtn').addEventListener('click', saveProp);
   $('cancelPropBtn').addEventListener('click', function() {
     _counteringProposalId = null;
+    if ($('propCounterBanner')) hide('propCounterBanner');
+    if ($('savePropBtn')) $('savePropBtn').textContent = 'Enviar solicitud';
     if ($('propFrom')) $('propFrom').readOnly = false;
     hide('propForm');
   });

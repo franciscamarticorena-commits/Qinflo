@@ -347,6 +347,8 @@ async function saveProp() {
     await loadProposals();
     $('propFrom').readOnly = false;
     $('propFrom').value = ''; $('propTo').value = ''; $('propReason').value = '';
+    if ($('propCounterBanner')) hide('propCounterBanner');
+    if ($('savePropBtn')) $('savePropBtn').textContent = 'Enviar solicitud';
     hide('propForm');
     return;
   }
@@ -447,6 +449,11 @@ function renderProposals() {
         $('propFrom').readOnly = true;
         $('propTo').value = '';
         $('propReason').value = '';
+        if ($('propCounterBanner')) {
+          $('propCounterBanner').textContent = 'Estás contraproponiendo otro día de reposición para el ' + fmtShortDate(pr.fromDate) + '. Ese día no cambia -- solo eliges un día tuyo distinto a cambio.';
+          show('propCounterBanner');
+        }
+        if ($('savePropBtn')) $('savePropBtn').textContent = 'Enviar contrapropuesta';
         show('propForm');
       });
     }
