@@ -179,6 +179,19 @@ function renderDayDetail() {
   html += _detailSectionHdr('Custodia');
   html += '<div class="detail-card" style="font-weight:700;font-size:15px;color:' + custodyColor + '">' + custodyLabel + '</div>';
 
+  // Confirmación de recepción (solo días de cambio de casa)
+  if (custodyVal === 'transition') {
+    var selDateStr = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(selDay).padStart(2, '0');
+    var todayNow = new Date();
+    var todayStr = todayNow.getFullYear() + '-' + String(todayNow.getMonth() + 1).padStart(2, '0') + '-' + String(todayNow.getDate()).padStart(2, '0');
+    var dayConf = typeof custodyDayConfirmation === 'function' ? custodyDayConfirmation(selDateStr) : null;
+    if (dayConf) {
+      html += '<div style="margin-top:8px;font-size:12px;color:var(--success);font-weight:600">' + _confirmationLabel(dayConf) + '</div>';
+    } else if (selDateStr === todayStr) {
+      html += '<button class="btn-outline" style="margin-top:8px;font-size:12px;padding:8px 16px" onclick="confirmKidsWithMe(this)">Los niños ya están conmigo ✓</button>';
+    }
+  }
+
   // Events section
   if (typeof renderEventsForDay === 'function') {
     var evHtml = renderEventsForDay(selDay);

@@ -40,6 +40,7 @@ async function confirmKidsWithMe(btnEl) {
       logActivity('custody_confirmed', myLabel() + ' confirmó que los niños ya están en casa');
     }
     renderToday();
+    if (typeof renderDayDetail === 'function') renderDayDetail();
   } catch(e) {
     console.error('[confirmKidsWithMe]', e);
     alert('No se pudo confirmar. Intenta de nuevo.');
