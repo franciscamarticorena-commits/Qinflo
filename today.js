@@ -65,26 +65,19 @@ function _pendingRow(badge, title, sub, actions) {
     '</div>';
 }
 
-async function acceptPropInline(propId) {
+// Aceptar/rechazar/contraproponer un cambio de custodia necesita ver el
+// panorama completo del mes (quién tiene qué día) -- no se decide a ciegas
+// desde esta tarjeta resumen, así que solo lleva al Calendario en el día
+// exacto de la solicitud.
+function goToProposalInCalendar(propId) {
   var p = (proposals || []).find(function(x) { return x.id === propId; });
-  if (!p) return;
-  var { error } = await supa.from('custody_changes').update({ status: 'accepted', responded_at: nowISO(), responded_by: USER.id }).eq('id', propId);
-  if (error) { console.error('[acceptPropInline]', error); alert('No se pudo aceptar: ' + error.message); return; }
-  if (typeof setCustody === 'function') await setCustody(Number(p.toDay), 'transition');
-  if (typeof logActivity === 'function') {
-    logActivity('proposal_accepted', myLabel() + ' aprobó cambio de custodia: Día ' + p.fromDay + ' → Día ' + p.toDay, { proposalId: propId });
-  }
-  if (typeof loadProposals === 'function') await loadProposals();
-}
-
-async function rejectPropInline(propId) {
-  var p = (proposals || []).find(function(x) { return x.id === propId; });
-  var { error } = await supa.from('custody_changes').update({ status: 'rejected', responded_at: nowISO(), responded_by: USER.id }).eq('id', propId);
-  if (error) { console.error('[rejectPropInline]', error); alert('No se pudo rechazar: ' + error.message); return; }
-  if (typeof logActivity === 'function' && p) {
-    logActivity('proposal_rejected', myLabel() + ' rechazó cambio de custodia: Día ' + p.fromDay + ' → Día ' + p.toDay, { proposalId: propId });
-  }
-  if (typeof loadProposals === 'function') await loadProposals();
+  if (!p || !p.fromDate) return;
+  var parts = p.fromDate.split('-');
+  calYear = Number(parts[0]);
+  calMonth = Number(parts[1]) - 1;
+  selDay = Number(parts[2]);
+  if (typeof switchTab === 'function') switchTab('calendar');
+  if (typeof renderCalendar === 'function') renderCalendar();
 }
 
 function _todayPendingRequests() {
@@ -130,13 +123,12 @@ function _todayPendingRequests() {
   var html = '';
 
   propsReceived.forEach(function(p) {
-    var label = typeof fmtProposalDates === 'function' ? fmtProposalDates(p) : 'día ' + p.fromDay + ' → ' + p.toDay;
+    var label = typeof fmtProposalDates === 'function' ? fmtProposalDates(p) : '';
     html += _pendingRow(
       _badge('RESPONDER', 'var(--warn)'),
       'Cambio de custodia — ' + label,
       p.reason || null,
-      '<button class="btn-sm" style="background:var(--success);font-size:12px;padding:6px 14px" onclick="acceptPropInline(\'' + p.id + '\')">Aceptar</button>' +
-      '<button class="btn-outline" style="font-size:12px;padding:6px 14px" onclick="rejectPropInline(\'' + p.id + '\')">Rechazar</button>'
+      '<button class="btn-sm" style="font-size:12px;padding:6px 14px" onclick="goToProposalInCalendar(\'' + p.id + '\')">Revisar en el Calendario →</button>'
     );
   });
 
@@ -151,7 +143,7 @@ function _todayPendingRequests() {
   });
 
   propsSent.forEach(function(p) {
-    var label = typeof fmtProposalDates === 'function' ? fmtProposalDates(p) : 'día ' + p.fromDay + ' → ' + p.toDay;
+    var label = typeof fmtProposalDates === 'function' ? fmtProposalDates(p) : '';
     html += _pendingRow(
       _badge('ESPERANDO', 'var(--primary)'),
       'Cambio de custodia — ' + label,
