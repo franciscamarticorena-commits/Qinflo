@@ -448,7 +448,6 @@ function renderProposals() {
         $('propTo').value = '';
         $('propReason').value = '';
         show('propForm');
-        updateProposalButtonState();
       });
     }
     el.appendChild(div);
