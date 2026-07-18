@@ -360,7 +360,7 @@ function exportarResumen() {
 
 var EXP_CAT_ORDER = ['Educación', 'Salud', 'Vida cotidiana', 'Gastos extraordinarios'];
 var EXP_CAT_COLORS = {
-  'Educación': 'var(--accent)', 'Salud': 'var(--error)',
+  'Educación': 'var(--accent)', 'Salud': 'var(--success)',
   'Vida cotidiana': 'var(--primary)', 'Gastos extraordinarios': 'var(--warn)'
 };
 
