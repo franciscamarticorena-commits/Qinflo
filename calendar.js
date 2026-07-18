@@ -280,52 +280,15 @@ async function _setCustodyOverrideForDate(dateStr, value) {
   if (error) console.error('[set_custody_override]', error);
 }
 
-function _addDaysISO(dateStr, n) {
-  var d = new Date(dateStr + 'T00:00:00');
-  d.setDate(d.getDate() + n);
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-}
-
-// "Quiero tener a los niños, pero no puedo el [fromDate]; propongo el
-// [toDate] en su lugar." Al aceptar: fromDate..toDate-1 quedan con quien
-// propuso (sigue teniendo a los niños esos días), toDate pasa a ser el
-// nuevo "Cambio de casa". El padre/madre que aprueba (quien se ajusta)
-// queda con esos días como saldo a favor para reclamar más adelante.
+// Intercambio directo: cedes un día tuyo (fromDate) y tomas uno del otro
+// padre/madre (toDate) -- ambos cambian de dueño en el momento, sin saldo
+// pendiente. Solo tiene sentido entre días que ya son claramente de un
+// padre u otro (no un día de "Cambio de casa").
 async function _applyCustodyChange(pr) {
   var requesterVal = pr.createdByRole === 'p1' ? 'mama' : 'papa';
-  var fromD = new Date(pr.fromDate + 'T00:00:00');
-  var toD   = new Date(pr.toDate + 'T00:00:00');
-  var daysGained = Math.round((toD - fromD) / 86400000);
-  if (daysGained < 1) daysGained = 1;
-
-  var cur = pr.fromDate;
-  for (var i = 0; i < daysGained; i++) {
-    await _setCustodyOverrideForDate(cur, requesterVal);
-    cur = _addDaysISO(cur, 1);
-  }
-  await _setCustodyOverrideForDate(pr.toDate, 'transition');
-
-  var { error: balErr } = await supa.rpc('adjust_custody_day_balance', {
-    p_family_id: FAMILY_ID,
-    p_role:      pr.requestedToRole,
-    p_delta:     daysGained
-  });
-  if (balErr) console.error('[adjust_custody_day_balance]', balErr);
-  if (typeof loadFamilyBalance === 'function') await loadFamilyBalance();
-}
-
-async function settleDayBalance(role) {
-  if (!FAMILY_ID) return;
-  var current = role === 'p1' ? familyDayBalance.p1 : familyDayBalance.p2;
-  if (!current) return;
-  var label = role === 'p1' ? p1() : p2();
-  if (!confirm('¿Marcar como usados los ' + current + ' día(s) a favor de ' + label + '?')) return;
-  var { error } = await supa.rpc('adjust_custody_day_balance', {
-    p_family_id: FAMILY_ID, p_role: role, p_delta: -current
-  });
-  if (error) { console.error('[settleDayBalance]', error); alert('No se pudo actualizar: ' + error.message); return; }
-  if (typeof logActivity === 'function') logActivity('day_balance_settled', myLabel() + ' marcó como usados los días a favor de ' + label);
-  if (typeof loadFamilyBalance === 'function') await loadFamilyBalance();
+  var otherVal      = pr.createdByRole === 'p1' ? 'papa' : 'mama';
+  await _setCustodyOverrideForDate(pr.fromDate, otherVal);
+  await _setCustodyOverrideForDate(pr.toDate, requesterVal);
 }
 
 async function saveProp() {
@@ -337,6 +300,20 @@ async function saveProp() {
   var minDate = tomorrow.toISOString().slice(0, 10);
   if (fromDate < minDate || toDate < minDate) {
     alert('Las fechas deben ser a partir de mañana. No es posible solicitar cambios para hoy o días anteriores.');
+    return;
+  }
+  if (fromDate === toDate) { alert('El día que cedes y el que pides deben ser distintos.'); return; }
+  var myVal = myRole() === 'p1' ? 'mama' : 'papa';
+  var otherVal = myRole() === 'p1' ? 'papa' : 'mama';
+  var custodyLabel = function(v) { return v === 'transition' ? '"Cambio de casa"' : v === 'mama' ? p1() : v === 'papa' ? p2() : 'sin definir'; };
+  var fromVal = await _effectiveCustodyForDate(fromDate);
+  var toVal = await _effectiveCustodyForDate(toDate);
+  if (fromVal !== myVal) {
+    alert('El día que cedes debe ser uno de tus días. Ese día hoy es ' + custodyLabel(fromVal) + '.');
+    return;
+  }
+  if (toVal !== otherVal) {
+    alert('El día que pides debe ser uno de los días del otro padre/madre. Ese día hoy es ' + custodyLabel(toVal) + '.');
     return;
   }
   var active = activePendingProposal();
@@ -381,7 +358,7 @@ function renderProposals() {
   pendingReceived.forEach(function(pr) {
     var div = document.createElement('div');
     div.className = 'proposal-alert';
-    div.innerHTML = '<div><strong>Solicitud de cambio de custodia</strong><br><strong>' + proposalRequesterLabel(pr) + '</strong> solicita a <strong>' + proposalRequestedLabel(pr) + '</strong><br>Cambio: ' + fmtProposalDates(pr) + '<br>Enviada: ' + fmtDateTime(pr.createdAt || pr.date) + (pr.reason ? '<br>' + pr.reason : '') + '<div class="proposal-flow-note">Debes aprobar o rechazar esta solicitud antes de crear una nueva.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm accept-btn" style="background:var(--success)">Aceptar</button><button class="btn-outline reject-btn">Rechazar</button></div>';
+    div.innerHTML = '<div><strong>Solicitud de cambio de custodia</strong><br><strong>' + proposalRequesterLabel(pr) + '</strong> solicita a <strong>' + proposalRequestedLabel(pr) + '</strong><br>Cambio: ' + fmtProposalDates(pr) + '<br>Enviada: ' + fmtDateTime(pr.createdAt || pr.date) + (pr.reason ? '<br>' + pr.reason : '') + '<div class="proposal-flow-note">Debes aprobar, rechazar o contraproponer otro día antes de crear una nueva.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm accept-btn" style="background:var(--success)">Aceptar</button><button class="btn-outline counter-btn">Contraproponer</button><button class="btn-outline reject-btn">Rechazar</button></div>';
     div.querySelector('.accept-btn').addEventListener('click', async function() {
       var { error } = await supa.from('custody_changes').update({ status: 'accepted', responded_at: nowISO(), responded_by: USER.id }).eq('id', pr.id);
       if (error) { console.error('[accept proposal]', error); alert('No se pudo aceptar: ' + error.message); return; }
@@ -395,6 +372,28 @@ function renderProposals() {
       if (error) { console.error('[reject proposal]', error); alert('No se pudo rechazar: ' + error.message); return; }
       if (typeof logActivity === 'function') logActivity('proposal_rejected', myLabel() + ' rechazó cambio de custodia: ' + fmtProposalDates(pr), { proposalId: pr.id });
       await loadProposals();
+    });
+    div.querySelector('.counter-btn').addEventListener('click', async function() {
+      // El día que pedían (pr.fromDate) no le acomoda a quien recibió la
+      // solicitud como día de compensación -- rechaza esa y abre el mismo
+      // formulario para que ofrezca otro de sus días a cambio del mismo
+      // día que el solicitante original quería ceder.
+      var { error } = await supa.from('custody_changes').update({ status: 'rejected', responded_at: nowISO(), responded_by: USER.id }).eq('id', pr.id);
+      if (error) { console.error('[counter proposal]', error); alert('No se pudo continuar: ' + error.message); return; }
+      if (typeof logActivity === 'function') logActivity('proposal_rejected', myLabel() + ' contrapropuso otro día de cambio de custodia (rechazó: ' + fmtProposalDates(pr) + ')', { proposalId: pr.id });
+      await loadProposals();
+      selDay = Number(pr.fromDate.split('-')[2]);
+      calYear = Number(pr.fromDate.split('-')[0]);
+      calMonth = Number(pr.fromDate.split('-')[1]) - 1;
+      renderCalendar();
+      var tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+      var minDate = tomorrow.toISOString().slice(0, 10);
+      $('propFrom').min = minDate; $('propTo').min = minDate;
+      $('propFrom').value = '';
+      $('propTo').value = pr.fromDate;
+      $('propReason').value = '';
+      show('propForm');
+      updateProposalButtonState();
     });
     el.appendChild(div);
   });
