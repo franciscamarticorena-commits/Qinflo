@@ -473,14 +473,14 @@ window.addEventListener('DOMContentLoaded', function() {
   $('togglePropBtn').addEventListener('click', function() {
     var active = activePendingProposal();
     if (active) {
-      var msg = active.createdBy === (USER && USER.id)
+      var msg = active.requestedToRole !== myRole()
         ? 'Ya tienes una solicitud de cambio pendiente. Debes esperar respuesta antes de crear otra.'
         : 'Tienes una solicitud de cambio pendiente por responder. Debes aprobarla o rechazarla antes de crear una nueva.';
       alert(msg);
       return;
     }
-    var tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-    var minDate = tomorrow.toISOString().slice(0, 10);
+    var minDay = new Date(); minDay.setDate(minDay.getDate() + 2);
+    var minDate = minDay.getFullYear() + '-' + String(minDay.getMonth() + 1).padStart(2, '0') + '-' + String(minDay.getDate()).padStart(2, '0');
     if ($('propFrom')) $('propFrom').min = minDate;
     if ($('propTo'))   $('propTo').min   = minDate;
     // Autorrelleno: "Día a cambiar" es el día que ya estás viendo en el calendario.

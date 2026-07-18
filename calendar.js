@@ -304,10 +304,10 @@ async function saveProp() {
   var toDate   = $('propTo')   ? $('propTo').value   : '';
   var reason   = $('propReason') ? $('propReason').value.trim() : '';
   if (!fromDate || !toDate) { alert('Selecciona ambas fechas.'); return; }
-  var tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-  var minDate = tomorrow.toISOString().slice(0, 10);
+  var minDay = new Date(); minDay.setDate(minDay.getDate() + 2);
+  var minDate = minDay.getFullYear() + '-' + String(minDay.getMonth() + 1).padStart(2, '0') + '-' + String(minDay.getDate()).padStart(2, '0');
   if (fromDate < minDate || toDate < minDate) {
-    alert('Las fechas deben ser a partir de mañana. No es posible solicitar cambios para hoy o días anteriores.');
+    alert('Las solicitudes de cambio deben hacerse con al menos 2 días de anticipación al día en cuestión.');
     return;
   }
   if (fromDate === toDate) { alert('El día que pides cambio y el día en que recuperas deben ser distintos.'); return; }
@@ -401,9 +401,17 @@ function renderProposals() {
   if (!pendingReceived.length && !pendingSent.length) { el.innerHTML = ''; updateProposalButtonState(); return; }
   el.innerHTML = '';
   pendingReceived.forEach(function(pr) {
+    // Solo se contrapropone una vez: si el turno ya volvió al proponente
+    // original (requestedToRole === createdByRole), está revisando una
+    // contrapropuesta y solo puede aceptarla o rechazarla -- ahí se
+    // cierra la negociación, sin más vueltas.
+    var isCounterRound = pr.requestedToRole === pr.createdByRole;
+    var note = isCounterRound
+      ? 'Contrapropuesta recibida: debes aprobarla o rechazarla. Si la rechazas, todo queda como estaba antes de solicitar el cambio.'
+      : 'Debes aprobar, rechazar o contraproponer otro día antes de crear una nueva.';
     var div = document.createElement('div');
     div.className = 'proposal-alert';
-    div.innerHTML = '<div><strong>Solicitud de cambio de custodia</strong><br><strong>' + proposalRequesterLabel(pr) + '</strong> solicita a <strong>' + proposalRequestedLabel(pr) + '</strong><br>Cambio: ' + fmtProposalDates(pr) + '<br>Enviada: ' + fmtDateTime(pr.createdAt || pr.date) + (pr.reason ? '<br>' + pr.reason : '') + '<div class="proposal-flow-note">Debes aprobar, rechazar o contraproponer otro día antes de crear una nueva.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm accept-btn" style="background:var(--success)">Aceptar</button><button class="btn-outline counter-btn">Contraproponer</button><button class="btn-outline reject-btn">Rechazar</button></div>';
+    div.innerHTML = '<div><strong>Solicitud de cambio de custodia</strong><br><strong>' + proposalRequesterLabel(pr) + '</strong> solicita a <strong>' + proposalRequestedLabel(pr) + '</strong><br>Cambio: ' + fmtProposalDates(pr) + '<br>Enviada: ' + fmtDateTime(pr.createdAt || pr.date) + (pr.reason ? '<br>' + pr.reason : '') + '<div class="proposal-flow-note">' + note + '</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm accept-btn" style="background:var(--success)">Aceptar</button>' + (isCounterRound ? '' : '<button class="btn-outline counter-btn">Contraproponer</button>') + '<button class="btn-outline reject-btn">Rechazar</button></div>';
     div.querySelector('.accept-btn').addEventListener('click', async function() {
       var { error } = await supa.from('custody_changes').update({ status: 'accepted', responded_at: nowISO(), responded_by: USER.id }).eq('id', pr.id);
       if (error) { console.error('[accept proposal]', error); alert('No se pudo aceptar: ' + error.message); return; }
@@ -418,26 +426,28 @@ function renderProposals() {
       if (typeof logActivity === 'function') logActivity('proposal_rejected', myLabel() + ' rechazó cambio de custodia: ' + fmtProposalDates(pr), { proposalId: pr.id });
       await loadProposals();
     });
-    div.querySelector('.counter-btn').addEventListener('click', function() {
-      // El día de reposición pedido no le acomoda -- el día que se pide
-      // cambiar (pr.fromDate) queda fijo, y esta persona ofrece uno de
-      // sus propios días como reposición en su lugar. No se rechaza nada:
-      // la misma solicitud se actualiza y le pasa el turno de vuelta.
-      _counteringProposalId = pr.id;
-      selDay = Number(pr.fromDate.split('-')[2]);
-      calYear = Number(pr.fromDate.split('-')[0]);
-      calMonth = Number(pr.fromDate.split('-')[1]) - 1;
-      renderCalendar();
-      var tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-      var minDate = tomorrow.toISOString().slice(0, 10);
-      $('propTo').min = minDate;
-      $('propFrom').value = pr.fromDate;
-      $('propFrom').readOnly = true;
-      $('propTo').value = '';
-      $('propReason').value = '';
-      show('propForm');
-      updateProposalButtonState();
-    });
+    if (!isCounterRound) {
+      div.querySelector('.counter-btn').addEventListener('click', function() {
+        // El día de reposición pedido no le acomoda -- el día que se pide
+        // cambiar (pr.fromDate) queda fijo, y esta persona ofrece uno de
+        // sus propios días como reposición en su lugar. No se rechaza nada:
+        // la misma solicitud se actualiza y le pasa el turno de vuelta.
+        _counteringProposalId = pr.id;
+        selDay = Number(pr.fromDate.split('-')[2]);
+        calYear = Number(pr.fromDate.split('-')[0]);
+        calMonth = Number(pr.fromDate.split('-')[1]) - 1;
+        renderCalendar();
+        var minDay = new Date(); minDay.setDate(minDay.getDate() + 2);
+        var minDate = minDay.getFullYear() + '-' + String(minDay.getMonth() + 1).padStart(2, '0') + '-' + String(minDay.getDate()).padStart(2, '0');
+        $('propTo').min = minDate;
+        $('propFrom').value = pr.fromDate;
+        $('propFrom').readOnly = true;
+        $('propTo').value = '';
+        $('propReason').value = '';
+        show('propForm');
+        updateProposalButtonState();
+      });
+    }
     el.appendChild(div);
   });
   pendingSent.forEach(function(pr) {
