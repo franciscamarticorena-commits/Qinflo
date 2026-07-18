@@ -75,7 +75,11 @@ async function sendReminderReply(r) {
 function renderReminders() {
   var el = $('remList');
   if (!el) return;
-  var up = reminders.filter(function(r) { return !r.done; }).sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
+  var todayD = new Date();
+  var todayStr = todayD.getFullYear() + '-' + String(todayD.getMonth() + 1).padStart(2, '0') + '-' + String(todayD.getDate()).padStart(2, '0');
+  // Un aviso ya vencido (fecha pasada) deja de listarse como "Próximo" para no
+  // confundir en días posteriores a su fecha -- se ve hasta el día que vence.
+  var up = reminders.filter(function(r) { return !r.done && r.date >= todayStr; }).sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
   var done = reminders.filter(function(r) { return r.done; });
   if (!reminders.length) { el.innerHTML = '<div class="empty-state">Sin avisos</div>'; return; }
   el.innerHTML = '';
