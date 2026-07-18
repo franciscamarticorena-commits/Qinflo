@@ -303,6 +303,11 @@ async function saveProp() {
     return;
   }
   if (fromDate === toDate) { alert('El día que cedes y el que pides deben ser distintos.'); return; }
+  var _dowCat = function(ds) { var dow = new Date(ds + 'T12:00:00').getDay(); return (dow === 5 || dow === 6) ? 'finde' : 'semana'; };
+  if (_dowCat(fromDate) !== _dowCat(toDate)) {
+    alert('El día que pides debe ser del mismo tipo que el que cedes: si cedes un viernes o sábado, pide otro viernes o sábado; si cedes de domingo a jueves, pide otro día de domingo a jueves.');
+    return;
+  }
   var myVal = myRole() === 'p1' ? 'mama' : 'papa';
   var otherVal = myRole() === 'p1' ? 'papa' : 'mama';
   var custodyLabel = function(v) { return v === 'transition' ? '"Cambio de casa"' : v === 'mama' ? p1() : v === 'papa' ? p2() : 'sin definir'; };
