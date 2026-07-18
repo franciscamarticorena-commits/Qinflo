@@ -312,14 +312,28 @@ function _todayOutingsHtml(now) {
     var who = o.pickedUpByRole === 'p1' ? p1() : p2();
     var names = typeof _outingChildNames === 'function' ? _outingChildNames(o.childIds) : '';
     var timeRange = o.startTime + (o.endTime ? ' – ' + o.endTime : '');
-    var conf = typeof outingConfirmation === 'function' ? outingConfirmation(o.id) : null;
-    var confirmHtml = conf
-      ? '<span style="color:var(--success);font-weight:600">' + _confirmationLabel(conf) + '</span>'
-      : (typeof _outingReadyToConfirm !== 'function' || _outingReadyToConfirm(o))
-        ? '<button class="btn-outline" style="font-size:10px;padding:2px 8px" onclick="confirmOutingReceived(\'' + o.id + '\')">Los niños ya están conmigo ✓</button>'
-        : '<span style="color:var(--text-s);font-size:11px">Podrás confirmar desde las ' + o.startTime + '</span>';
+    var isCreator = o.createdBy === (USER && USER.id);
+
+    var actionHtml = '';
+    if (o.status === 'pending') {
+      actionHtml = !isCreator
+        ? '<div style="display:flex;gap:6px;margin-top:5px">' +
+            '<button class="btn-sm" style="background:var(--success);font-size:10px;padding:3px 10px" onclick="respondOuting(\'' + o.id + '\',\'approved\')">Aprobar</button>' +
+            '<button class="btn-outline" style="font-size:10px;padding:3px 10px" onclick="respondOuting(\'' + o.id + '\',\'rejected\')">Rechazar</button>' +
+          '</div>'
+        : '<div style="margin-top:5px;font-size:11px;color:var(--text-s);font-style:italic">Esperando aprobación</div>';
+    } else if (o.status === 'rejected') {
+      actionHtml = '<div style="margin-top:5px;font-size:11px;color:var(--error)">Rechazada</div>';
+    } else {
+      var conf = typeof outingConfirmation === 'function' ? outingConfirmation(o.id) : null;
+      actionHtml = conf
+        ? '<span style="color:var(--success);font-weight:600">' + _confirmationLabel(conf) + '</span>'
+        : (typeof _outingReadyToConfirm !== 'function' || _outingReadyToConfirm(o))
+          ? '<button class="btn-outline" style="font-size:10px;padding:2px 8px" onclick="confirmOutingReceived(\'' + o.id + '\')">Los niños ya están conmigo ✓</button>'
+          : '<span style="color:var(--text-s);font-size:11px">Podrás confirmar desde las ' + o.startTime + '</span>';
+    }
     return '<div style="font-size:12px;color:var(--accent);margin-top:8px;background:rgba(216,164,95,.1);border-radius:8px;padding:7px 10px">' +
-      '🚗 ' + who + ' retira a ' + names + ' · ' + timeRange + '<div style="margin-top:5px">' + confirmHtml + '</div></div>';
+      '🚗 ' + who + ' retira a ' + names + ' · ' + timeRange + '<div style="margin-top:5px">' + actionHtml + '</div></div>';
   }).join('');
 }
 
