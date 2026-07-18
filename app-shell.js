@@ -483,6 +483,11 @@ window.addEventListener('DOMContentLoaded', function() {
     var minDate = tomorrow.toISOString().slice(0, 10);
     if ($('propFrom')) $('propFrom').min = minDate;
     if ($('propTo'))   $('propTo').min   = minDate;
+    // Autorrelleno: "Día a cambiar" es el día que ya estás viendo en el calendario.
+    if ($('propFrom') && selDay) {
+      var selDateStr = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(selDay).padStart(2, '0');
+      $('propFrom').value = selDateStr >= minDate ? selDateStr : minDate;
+    }
     $('propForm').classList.toggle('hidden');
   });
   $('savePropBtn').addEventListener('click', saveProp);

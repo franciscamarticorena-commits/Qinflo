@@ -289,7 +289,7 @@ async function saveProp() {
     return;
   }
   if (typeof logActivity === 'function') {
-    logActivity('proposal_created', myLabel() + ' solicitó cambio de custodia: Día ' + from + ' → Día ' + to, { fromDay: from, toDay: to });
+    logActivity('proposal_created', myLabel() + ' solicitó cambio de custodia: ' + fmtShortDate(fromDate) + ' → ' + fmtShortDate(toDate), { fromDate: fromDate, toDate: toDate });
   }
   await loadProposals();
   $('propFrom').value = ''; $('propTo').value = ''; $('propReason').value = '';
@@ -310,7 +310,20 @@ function renderProposals() {
     div.querySelector('.accept-btn').addEventListener('click', async function() {
       var { error } = await supa.from('custody_changes').update({ status: 'accepted', responded_at: nowISO(), responded_by: USER.id }).eq('id', pr.id);
       if (error) { console.error('[accept proposal]', error); alert('No se pudo aceptar: ' + error.message); return; }
-      setCustody(Number(pr.toDay), 'transition');
+      // pr.toDate es 'YYYY-MM-DD' -- puede caer en un mes distinto al que
+      // se está viendo ahora mismo, así que se llama al RPC directo en vez
+      // de depender del mes actualmente abierto en el calendario.
+      var toParts = (pr.toDate || '').split('-');
+      if (toParts.length === 3) {
+        var { error: custErr } = await supa.rpc('set_custody_day', {
+          p_family_id: FAMILY_ID,
+          p_month_key: toParts[0] + '-' + toParts[1],
+          p_day:       String(Number(toParts[2])),
+          p_parent:    'transition'
+        });
+        if (custErr) console.error('[accept proposal] set_custody_day', custErr);
+      }
+      if (typeof loadCalendar === 'function') await loadCalendar();
       if (typeof logActivity === 'function') logActivity('proposal_accepted', myLabel() + ' aprobó cambio de custodia: ' + fmtProposalDates(pr), { proposalId: pr.id });
       await loadProposals();
     });

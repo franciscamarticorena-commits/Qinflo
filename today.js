@@ -315,7 +315,9 @@ function _todayOutingsHtml(now) {
     var conf = typeof outingConfirmation === 'function' ? outingConfirmation(o.id) : null;
     var confirmHtml = conf
       ? '<span style="color:var(--success);font-weight:600">' + _confirmationLabel(conf) + '</span>'
-      : '<button class="btn-outline" style="font-size:10px;padding:2px 8px" onclick="confirmOutingReceived(\'' + o.id + '\')">Los niños ya están conmigo ✓</button>';
+      : (typeof _outingReadyToConfirm !== 'function' || _outingReadyToConfirm(o))
+        ? '<button class="btn-outline" style="font-size:10px;padding:2px 8px" onclick="confirmOutingReceived(\'' + o.id + '\')">Los niños ya están conmigo ✓</button>'
+        : '<span style="color:var(--text-s);font-size:11px">Podrás confirmar desde las ' + o.startTime + '</span>';
     return '<div style="font-size:12px;color:var(--accent);margin-top:8px;background:rgba(216,164,95,.1);border-radius:8px;padding:7px 10px">' +
       '🚗 ' + who + ' retira a ' + names + ' · ' + timeRange + '<div style="margin-top:5px">' + confirmHtml + '</div></div>';
   }).join('');

@@ -11,6 +11,14 @@ function outingsForDay(year, month, day) {
   return (temporaryOutings || []).filter(function(o) { return o.date === dateStr; });
 }
 
+// No tiene sentido confirmar "los niños ya están conmigo" antes de que la
+// salida siquiera haya empezado -- solo se habilita desde su hora de inicio.
+function _outingReadyToConfirm(o) {
+  if (!o || !o.date) return true;
+  var dt = new Date(o.date + 'T' + (o.startTime || '00:00') + ':00');
+  return new Date() >= dt;
+}
+
 function _outingChildNames(childIds) {
   return (childIds || []).map(function(id) {
     var c = (children || []).find(function(k) { return k.id === id; });
@@ -143,7 +151,9 @@ function renderOutingsForDay(day) {
     var conf = typeof outingConfirmation === 'function' ? outingConfirmation(o.id) : null;
     var confirmHtml = conf
       ? '<div style="font-size:11px;color:var(--success);font-weight:600;margin-top:6px">' + _confirmationLabel(conf) + '</div>'
-      : '<button class="btn-outline" style="font-size:11px;padding:4px 9px;margin-top:6px" onclick="confirmOutingReceived(\'' + o.id + '\')">Los niños ya están conmigo ✓</button>';
+      : _outingReadyToConfirm(o)
+        ? '<button class="btn-outline" style="font-size:11px;padding:4px 9px;margin-top:6px" onclick="confirmOutingReceived(\'' + o.id + '\')">Los niños ya están conmigo ✓</button>'
+        : '<div style="font-size:11px;color:var(--text-s);margin-top:6px">Podrás confirmar desde las ' + o.startTime + '</div>';
     return '<div class="detail-card" style="border-left:2px solid var(--accent)">' +
       '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">' +
       '<strong style="font-size:13px;color:var(--text)">🚗 Salida temporal — ' + names + '</strong></div>' +
