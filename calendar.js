@@ -291,6 +291,14 @@ async function _applyCustodyChange(pr) {
   await _setCustodyOverrideForDate(pr.toDate, requesterVal);
 }
 
+var _dowCat = function(ds) { var dow = new Date(ds + 'T12:00:00').getDay(); return (dow === 5 || dow === 6) ? 'finde' : 'semana'; };
+var _custodyLabel = function(v) { return v === 'transition' ? '"Cambio de casa"' : v === 'mama' ? p1() : v === 'papa' ? p2() : 'sin definir'; };
+
+// Id de la solicitud que se está contraproponiendo (null = propuesta nueva).
+// En una contrapropuesta el día que pides cambio queda fijo (es el del
+// proponente original) -- solo se ofrece un día de reposición distinto.
+var _counteringProposalId = null;
+
 async function saveProp() {
   var fromDate = $('propFrom') ? $('propFrom').value : '';
   var toDate   = $('propTo')   ? $('propTo').value   : '';
@@ -303,29 +311,58 @@ async function saveProp() {
     return;
   }
   if (fromDate === toDate) { alert('El día que pides cambio y el día en que recuperas deben ser distintos.'); return; }
-  var _dowCat = function(ds) { var dow = new Date(ds + 'T12:00:00').getDay(); return (dow === 5 || dow === 6) ? 'finde' : 'semana'; };
   if (_dowCat(fromDate) !== _dowCat(toDate)) {
     alert('El día que ofreces recuperar debe ser del mismo tipo del día que pides cambio: si pides un viernes o sábado, recupera en otro viernes o sábado; si pides cambio de domingo a jueves, recupera otro día, de domingo a jueves.');
     return;
   }
+
+  if (_counteringProposalId) {
+    var counterToVal = await _effectiveCustodyForDate(toDate);
+    var myVal2 = myRole() === 'p1' ? 'mama' : 'papa';
+    if (counterToVal !== myVal2) {
+      alert('El día de reposición que ofreces debe ser uno de tus días. Ese día hoy es ' + _custodyLabel(counterToVal) + '.');
+      return;
+    }
+    var { error: cErr } = await supa.from('custody_changes').update({
+      to_date:            toDate,
+      reason:             reason,
+      requested_to_role:  oppositeRole(myRole()),
+      responded_at:       null,
+      responded_by:       null
+    }).eq('id', _counteringProposalId);
+    if (cErr) {
+      console.error('[counter saveProp]', cErr);
+      alert('No se pudo enviar la contrapropuesta: ' + cErr.message);
+      return;
+    }
+    if (typeof logActivity === 'function') {
+      logActivity('proposal_countered', myLabel() + ' contrapropuso día de reposición: ' + fmtShortDate(toDate), { proposalId: _counteringProposalId, toDate: toDate });
+    }
+    _counteringProposalId = null;
+    await loadProposals();
+    $('propFrom').readOnly = false;
+    $('propFrom').value = ''; $('propTo').value = ''; $('propReason').value = '';
+    hide('propForm');
+    return;
+  }
+
   var myVal = myRole() === 'p1' ? 'mama' : 'papa';
   var otherVal = myRole() === 'p1' ? 'papa' : 'mama';
-  var custodyLabel = function(v) { return v === 'transition' ? '"Cambio de casa"' : v === 'mama' ? p1() : v === 'papa' ? p2() : 'sin definir'; };
   var fromVal = await _effectiveCustodyForDate(fromDate);
   var toVal = await _effectiveCustodyForDate(toDate);
   if (fromVal !== myVal) {
-    alert('El día que pides cambio debe ser uno de tus días. Ese día hoy es ' + custodyLabel(fromVal) + '.');
+    alert('El día que pides cambio debe ser uno de tus días. Ese día hoy es ' + _custodyLabel(fromVal) + '.');
     return;
   }
   if (toVal !== otherVal) {
-    alert('El día en que recuperas debe ser uno de los días del otro padre/madre. Ese día hoy es ' + custodyLabel(toVal) + '.');
+    alert('El día en que recuperas debe ser uno de los días del otro padre/madre. Ese día hoy es ' + _custodyLabel(toVal) + '.');
     return;
   }
   var active = activePendingProposal();
   if (active) {
-    alert(active.createdBy === (USER && USER.id)
-      ? 'Ya tienes una solicitud pendiente. Espera respuesta antes de crear otra.'
-      : 'Primero debes responder la solicitud pendiente antes de crear una nueva.');
+    alert(active.requestedToRole === myRole()
+      ? 'Primero debes responder la solicitud pendiente antes de crear una nueva.'
+      : 'Ya tienes una solicitud pendiente. Espera respuesta antes de crear otra.');
     hide('propForm');
     updateProposalButtonState();
     return;
@@ -356,8 +393,11 @@ async function saveProp() {
 function renderProposals() {
   var el = $('pendingProposals');
   if (!el) return;
-  var pendingReceived = proposals.filter(function(p) { return p.status === 'pending' && p.createdBy !== (USER && USER.id); });
-  var pendingSent = proposals.filter(function(p) { return p.status === 'pending' && p.createdBy === (USER && USER.id); });
+  // Basado en de quién es el turno de responder (requestedToRole), no en
+  // quién creó la fila -- así una contrapropuesta le pasa correctamente
+  // el turno a la otra persona sin importar quién inició la negociación.
+  var pendingReceived = proposals.filter(function(p) { return p.status === 'pending' && p.requestedToRole === myRole(); });
+  var pendingSent = proposals.filter(function(p) { return p.status === 'pending' && p.requestedToRole !== myRole(); });
   if (!pendingReceived.length && !pendingSent.length) { el.innerHTML = ''; updateProposalButtonState(); return; }
   el.innerHTML = '';
   pendingReceived.forEach(function(pr) {
@@ -378,24 +418,22 @@ function renderProposals() {
       if (typeof logActivity === 'function') logActivity('proposal_rejected', myLabel() + ' rechazó cambio de custodia: ' + fmtProposalDates(pr), { proposalId: pr.id });
       await loadProposals();
     });
-    div.querySelector('.counter-btn').addEventListener('click', async function() {
-      // El día que pedían (pr.fromDate) no le acomoda a quien recibió la
-      // solicitud como día de compensación -- rechaza esa y abre el mismo
-      // formulario para que ofrezca otro de sus días a cambio del mismo
-      // día que el solicitante original quería ceder.
-      var { error } = await supa.from('custody_changes').update({ status: 'rejected', responded_at: nowISO(), responded_by: USER.id }).eq('id', pr.id);
-      if (error) { console.error('[counter proposal]', error); alert('No se pudo continuar: ' + error.message); return; }
-      if (typeof logActivity === 'function') logActivity('proposal_rejected', myLabel() + ' contrapropuso otro día de cambio de custodia (rechazó: ' + fmtProposalDates(pr) + ')', { proposalId: pr.id });
-      await loadProposals();
+    div.querySelector('.counter-btn').addEventListener('click', function() {
+      // El día de reposición pedido no le acomoda -- el día que se pide
+      // cambiar (pr.fromDate) queda fijo, y esta persona ofrece uno de
+      // sus propios días como reposición en su lugar. No se rechaza nada:
+      // la misma solicitud se actualiza y le pasa el turno de vuelta.
+      _counteringProposalId = pr.id;
       selDay = Number(pr.fromDate.split('-')[2]);
       calYear = Number(pr.fromDate.split('-')[0]);
       calMonth = Number(pr.fromDate.split('-')[1]) - 1;
       renderCalendar();
       var tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
       var minDate = tomorrow.toISOString().slice(0, 10);
-      $('propFrom').min = minDate; $('propTo').min = minDate;
-      $('propFrom').value = '';
-      $('propTo').value = pr.fromDate;
+      $('propTo').min = minDate;
+      $('propFrom').value = pr.fromDate;
+      $('propFrom').readOnly = true;
+      $('propTo').value = '';
       $('propReason').value = '';
       show('propForm');
       updateProposalButtonState();
