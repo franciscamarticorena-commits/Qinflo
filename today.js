@@ -393,22 +393,36 @@ function _todayReminders(now, todayStr) {
   var cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 8)
     .toISOString().split('T')[0];
 
-  var upcoming = (reminders || []).filter(function(r) {
+  var items = (reminders || []).filter(function(r) {
     return r.date && r.date >= todayStr && r.date < cutoff;
-  }).slice(0, 4);
+  }).map(function(r) {
+    return { sortKey: r.date, isToday: r.date === todayStr, label: (r.text || r.title || '') };
+  });
 
-  if (!upcoming.length) {
+  // Salidas temporales futuras (las de hoy ya se muestran en su propia
+  // tarjeta de custodia) para que no queden invisibles hasta el día mismo.
+  (temporaryOutings || []).filter(function(o) {
+    return o.date && o.date > todayStr && o.date < cutoff && o.status !== 'rejected';
+  }).forEach(function(o) {
+    var names = typeof _outingChildNames === 'function' ? _outingChildNames(o.childIds) : '';
+    var pendTag = o.status === 'pending' ? ' (pend. aprobación)' : '';
+    items.push({ sortKey: o.date + 'T' + (o.startTime || '00:00'), isToday: false, label: '🚗 Salida: ' + names + pendTag });
+  });
+
+  items.sort(function(a, b) { return a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0; });
+  items = items.slice(0, 4);
+
+  if (!items.length) {
     el.innerHTML = '<span style="color:var(--text-s);font-size:13px">Sin avisos esta semana</span>';
     return;
   }
 
-  el.innerHTML = upcoming.map(function(r) {
-    var isToday = r.date === todayStr;
-    var d = new Date(r.date + 'T12:00:00');
-    var dayLabel = isToday ? 'Hoy' : TODAY_DAYS_S[d.getDay()] + ' ' + d.getDate();
-    var labelColor = isToday ? 'var(--accent)' : 'var(--primary-d)';
+  el.innerHTML = items.map(function(item) {
+    var d = new Date(item.sortKey.slice(0, 10) + 'T12:00:00');
+    var dayLabel = item.isToday ? 'Hoy' : TODAY_DAYS_S[d.getDay()] + ' ' + d.getDate();
+    var labelColor = item.isToday ? 'var(--accent)' : 'var(--primary-d)';
     return '<div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px">' +
       '<span style="color:' + labelColor + ';font-size:11px;font-weight:700;min-width:34px">' + dayLabel + '</span>' +
-      '<span style="color:var(--text)">' + (r.text || r.title || '') + '</span></div>';
+      '<span style="color:var(--text)">' + item.label + '</span></div>';
   }).join('');
 }
