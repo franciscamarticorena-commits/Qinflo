@@ -253,6 +253,41 @@ function updateProposalButtonState() {
   hide('propForm');
 }
 
+// Custodia efectiva de una fecha puntual (override si existe, si no el
+// patrón base) -- consulta directa a la BD, sin depender de qué mes esté
+// cargado ahora mismo en pantalla.
+async function _effectiveCustodyForDate(dateStr) {
+  var parts = (dateStr || '').split('-');
+  if (parts.length !== 3) return 'none';
+  var monthKey = parts[0] + '-' + parts[1];
+  var day = String(Number(parts[2]));
+  var { data } = await supa.from('custody_months').select('custody, overrides')
+    .eq('family_id', FAMILY_ID).eq('month_key', monthKey).maybeSingle();
+  if (!data) return 'none';
+  if (data.overrides && data.overrides[day]) return data.overrides[day].value;
+  return (data.custody && data.custody[day]) || 'none';
+}
+
+async function _setCustodyOverrideForDate(dateStr, value) {
+  var parts = (dateStr || '').split('-');
+  if (parts.length !== 3) return;
+  var { error } = await supa.rpc('set_custody_override', {
+    p_family_id: FAMILY_ID,
+    p_month_key: parts[0] + '-' + parts[1],
+    p_day:       String(Number(parts[2])),
+    p_value:     value
+  });
+  if (error) console.error('[set_custody_override]', error);
+}
+
+// Intercambio 1x1: lo que había en dateA pasa a dateB y viceversa.
+async function _swapCustodyDates(dateA, dateB) {
+  var valA = await _effectiveCustodyForDate(dateA);
+  var valB = await _effectiveCustodyForDate(dateB);
+  await _setCustodyOverrideForDate(dateA, valB);
+  await _setCustodyOverrideForDate(dateB, valA);
+}
+
 async function saveProp() {
   var fromDate = $('propFrom') ? $('propFrom').value : '';
   var toDate   = $('propTo')   ? $('propTo').value   : '';
@@ -310,19 +345,11 @@ function renderProposals() {
     div.querySelector('.accept-btn').addEventListener('click', async function() {
       var { error } = await supa.from('custody_changes').update({ status: 'accepted', responded_at: nowISO(), responded_by: USER.id }).eq('id', pr.id);
       if (error) { console.error('[accept proposal]', error); alert('No se pudo aceptar: ' + error.message); return; }
-      // pr.toDate es 'YYYY-MM-DD' -- puede caer en un mes distinto al que
-      // se está viendo ahora mismo, así que se llama al RPC directo en vez
-      // de depender del mes actualmente abierto en el calendario.
-      var toParts = (pr.toDate || '').split('-');
-      if (toParts.length === 3) {
-        var { error: custErr } = await supa.rpc('set_custody_day', {
-          p_family_id: FAMILY_ID,
-          p_month_key: toParts[0] + '-' + toParts[1],
-          p_day:       String(Number(toParts[2])),
-          p_parent:    'transition'
-        });
-        if (custErr) console.error('[accept proposal] set_custody_day', custErr);
-      }
+      // Intercambio real: lo que tenía el día que se cede pasa al día que
+      // se recibe, y viceversa. Así nadie "gana" un día extra ni queda
+      // debiendo -- es un trueque 1x1, guardado como override (no se toca
+      // el patrón base recurrente).
+      await _swapCustodyDates(pr.fromDate, pr.toDate);
       if (typeof loadCalendar === 'function') await loadCalendar();
       if (typeof logActivity === 'function') logActivity('proposal_accepted', myLabel() + ' aprobó cambio de custodia: ' + fmtProposalDates(pr), { proposalId: pr.id });
       await loadProposals();
