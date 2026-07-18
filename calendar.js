@@ -302,7 +302,7 @@ async function saveProp() {
     alert('Las fechas deben ser a partir de mañana. No es posible solicitar cambios para hoy o días anteriores.');
     return;
   }
-  if (fromDate === toDate) { alert('El día que cedes y el que pides deben ser distintos.'); return; }
+  if (fromDate === toDate) { alert('El día que pides cambio y el día en que recuperas deben ser distintos.'); return; }
   var _dowCat = function(ds) { var dow = new Date(ds + 'T12:00:00').getDay(); return (dow === 5 || dow === 6) ? 'finde' : 'semana'; };
   if (_dowCat(fromDate) !== _dowCat(toDate)) {
     alert('El día que ofreces recuperar debe ser del mismo tipo del día que pides cambio: si pides un viernes o sábado, recupera en otro viernes o sábado; si pides cambio de domingo a jueves, recupera otro día, de domingo a jueves.');
@@ -314,11 +314,11 @@ async function saveProp() {
   var fromVal = await _effectiveCustodyForDate(fromDate);
   var toVal = await _effectiveCustodyForDate(toDate);
   if (fromVal !== myVal) {
-    alert('El día que cedes debe ser uno de tus días. Ese día hoy es ' + custodyLabel(fromVal) + '.');
+    alert('El día que pides cambio debe ser uno de tus días. Ese día hoy es ' + custodyLabel(fromVal) + '.');
     return;
   }
   if (toVal !== otherVal) {
-    alert('El día que pides debe ser uno de los días del otro padre/madre. Ese día hoy es ' + custodyLabel(toVal) + '.');
+    alert('El día en que recuperas debe ser uno de los días del otro padre/madre. Ese día hoy es ' + custodyLabel(toVal) + '.');
     return;
   }
   var active = activePendingProposal();
