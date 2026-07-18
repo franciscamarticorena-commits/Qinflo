@@ -479,9 +479,9 @@ window.addEventListener('DOMContentLoaded', function() {
       alert(msg);
       return;
     }
-    var minDay = new Date(); minDay.setDate(minDay.getDate() + 2);
-    var minDate = minDay.getFullYear() + '-' + String(minDay.getMonth() + 1).padStart(2, '0') + '-' + String(minDay.getDate()).padStart(2, '0');
-    if ($('propFrom')) $('propFrom').min = minDate;
+    _counteringProposalId = null;
+    var minDate = _minDateISO(3);
+    if ($('propFrom')) { $('propFrom').min = minDate; $('propFrom').readOnly = false; }
     if ($('propTo'))   $('propTo').min   = minDate;
     // Autorrelleno: "Día a cambiar" es el día que ya estás viendo en el calendario.
     if ($('propFrom') && selDay) {
@@ -491,7 +491,11 @@ window.addEventListener('DOMContentLoaded', function() {
     $('propForm').classList.toggle('hidden');
   });
   $('savePropBtn').addEventListener('click', saveProp);
-  $('cancelPropBtn').addEventListener('click', function() { hide('propForm'); });
+  $('cancelPropBtn').addEventListener('click', function() {
+    _counteringProposalId = null;
+    if ($('propFrom')) $('propFrom').readOnly = false;
+    hide('propForm');
+  });
 
   // Expenses
   $('toggleExpBtn').addEventListener('click', function() {

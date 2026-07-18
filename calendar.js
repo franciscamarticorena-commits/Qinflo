@@ -293,6 +293,11 @@ async function _applyCustodyChange(pr) {
 
 var _dowCat = function(ds) { var dow = new Date(ds + 'T12:00:00').getDay(); return (dow === 5 || dow === 6) ? 'finde' : 'semana'; };
 var _custodyLabel = function(v) { return v === 'transition' ? '"Cambio de casa"' : v === 'mama' ? p1() : v === 'papa' ? p2() : 'sin definir'; };
+// Propuestas nuevas: 3 días de anticipación. Contrapropuestas: 2 días.
+function _minDateISO(days) {
+  var d = new Date(); d.setDate(d.getDate() + days);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
 
 // Id de la solicitud que se está contraproponiendo (null = propuesta nueva).
 // En una contrapropuesta el día que pides cambio queda fijo (es el del
@@ -304,10 +309,10 @@ async function saveProp() {
   var toDate   = $('propTo')   ? $('propTo').value   : '';
   var reason   = $('propReason') ? $('propReason').value.trim() : '';
   if (!fromDate || !toDate) { alert('Selecciona ambas fechas.'); return; }
-  var minDay = new Date(); minDay.setDate(minDay.getDate() + 2);
-  var minDate = minDay.getFullYear() + '-' + String(minDay.getMonth() + 1).padStart(2, '0') + '-' + String(minDay.getDate()).padStart(2, '0');
+  var noticeDays = _counteringProposalId ? 2 : 3;
+  var minDate = _minDateISO(noticeDays);
   if (fromDate < minDate || toDate < minDate) {
-    alert('Las solicitudes de cambio deben hacerse con al menos 2 días de anticipación al día en cuestión.');
+    alert('Las solicitudes ' + (_counteringProposalId ? 'de contrapropuesta deben hacerse con al menos 2 días' : 'de cambio deben hacerse con al menos 3 días') + ' de anticipación al día en cuestión.');
     return;
   }
   if (fromDate === toDate) { alert('El día que pides cambio y el día en que recuperas deben ser distintos.'); return; }
@@ -437,9 +442,7 @@ function renderProposals() {
         calYear = Number(pr.fromDate.split('-')[0]);
         calMonth = Number(pr.fromDate.split('-')[1]) - 1;
         renderCalendar();
-        var minDay = new Date(); minDay.setDate(minDay.getDate() + 2);
-        var minDate = minDay.getFullYear() + '-' + String(minDay.getMonth() + 1).padStart(2, '0') + '-' + String(minDay.getDate()).padStart(2, '0');
-        $('propTo').min = minDate;
+        $('propTo').min = _minDateISO(2);
         $('propFrom').value = pr.fromDate;
         $('propFrom').readOnly = true;
         $('propTo').value = '';
