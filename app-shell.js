@@ -95,7 +95,16 @@ supa.auth.onAuthStateChange(async function(event, session) {
     var userData = await loadUserData(u.id);
 
     if (!userData) {
-      // Usuario nuevo: no tiene familia todavía
+      // Sin membresía activa: puede ser cuenta realmente nueva, o una cuenta
+      // existente (ej. ya removida de otra familia) que ahora entra vía
+      // invitación -- en ambos casos, una invitación pendiente manda.
+      var urlParams0 = new URLSearchParams(window.location.search);
+      var pendingInviteNew = urlParams0.get('invite') || localStorage.getItem('pendingInvite');
+      if (pendingInviteNew) {
+        localStorage.removeItem('pendingInvite');
+        await autoConnect(pendingInviteNew);
+        return;
+      }
       var isGoogle = u.app_metadata && u.app_metadata.provider === 'google';
       if (isGoogle) {
         await createGoogleUserProfile(u);
