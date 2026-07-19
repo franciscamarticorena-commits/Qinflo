@@ -242,7 +242,8 @@ async function setupListeners() {
     loadSettlements(),
     loadActivity(),
     loadTemporaryOutings(),
-    loadCustodyConfirmations()
+    loadCustodyConfirmations(),
+    loadFamilyPlan()
   ]);
   _dataReady = true;
   renderToday();

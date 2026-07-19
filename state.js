@@ -6,6 +6,9 @@ let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
 let selDay = null, custodyMap = {}, calEventsMap = {}, custodyOverridesMap = {};
 let calFilter = 'both';
 let expenses = [], messages = [], children = [], agreements = [], reminders = [], proposals = [], events = [], settlements = [], activityLog = [], temporaryOutings = [], custodyConfirmations = [];
+// Plan de la familia (modelo centralizado) -- cargado, aún sin usarse
+// para restringir nada. Ver plans.js.
+let FAMILY_PLAN = null, FAMILY_PLAN_SLUG = 'esencial';
 let expPeriod = 'week', expCurrency = 'CLP', UF = 38650;
 let expandedAgr = null;
 
