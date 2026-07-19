@@ -11,6 +11,13 @@
 -- IMPORTANTE: esto SOLO define el modelo de datos -- no se aplica
 -- ninguna restricción funcional todavía. La app sigue funcionando
 -- exactamente igual que antes; eso queda para una segunda etapa.
+--
+-- Nota para la segunda etapa: el booleano "exports" no distingue QUÉ se
+-- exporta -- en Coordinación Plus corresponde solo al balance mensual de
+-- gastos; en Full Organización (junto con "advanced_exports") habilita
+-- además mensajes, acuerdos e historial completo. Eso lo decide la
+-- lógica de la app al momento de mostrar cada botón de descarga, no el
+-- esquema en sí.
 -- Idempotente.
 -- ============================================================
 
@@ -29,13 +36,13 @@ INSERT INTO public.plans (name, slug, price_clp, objective, features, limits, fl
   'Coordinación básica de custodia y comunicación entre padres.',
   '{
     "calendar": true, "child_profiles": true, "custody": true,
-    "handoff_confirmation": false, "resources": true,
+    "handoff_confirmation": true, "resources": true,
     "expenses": false, "expense_categories": false, "expense_balance": false,
-    "messaging": true, "calendar_change_requests": false,
+    "messaging": false, "calendar_change_requests": false,
     "agreements": false, "agreement_versioning": false,
     "reports": "none", "timeline": false,
     "exports": false, "advanced_exports": false,
-    "reminders": true, "advanced_reminders": false
+    "reminders": false, "advanced_reminders": false
   }'::jsonb,
   '{ "max_adults": 2, "expense_history_months": 0 }'::jsonb,
   '{ "ads": "full", "premium_auto_access": false, "monthly_recurrent_expense_notification": false }'::jsonb
@@ -48,12 +55,12 @@ INSERT INTO public.plans (name, slug, price_clp, objective, features, limits, fl
     "handoff_confirmation": true, "resources": true,
     "expenses": true, "expense_categories": true, "expense_balance": true,
     "messaging": true, "calendar_change_requests": true,
-    "agreements": true, "agreement_versioning": false,
+    "agreements": false, "agreement_versioning": false,
     "reports": "partial", "timeline": true,
-    "exports": false, "advanced_exports": false,
+    "exports": true, "advanced_exports": false,
     "reminders": true, "advanced_reminders": false
   }'::jsonb,
-  '{ "max_adults": 2, "expense_history_months": 12 }'::jsonb,
+  '{ "max_adults": 2, "expense_history_months": 6 }'::jsonb,
   '{ "ads": "limited", "premium_auto_access": false, "monthly_recurrent_expense_notification": true }'::jsonb
 ),
 (
