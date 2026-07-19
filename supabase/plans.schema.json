@@ -1,0 +1,255 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "Esquema centralizado para definir los planes de suscripción de Qinflo, incluyendo funcionalidades, límites y flags de comportamiento.",
+  "$comment": "Este esquema actúa como fuente única de verdad para frontend, backend y lógica de negocio. Referencia únicamente -- no hay validación de JSON Schema en código todavía; los datos reales viven en public.plans (ver migración 022).",
+  "type": "object",
+  "required": ["plans"],
+  "properties": {
+    "plans": {
+      "type": "array",
+      "description": "Lista de planes disponibles en la aplicación.",
+      "$comment": "Cada elemento representa un plan completo con sus capacidades y restricciones.",
+      "items": {
+        "$ref": "#/$defs/plan"
+      }
+    }
+  },
+  "$defs": {
+    "plan": {
+      "type": "object",
+      "description": "Definición completa de un plan de suscripción.",
+      "$comment": "Incluye identidad, precio, objetivo comercial, funcionalidades habilitadas, límites y flags de comportamiento.",
+      "required": [
+        "id",
+        "name",
+        "price_clp",
+        "objective",
+        "features",
+        "limits",
+        "flags"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identificador técnico único del plan.",
+          "$comment": "Se utiliza internamente para lógica de permisos y configuración.",
+          "enum": [
+            "esencial",
+            "coordinacion_plus",
+            "full_organizacion"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "description": "Nombre visible del plan para los usuarios.",
+          "$comment": "Debe coincidir exactamente con los nombres oficiales definidos por negocio.",
+          "enum": [
+            "Esencial",
+            "Coordinación Plus",
+            "Full Organización"
+          ]
+        },
+        "price_clp": {
+          "type": "integer",
+          "description": "Precio mensual del plan en pesos chilenos.",
+          "$comment": "El valor 0 representa un plan gratuito.",
+          "minimum": 0
+        },
+        "objective": {
+          "type": "string",
+          "description": "Propuesta de valor principal del plan.",
+          "$comment": "Se utiliza en pantallas de marketing y comparación de planes."
+        },
+        "features": {
+          "$ref": "#/$defs/features"
+        },
+        "limits": {
+          "$ref": "#/$defs/limits"
+        },
+        "flags": {
+          "$ref": "#/$defs/flags"
+        }
+      },
+      "additionalProperties": false
+    },
+    "features": {
+      "type": "object",
+      "description": "Conjunto de funcionalidades habilitadas o deshabilitadas por plan.",
+      "$comment": "Cada propiedad representa una capacidad específica del sistema.",
+      "required": [
+        "calendar",
+        "child_profiles",
+        "custody",
+        "handoff_confirmation",
+        "resources",
+        "expenses",
+        "expense_categories",
+        "expense_balance",
+        "messaging",
+        "calendar_change_requests",
+        "temporary_outings",
+        "agreements",
+        "agreement_versioning",
+        "reports",
+        "timeline",
+        "exports",
+        "advanced_exports",
+        "reminders",
+        "advanced_reminders"
+      ],
+      "properties": {
+        "calendar": {
+          "type": "boolean",
+          "description": "Acceso al calendario compartido.",
+          "$comment": "Permite visualizar y gestionar eventos familiares."
+        },
+        "child_profiles": {
+          "type": "boolean",
+          "description": "Gestión de perfiles de hijos.",
+          "$comment": "Permite crear y editar información de los hijos."
+        },
+        "custody": {
+          "type": "boolean",
+          "description": "Configuración de custodia recurrente.",
+          "$comment": "Define reglas de convivencia y turnos."
+        },
+        "handoff_confirmation": {
+          "type": "boolean",
+          "description": "Confirmación de entrega de los niños.",
+          "$comment": "Registra eventos de traspaso entre padres. Solo confirma los cambios base ya definidos por la custodia recurrente -- no gestiona cambios extraordinarios (eso es calendar_change_requests / temporary_outings)."
+        },
+        "resources": {
+          "type": "boolean",
+          "description": "Acceso a recursos y guías.",
+          "$comment": "Contenido educativo o de apoyo dentro de la app."
+        },
+        "expenses": {
+          "type": "boolean",
+          "description": "Gestión de gastos compartidos.",
+          "$comment": "Permite registrar y dividir gastos entre padres."
+        },
+        "expense_categories": {
+          "type": "boolean",
+          "description": "Uso de categorías de gastos.",
+          "$comment": "Clasificación de gastos por tipo (salud, educación, etc.)."
+        },
+        "expense_balance": {
+          "type": "boolean",
+          "description": "Cálculo automático de balances.",
+          "$comment": "Determina quién debe a quién y cuánto."
+        },
+        "messaging": {
+          "type": "boolean",
+          "description": "Mensajería entre padres.",
+          "$comment": "Comunicación directa dentro de la aplicación."
+        },
+        "calendar_change_requests": {
+          "type": "boolean",
+          "description": "Solicitudes de cambio de calendario.",
+          "$comment": "Permite proponer, aprobar o rechazar modificaciones de custodia fuera del patrón base."
+        },
+        "temporary_outings": {
+          "type": "boolean",
+          "description": "Salidas extraordinarias.",
+          "$comment": "Retiro puntual que NO modifica la custodia del día -- distinto de calendar_change_requests, aunque ambos son de planes pagados. No existe una feature separada de \"autorización excepcional\": esos casos se resuelven vía agreements, messaging u otro canal existente."
+        },
+        "agreements": {
+          "type": "boolean",
+          "description": "Gestión de acuerdos compartidos.",
+          "$comment": "Permite registrar acuerdos formales entre padres."
+        },
+        "agreement_versioning": {
+          "type": "boolean",
+          "description": "Historial de versiones de acuerdos.",
+          "$comment": "Mantiene trazabilidad de cambios en acuerdos."
+        },
+        "reports": {
+          "type": "string",
+          "description": "Nivel de acceso a reportes.",
+          "$comment": "Define el alcance de reportes disponibles para el usuario.",
+          "enum": ["none", "partial", "full"]
+        },
+        "timeline": {
+          "type": "boolean",
+          "description": "Acceso a timeline de actividades.",
+          "$comment": "Vista histórica de eventos y acciones."
+        },
+        "exports": {
+          "type": "boolean",
+          "description": "Exportación básica de datos.",
+          "$comment": "Permite descargar información en formatos simples. El alcance concreto de qué se exporta lo define la app por plan (ej. en Coordinación Plus corresponde solo al balance mensual de gastos)."
+        },
+        "advanced_exports": {
+          "type": "boolean",
+          "description": "Exportaciones avanzadas.",
+          "$comment": "Incluye reportes detallados y formatos extendidos (mensajes, acuerdos, historial completo)."
+        },
+        "reminders": {
+          "type": "boolean",
+          "description": "Recordatorios básicos.",
+          "$comment": "Notificaciones simples dentro de la app."
+        },
+        "advanced_reminders": {
+          "type": "boolean",
+          "description": "Recordatorios avanzados.",
+          "$comment": "Incluye lógica adicional como fechas específicas o reglas complejas."
+        }
+      },
+      "additionalProperties": false
+    },
+    "limits": {
+      "type": "object",
+      "description": "Restricciones cuantitativas del plan.",
+      "$comment": "Define límites operativos que afectan el uso del sistema. max_adults es siempre 2 en todos los planes -- no es una diferenciación comercial, es un límite estructural de Qinflo.",
+      "required": [
+        "max_adults",
+        "expense_history_months"
+      ],
+      "properties": {
+        "max_adults": {
+          "type": "integer",
+          "description": "Número máximo de adultos permitidos en el plan.",
+          "$comment": "Controla cuántos usuarios principales pueden participar. Siempre 2 -- todos los espacios de Qinflo son para un máximo de 2 adultos.",
+          "minimum": 1
+        },
+        "expense_history_months": {
+          "type": "integer",
+          "description": "Cantidad de meses de historial de gastos accesible.",
+          "$comment": "0 representa acceso ilimitado. Esencial: 0 (sin gastos, no aplica); Coordinación Plus: 6; Full Organización: 0 (ilimitado).",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "flags": {
+      "type": "object",
+      "description": "Configuraciones especiales que afectan comportamiento del sistema.",
+      "$comment": "Se utilizan para activar o desactivar comportamientos globales por plan.",
+      "required": [
+        "ads",
+        "premium_auto_access",
+        "monthly_recurrent_expense_notification"
+      ],
+      "properties": {
+        "ads": {
+          "type": "string",
+          "description": "Nivel de publicidad mostrada al usuario.",
+          "$comment": "Controla la presencia de anuncios dentro de la aplicación. \"limited\" significa que el plan puede incluir publicidad o convenios, pero no publicidad invasiva.",
+          "enum": ["full", "limited", "none"]
+        },
+        "premium_auto_access": {
+          "type": "boolean",
+          "description": "Acceso automático a nuevas funcionalidades premium.",
+          "$comment": "Si es true, el plan recibe nuevas features sin cambios adicionales."
+        },
+        "monthly_recurrent_expense_notification": {
+          "type": "boolean",
+          "description": "Notificación automática de gastos recurrentes mensuales.",
+          "$comment": "Activa avisos el último miércoles hábil del mes para gastos recurrentes."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
