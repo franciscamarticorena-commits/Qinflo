@@ -18,6 +18,11 @@
 -- además mensajes, acuerdos e historial completo. Eso lo decide la
 -- lógica de la app al momento de mostrar cada botón de descarga, no el
 -- esquema en sí.
+--
+-- "temporary_outings" (salidas extraordinarias) se separó de
+-- "calendar_change_requests": ambas son funcionalidades de planes
+-- pagados, pero distintas -- una es la solicitud/aprobación de cambio
+-- de custodia, la otra es un retiro puntual que no modifica custodia.
 -- Idempotente.
 -- ============================================================
 
@@ -38,7 +43,7 @@ INSERT INTO public.plans (name, slug, price_clp, objective, features, limits, fl
     "calendar": true, "child_profiles": true, "custody": true,
     "handoff_confirmation": true, "resources": true,
     "expenses": false, "expense_categories": false, "expense_balance": false,
-    "messaging": false, "calendar_change_requests": false,
+    "messaging": false, "calendar_change_requests": false, "temporary_outings": false,
     "agreements": false, "agreement_versioning": false,
     "reports": "none", "timeline": false,
     "exports": false, "advanced_exports": false,
@@ -54,7 +59,7 @@ INSERT INTO public.plans (name, slug, price_clp, objective, features, limits, fl
     "calendar": true, "child_profiles": true, "custody": true,
     "handoff_confirmation": true, "resources": true,
     "expenses": true, "expense_categories": true, "expense_balance": true,
-    "messaging": true, "calendar_change_requests": true,
+    "messaging": true, "calendar_change_requests": true, "temporary_outings": true,
     "agreements": false, "agreement_versioning": false,
     "reports": "partial", "timeline": true,
     "exports": true, "advanced_exports": false,
@@ -70,7 +75,7 @@ INSERT INTO public.plans (name, slug, price_clp, objective, features, limits, fl
     "calendar": true, "child_profiles": true, "custody": true,
     "handoff_confirmation": true, "resources": true,
     "expenses": true, "expense_categories": true, "expense_balance": true,
-    "messaging": true, "calendar_change_requests": true,
+    "messaging": true, "calendar_change_requests": true, "temporary_outings": true,
     "agreements": true, "agreement_versioning": true,
     "reports": "full", "timeline": true,
     "exports": true, "advanced_exports": true,
